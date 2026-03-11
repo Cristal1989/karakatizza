@@ -1,5 +1,7 @@
 export async function getProducts() {
-  const response = await fetch("http://localhost:5000/products");
+  const response = await fetch(
+    "https://karakatizza-production.up.railway.app/products"
+  );
   const data = await response.json();
 
   if (!response.ok) {
@@ -10,9 +12,12 @@ export async function getProducts() {
 }
 
 export async function deleteProduct(id) {
-  const response = await fetch(`http://localhost:5000/products/${id}`, {
-    method: "DELETE",
-  });
+  const response = await fetch(
+    `https://karakatizza-production.up.railway.app/products${id}`,
+    {
+      method: "DELETE",
+    }
+  );
 
   const data = await response.json();
 
@@ -24,10 +29,13 @@ export async function deleteProduct(id) {
 }
 
 export async function updateProduct(id, formData) {
-  const response = await fetch(`http://localhost:5000/products/${id}`, {
-    method: "PUT",
-    body: formData,
-  });
+  const response = await fetch(
+    `https://karakatizza-production.up.railway.app/products${id}`,
+    {
+      method: "PUT",
+      body: formData,
+    }
+  );
 
   const data = await response.json();
 

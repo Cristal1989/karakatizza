@@ -184,6 +184,8 @@ app.post("/order", async (req, res) => {
   }
 });
 
+// 22
+
 app.delete("/products/:id", (req, res) => {
   try {
     const { id } = req.params;

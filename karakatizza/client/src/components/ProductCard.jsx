@@ -25,7 +25,7 @@ export default function ProductCard({ product }) {
   }
 
   const imageSrc = product.image?.startsWith("/uploads")
-    ? `http://localhost:5000${product.image}`
+    ? `https://karakatizza-production.up.railway.app/products${product.image}`
     : product.image;
 
   return (
