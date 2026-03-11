@@ -1,0 +1,64 @@
+[
+  {
+    "id": "dcec6d79-f88d-4b93-a7c1-fa4b743cbc7c",
+    "name": "Суші Бургер",
+    "price": 200,
+    "category": "baked",
+    "description": "Бургер с рисом",
+    "image": "/uploads/1773250878899-179118504.jpg"
+  },
+  {
+    "id": 1,
+    "name": "Філадельфія",
+    "price": 200,
+    "category": "rolls",
+    "image": "/images/fola.jpeg",
+    "description": "Лосось, крем-сир",
+    "badge": "Хіт"
+  },
+  {
+    "id": 2,
+    "name": "Каліфорнія",
+    "price": 165,
+    "category": "rolls",
+    "image": "/images/kalif.jpg",
+    "description": "Краб, авокадо",
+    "badge": ""
+  },
+  {
+    "id": 3,
+    "name": "Лава",
+    "price": 199,
+    "category": "baked",
+    "image": "/images/fola.jpeg",
+    "description": "Запечений рол із ніжним соусом",
+    "badge": "Новинка"
+  },
+  {
+    "id": 4,
+    "name": "Фірмовий сет",
+    "price": 499,
+    "category": "sets",
+    "image": "/images/kalif.jpg",
+    "description": "Популярний набір ролів для компанії",
+    "badge": "Хіт"
+  },
+  {
+    "id": 5,
+    "name": "Чука",
+    "price": 75,
+    "category": "snacks",
+    "image": "/images/chuka.jpg",
+    "description": "Салат із водоростей",
+    "badge": ""
+  },
+  {
+    "id": 6,
+    "name": "Pepsi 0.5",
+    "price": 45,
+    "category": "drinks",
+    "image": "/images/peps.png",
+    "description": "Газований напій",
+    "badge": ""
+  }
+]
