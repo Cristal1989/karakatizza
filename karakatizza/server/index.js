@@ -88,13 +88,7 @@ app.post("/products", upload.single("image"), async (req, res) => {
     let imageUrl = "";
 
     if (req.file) {
-      const result = await cloudinary.uploader.upload(req.file.path);
-      imageUrl = result.secure_url;
-
-      // удаляем временный файл после загрузки в Cloudinary
-      if (fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
-      }
+      imageUrl = `/uploads/${req.file.filename}`;
     }
 
     const newProduct = {
@@ -320,18 +314,23 @@ app.put("/products/:id", upload.single("image"), (req, res) => {
 });
 
 app.use((err, req, res, next) => {
-  console.error("GLOBAL SERVER ERROR:", err);
+  console.error("GLOBAL SERVER ERROR:");
+  console.error(err);
+  console.error("MESSAGE:", err?.message);
+  console.error("STACK:", err?.stack);
 
   if (err instanceof multer.MulterError) {
     return res.status(500).json({
       message: "Помилка завантаження файлу",
       error: err.message,
+      stack: err.stack,
     });
   }
 
   return res.status(500).json({
     message: "Внутрішня помилка сервера",
-    error: err.message,
+    error: err?.message || "Unknown error",
+    stack: err?.stack || "",
   });
 });
 
