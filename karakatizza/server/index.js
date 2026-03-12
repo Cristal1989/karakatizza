@@ -13,6 +13,10 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
 const productsFilePath = path.join(__dirname, "data", "products.json");
 const uploadsDir = path.join(__dirname, "uploads");
 
@@ -74,12 +78,24 @@ app.get("/", (req, res) => {
 app.post("/products", upload.single("image"), async (req, res) => {
   try {
     const products = readProducts();
+    const { name, price, category, description } = req.body;
+
+    if (!name || !price || !category) {
+      return res.status(400).json({
+        message: "Необхідні поля: name, price, category",
+      });
+    }
 
     let imageUrl = "";
 
     if (req.file) {
       const result = await cloudinary.uploader.upload(req.file.path);
       imageUrl = result.secure_url;
+
+      // удаляем временный файл после загрузки в Cloudinary
+      if (fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
     }
 
     const newProduct = {
@@ -99,8 +115,12 @@ app.post("/products", upload.single("image"), async (req, res) => {
       product: newProduct,
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error creating product" });
+    console.error("POST PRODUCT ERROR:", error);
+
+    return res.status(500).json({
+      message: "Помилка створення товару",
+      error: error.message,
+    });
   }
 });
 
@@ -298,6 +318,22 @@ app.put("/products/:id", upload.single("image"), (req, res) => {
       error: error.message,
     });
   }
+});
+
+app.use((err, req, res, next) => {
+  console.error("GLOBAL SERVER ERROR:", err);
+
+  if (err instanceof multer.MulterError) {
+    return res.status(500).json({
+      message: "Помилка завантаження файлу",
+      error: err.message,
+    });
+  }
+
+  return res.status(500).json({
+    message: "Внутрішня помилка сервера",
+    error: err.message,
+  });
 });
 
 app.listen(PORT, () => {
