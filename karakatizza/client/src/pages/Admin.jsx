@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { getProducts, deleteProduct, updateProduct } from "../api/productsApi";
+import {
+  getProducts,
+  createProduct,
+  deleteProduct,
+  updateProduct,
+  getImageUrl,
+} from "../api/productsApi";
 
 export default function Admin() {
   const [form, setForm] = useState({
@@ -76,17 +82,7 @@ export default function Admin() {
         await updateProduct(editingId, formData);
         setMessage("✅ Товар успішно оновлено");
       } else {
-        const response = await fetch("http://localhost:5000/products", {
-          method: "POST",
-          body: formData,
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.message || "Помилка створення товару");
-        }
-
+        await createProduct(formData);
         setMessage("✅ Товар успішно додано");
       }
 
@@ -139,9 +135,7 @@ export default function Admin() {
 
     setImage(null);
 
-    const currentImage = product.image?.startsWith("/uploads")
-      ? `http://localhost:5000${product.image}`
-      : product.image || "";
+    const currentImage = getImageUrl(product.image);
 
     setImagePreview(currentImage);
     setMessage("");
@@ -375,9 +369,7 @@ export default function Admin() {
           ) : (
             <div style={{ display: "grid", gap: "14px" }}>
               {products.map((product) => {
-                const imageSrc = product.image?.startsWith("/uploads")
-                  ? `http://localhost:5000${product.image}`
-                  : product.image;
+                const imageSrc = getImageUrl(product.image);
 
                 return (
                   <div

@@ -1,8 +1,7 @@
-export async function createOrder(orderData) {
-  console.log("A. createOrder викликався");
-  console.log("B. orderData:", orderData);
+import { API_BASE_URL } from "./config";
 
-  const response = await fetch("http://localhost:5000/order", {
+export async function createOrder(orderData) {
+  const response = await fetch(`${API_BASE_URL}/order`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -10,10 +9,7 @@ export async function createOrder(orderData) {
     body: JSON.stringify(orderData),
   });
 
-  console.log("C. response status:", response.status);
-
   const data = await response.json();
-  console.log("D. response data:", data);
 
   if (!response.ok) {
     throw new Error(data.message || "Помилка відправки замовлення");

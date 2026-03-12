@@ -6,6 +6,7 @@ import path from "path";
 import multer from "multer";
 import { v4 as uuidv4 } from "uuid";
 import { fileURLToPath } from "url";
+import cloudinary from "./cloudinary.js";
 
 dotenv.config();
 
@@ -48,7 +49,7 @@ function writeProducts(products) {
 
 app.use(cors());
 app.use(express.json());
-app.use("/uploads", express.static("uploads"));
+app.use("/uploads", express.static(uploadsDir));
 
 const PORT = process.env.PORT || 5000;
 const BOT_TOKEN = process.env.BOT_TOKEN;
@@ -70,17 +71,16 @@ app.get("/", (req, res) => {
   res.send("Server running");
 });
 
-app.post("/products", upload.single("image"), (req, res) => {
+app.post("/products", upload.single("image"), async (req, res) => {
   try {
-    const { name, price, category, description } = req.body;
-
-    if (!name || !price || !category) {
-      return res.status(400).json({
-        message: "Заповни назву, ціну і категорію",
-      });
-    }
-
     const products = readProducts();
+
+    let imageUrl = "";
+
+    if (req.file) {
+      const result = await cloudinary.uploader.upload(req.file.path);
+      imageUrl = result.secure_url;
+    }
 
     const newProduct = {
       id: uuidv4(),
@@ -88,7 +88,7 @@ app.post("/products", upload.single("image"), (req, res) => {
       price: Number(price),
       category,
       description: description || "",
-      image: req.file ? `/uploads/${req.file.filename}` : "",
+      image: imageUrl,
     };
 
     products.push(newProduct);
@@ -99,10 +99,8 @@ app.post("/products", upload.single("image"), (req, res) => {
       product: newProduct,
     });
   } catch (error) {
-    return res.status(500).json({
-      message: "Не вдалося створити товар",
-      error: error.message,
-    });
+    console.error(error);
+    res.status(500).json({ message: "Error creating product" });
   }
 });
 
@@ -184,8 +182,6 @@ app.post("/order", async (req, res) => {
   }
 });
 
-// 22
-
 app.delete("/products/:id", (req, res) => {
   try {
     const { id } = req.params;
@@ -220,6 +216,8 @@ app.delete("/products/:id", (req, res) => {
         console.error("Помилка видалення файлу:", fileError.message);
       }
     }
+
+    writeProducts(updatedProducts);
 
     return res.json({
       success: true,

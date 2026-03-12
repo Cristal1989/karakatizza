@@ -1,7 +1,6 @@
-import { useCart } from "../hooks/useCart";
-import { useState } from "react";
-import { useRef } from "react";
+import { useState, useRef } from "react";
 import { flyToCart } from "../utils/flyToCart";
+import { getImageUrl } from "../api/productsApi";
 
 export default function ProductCard({ product }) {
   const { addToCart } = useCart();
@@ -24,9 +23,7 @@ export default function ProductCard({ product }) {
     setQuantity(1);
   }
 
-  const imageSrc = product.image?.startsWith("/uploads")
-    ? `https://karakatizza-production.up.railway.app/products${product.image}`
-    : product.image;
+  const imageSrc = getImageUrl(product.image);
 
   return (
     <div
