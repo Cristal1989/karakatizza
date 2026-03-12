@@ -22,6 +22,7 @@ export default function Admin() {
   const [productsLoading, setProductsLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
+  const [popular, setPopular] = useState(false);
 
   useEffect(() => {
     loadProducts();
@@ -73,6 +74,7 @@ export default function Admin() {
       formData.append("price", form.price);
       formData.append("category", form.category);
       formData.append("description", form.description);
+      formData.append("popular", popular);
 
       if (image) {
         formData.append("image", image);
@@ -93,6 +95,7 @@ export default function Admin() {
         description: "",
       });
 
+      setPopular(false);
       setImage(null);
       setImagePreview("");
       setEditingId(null);
@@ -133,12 +136,15 @@ export default function Admin() {
       description: product.description || "",
     });
 
+    setPopular(!!product.popular);
     setImage(null);
 
     const currentImage = getImageUrl(product.image);
-
     setImagePreview(currentImage);
     setMessage("");
+
+    const fileInput = document.getElementById("image-input");
+    if (fileInput) fileInput.value = "";
 
     window.scrollTo({
       top: 0,
@@ -156,6 +162,7 @@ export default function Admin() {
       description: "",
     });
 
+    setPopular(false);
     setImage(null);
     setImagePreview("");
     setMessage("");
@@ -227,7 +234,6 @@ export default function Admin() {
               style={inputStyle}
             >
               <option value="">Оберіть категорію</option>
-
               <option value="rolls">Роли</option>
               <option value="baked">Запечені</option>
               <option value="sets">Сети</option>
@@ -243,6 +249,38 @@ export default function Admin() {
               rows={4}
               style={inputStyle}
             />
+
+            <div
+              style={{
+                padding: "12px 14px",
+                border: "1px solid #ddd",
+                borderRadius: "12px",
+                background: "#fafafa",
+              }}
+            >
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={popular}
+                  onChange={(e) => setPopular(e.target.checked)}
+                  style={{
+                    width: "18px",
+                    height: "18px",
+                    cursor: "pointer",
+                  }}
+                />
+                Хіт продажу
+              </label>
+            </div>
 
             <input
               id="image-input"
@@ -310,6 +348,7 @@ export default function Admin() {
                 ? "Зберегти зміни"
                 : "Додати товар"}
             </button>
+
             {editingId && (
               <button
                 type="button"
@@ -409,8 +448,32 @@ export default function Admin() {
                     </div>
 
                     <div>
-                      <div style={{ fontWeight: 800, fontSize: "18px" }}>
+                      <div
+                        style={{
+                          fontWeight: 800,
+                          fontSize: "18px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          flexWrap: "wrap",
+                        }}
+                      >
                         {product.name}
+
+                        {product.popular && (
+                          <span
+                            style={{
+                              background: "#e53935",
+                              color: "#fff",
+                              fontSize: "12px",
+                              fontWeight: 700,
+                              padding: "4px 8px",
+                              borderRadius: "999px",
+                            }}
+                          >
+                            ХІТ
+                          </span>
+                        )}
                       </div>
 
                       <div style={{ marginTop: "6px", color: "#666" }}>

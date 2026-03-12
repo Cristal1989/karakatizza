@@ -64,8 +64,18 @@ export async function updateProduct(id, formData) {
 
 export function getImageUrl(imagePath) {
   if (!imagePath) return "";
+
   if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
     return imagePath;
   }
-  return `${API_BASE_URL}${imagePath}`;
+
+  if (imagePath.startsWith("/uploads/")) {
+    return `${API_BASE_URL}${imagePath}`;
+  }
+
+  if (imagePath.startsWith("/images/")) {
+    return imagePath;
+  }
+
+  return imagePath;
 }

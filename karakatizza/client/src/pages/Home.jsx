@@ -53,6 +53,51 @@ export default function Home() {
       <Header />
       <CartToast />
       <Hero />
+      <section
+        style={{
+          maxWidth: "1200px",
+          margin: "0 auto",
+          padding: "32px 20px 0",
+        }}
+      >
+        <div style={{ marginBottom: "20px" }}>
+          <h2
+            style={{
+              fontSize: "30px",
+              fontWeight: "800",
+              marginBottom: "8px",
+            }}
+          >
+            🔥 Хіти продажу
+          </h2>
+
+          <p
+            style={{
+              color: "#666",
+              margin: 0,
+            }}
+          >
+            Найпопулярніші позиції, які замовляють найчастіше
+          </p>
+        </div>
+
+        {products.filter((product) => product.popular).length > 0 ? (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+              gap: "24px",
+            }}
+          >
+            {products
+              .filter((product) => product.popular)
+              .slice(0, 4)
+              .map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+          </div>
+        ) : null}
+      </section>
       <CartDrawer />
       <MobileCartBar />
 
@@ -63,7 +108,7 @@ export default function Home() {
           padding: "32px 20px 100px",
         }}
       >
-        <section style={{ marginBottom: "28px" }}>
+        <section id="menu" style={{ marginBottom: "28px" }}>
           <h2
             style={{
               fontSize: "34px",

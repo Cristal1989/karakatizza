@@ -77,7 +77,7 @@ app.get("/", (req, res) => {
 app.post("/products", upload.single("image"), async (req, res) => {
   try {
     const products = readProducts();
-    const { name, price, category, description } = req.body;
+    const { name, price, category, description, popular } = req.body;
 
     if (!name || !price || !category) {
       return res.status(400).json({
@@ -98,6 +98,7 @@ app.post("/products", upload.single("image"), async (req, res) => {
       category,
       description: description || "",
       image: imageUrl,
+      popular: popular === "true",
     };
 
     products.push(newProduct);
@@ -117,79 +118,68 @@ app.post("/products", upload.single("image"), async (req, res) => {
   }
 });
 
-app.post("/order", async (req, res) => {
+app.put("/products/:id", upload.single("image"), (req, res) => {
   try {
-    console.log("1. /order викликався");
-    console.log("2. req.body:", req.body);
+    const { id } = req.params;
+    const { name, price, category, description, popular } = req.body;
 
-    const order = req.body;
-
-    if (!order || !order.items || !order.customer) {
-      console.log("3. Некоректний payload");
+    if (!name || !price || !category) {
       return res.status(400).json({
-        message: "Некоректні дані замовлення",
+        message: "Необхідні поля: name, price, category",
       });
     }
 
-    let text = `🛒 Нове замовлення\n\n`;
-
-    order.items.forEach((item) => {
-      text += `• ${item.name} x ${item.quantity} — ${
-        item.price * item.quantity
-      } грн\n`;
-    });
-
-    text += `\n💰 Сума: ${order.total} грн`;
-    text += `\n👤 ${order.customer.name}`;
-    text += `\n📞 ${order.customer.phone}`;
-    text += `\n📍 ${order.customer.address}`;
-
-    if (order.customer.comment) {
-      text += `\n📝 ${order.customer.comment}`;
-    }
-
-    console.log("4. Сформований текст:");
-    console.log(text);
-
-    console.log("5. BOT_TOKEN:", BOT_TOKEN ? "є" : "нема");
-    console.log("6. CHAT_ID:", CHAT_ID);
-
-    const telegramResponse = await fetch(
-      `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          chat_id: CHAT_ID,
-          text,
-        }),
-      }
+    const products = readProducts();
+    const productIndex = products.findIndex(
+      (product) => String(product.id) === String(id)
     );
 
-    console.log("7. telegramResponse.status:", telegramResponse.status);
-
-    const telegramData = await telegramResponse.json();
-
-    console.log("8. telegramData:", telegramData);
-
-    if (!telegramData.ok) {
-      return res.status(500).json({
-        message: "Помилка при відправці в Telegram",
-        telegramData,
-      });
+    if (productIndex === -1) {
+      return res.status(404).json({ message: "Товар не знайдено" });
     }
+
+    const oldProduct = products[productIndex];
+    let imageUrl = oldProduct.image || "";
+
+    if (req.file) {
+      imageUrl = `/uploads/${req.file.filename}`;
+
+      if (oldProduct.image && oldProduct.image.startsWith("/uploads/")) {
+        try {
+          const oldFileName = oldProduct.image.replace("/uploads/", "");
+          const oldImagePath = path.join(uploadsDir, oldFileName);
+
+          if (fs.existsSync(oldImagePath)) {
+            fs.unlinkSync(oldImagePath);
+          }
+        } catch (fileError) {
+          console.error("Помилка видалення старого фото:", fileError.message);
+        }
+      }
+    }
+
+    const updatedProduct = {
+      ...oldProduct,
+      name,
+      price: Number(price),
+      category,
+      description: description || "",
+      image: imageUrl,
+      popular: popular === "true",
+    };
+
+    products[productIndex] = updatedProduct;
+    writeProducts(products);
 
     return res.json({
       success: true,
-      message: "Замовлення успішно відправлено",
+      product: updatedProduct,
     });
   } catch (error) {
-    console.error("9. SERVER ERROR:", error);
+    console.error("PUT PRODUCT ERROR:", error);
 
     return res.status(500).json({
-      message: "Помилка сервера",
+      message: "Помилка оновлення товару",
       error: error.message,
     });
   }

@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useCart } from "../hooks/useCart";
 import { flyToCart } from "../utils/flyToCart";
 import { getImageUrl } from "../api/productsApi";
 
@@ -6,6 +7,8 @@ export default function ProductCard({ product }) {
   const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
   const imageRef = useRef(null);
+
+  const imageSrc = getImageUrl(product.image);
 
   function increase() {
     setQuantity((q) => q + 1);
@@ -18,41 +21,85 @@ export default function ProductCard({ product }) {
   }
 
   function handleAdd() {
-    flyToCart(imageRef.current);
+    if (imageRef.current) {
+      flyToCart(imageRef.current);
+    }
     addToCart(product, quantity);
     setQuantity(1);
   }
 
-  const imageSrc = getImageUrl(product.image);
-
   return (
     <div
       style={{
+        position: "relative",
         background: "#fff",
-        borderRadius: "18px",
+        borderRadius: "20px",
         overflow: "hidden",
-        boxShadow: "0 6px 20px rgba(0,0,0,0.08)",
+        boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
         display: "flex",
         flexDirection: "column",
+        minHeight: "100%",
       }}
     >
-      <img
-        ref={imageRef}
-        src={imageSrc}
-        alt={product.name}
+      {product.popular && (
+        <div
+          style={{
+            position: "absolute",
+            top: "12px",
+            left: "12px",
+            background: "#e53935",
+            color: "#fff",
+            padding: "6px 10px",
+            borderRadius: "999px",
+            fontSize: "12px",
+            fontWeight: 800,
+            zIndex: 2,
+            letterSpacing: "0.4px",
+          }}
+        >
+          ХІТ
+        </div>
+      )}
+
+      <div
         style={{
           width: "100%",
-          height: "200px",
-          objectFit: "cover",
+          height: "220px",
+          background: "#f6f6f6",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          overflow: "hidden",
         }}
-      />
+      >
+        <img
+          ref={imageRef}
+          src={imageSrc}
+          alt={product.name}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            display: "block",
+          }}
+        />
+      </div>
 
-      <div style={{ padding: "16px", flex: 1 }}>
+      <div
+        style={{
+          padding: "16px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px",
+          flexGrow: 1,
+        }}
+      >
         <h3
           style={{
-            fontSize: "18px",
-            fontWeight: "700",
-            marginBottom: "6px",
+            margin: 0,
+            fontSize: "24px",
+            fontWeight: 800,
+            color: "#111",
           }}
         >
           {product.name}
@@ -60,19 +107,22 @@ export default function ProductCard({ product }) {
 
         <p
           style={{
-            fontSize: "14px",
-            color: "#777",
-            marginBottom: "14px",
+            margin: 0,
+            color: "#666",
+            fontSize: "16px",
+            lineHeight: 1.4,
+            minHeight: "44px",
           }}
         >
-          {product.description}
+          {product.description || "Без опису"}
         </p>
 
         <div
           style={{
-            fontSize: "20px",
-            fontWeight: "800",
-            marginBottom: "14px",
+            fontSize: "28px",
+            fontWeight: 800,
+            color: "#111",
+            marginTop: "4px",
           }}
         >
           {product.price} грн
@@ -81,69 +131,73 @@ export default function ProductCard({ product }) {
         <div
           style={{
             display: "flex",
-            gap: "10px",
             alignItems: "center",
+            gap: "8px",
+            marginTop: "auto",
           }}
         >
-          <div
+          <button
+            type="button"
+            onClick={decrease}
             style={{
-              display: "flex",
+              width: "36px",
+              height: "36px",
+              borderRadius: "10px",
               border: "1px solid #ddd",
-              borderRadius: "8px",
-              overflow: "hidden",
+              background: "#fff",
+              cursor: "pointer",
+              fontSize: "20px",
             }}
           >
-            <button
-              onClick={decrease}
-              style={{
-                border: "none",
-                background: "#f3f3f3",
-                padding: "6px 10px",
-                cursor: "pointer",
-              }}
-            >
-              -
-            </button>
+            -
+          </button>
 
-            <div
-              style={{
-                padding: "6px 12px",
-                minWidth: "30px",
-                textAlign: "center",
-              }}
-            >
-              {quantity}
-            </div>
-
-            <button
-              onClick={increase}
-              style={{
-                border: "none",
-                background: "#f3f3f3",
-                padding: "6px 10px",
-                cursor: "pointer",
-              }}
-            >
-              +
-            </button>
-          </div>
+          <span
+            style={{
+              minWidth: "24px",
+              textAlign: "center",
+              fontWeight: 700,
+              fontSize: "18px",
+            }}
+          >
+            {quantity}
+          </span>
 
           <button
-            onClick={handleAdd}
+            type="button"
+            onClick={increase}
             style={{
-              flex: 1,
-              background: "#e53935",
-              color: "#fff",
-              border: "none",
-              padding: "10px",
-              borderRadius: "8px",
-              fontWeight: "700",
+              width: "36px",
+              height: "36px",
+              borderRadius: "10px",
+              border: "1px solid #ddd",
+              background: "#fff",
               cursor: "pointer",
+              fontSize: "20px",
             }}
           >
-            Додати
+            +
           </button>
         </div>
+
+        <button
+          type="button"
+          onClick={handleAdd}
+          style={{
+            marginTop: "12px",
+            width: "100%",
+            border: "none",
+            borderRadius: "14px",
+            background: "#ef4444",
+            color: "#fff",
+            padding: "14px 16px",
+            fontSize: "16px",
+            fontWeight: 700,
+            cursor: "pointer",
+          }}
+        >
+          Додати в кошик
+        </button>
       </div>
     </div>
   );
