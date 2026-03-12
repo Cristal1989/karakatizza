@@ -1,3 +1,4 @@
+import { pool, initDb } from "./db.js";
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -325,6 +326,13 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+initDb()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.error("DB INIT ERROR:", error);
+    process.exit(1);
+  });

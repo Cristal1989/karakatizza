@@ -10,7 +10,6 @@ export async function createOrder(orderData) {
   });
 
   const contentType = response.headers.get("content-type") || "";
-
   let data;
 
   if (contentType.includes("application/json")) {

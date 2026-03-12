@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://karakatizza-production.up.railway.app";
+export const API_BASE_URL = "https://karakatizza-production.up.railway.app";
 
 export async function getProducts() {
   const response = await fetch(`${API_BASE_URL}/products`);
