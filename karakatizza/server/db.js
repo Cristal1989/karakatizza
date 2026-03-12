@@ -1,9 +1,19 @@
-import pkg from "pg";
+import pg from "pg";
 
-const { Pool } = pkg;
+const { Pool } = pg;
+
+console.log("PGHOST:", process.env.PGHOST);
+console.log("PGPORT:", process.env.PGPORT);
+console.log("PGDATABASE:", process.env.PGDATABASE);
+console.log("PGUSER:", process.env.PGUSER);
+console.log("PGPASSWORD exists:", !!process.env.PGPASSWORD);
 
 export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  host: process.env.PGHOST,
+  port: Number(process.env.PGPORT),
+  database: process.env.PGDATABASE,
+  user: process.env.PGUSER,
+  password: process.env.PGPASSWORD,
   ssl: {
     rejectUnauthorized: false,
   },
