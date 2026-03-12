@@ -1,10 +1,14 @@
 const categories = [
   { id: "all", label: "Усе" },
   { id: "rolls", label: "Роли" },
-  { id: "baked", label: "Запечені" },
+  { id: "maki", label: "Маки" },
   { id: "sets", label: "Сети" },
-  { id: "snacks", label: "Закуски" },
+  { id: "sushi", label: "Суші" },
+  { id: "baked", label: "Запечені" },
+  { id: "snacks", label: "Салати і закуски" },
+  { id: "bowls", label: "Суші боули" },
   { id: "drinks", label: "Напої" },
+  { id: "extras", label: "Додатково" },
 ];
 
 export default function CategoryTabs({ activeCategory, onChange }) {
@@ -13,9 +17,12 @@ export default function CategoryTabs({ activeCategory, onChange }) {
       style={{
         display: "flex",
         gap: "10px",
-        flexWrap: "wrap",
-        marginBottom: "24px",
+        overflowX: "auto",
+        paddingBottom: "4px",
+        scrollbarWidth: "none",
+        msOverflowStyle: "none",
       }}
+      className="category-tabs-scroll"
     >
       {categories.map((category) => {
         const isActive = activeCategory === category.id;
@@ -27,14 +34,17 @@ export default function CategoryTabs({ activeCategory, onChange }) {
             style={{
               border: "none",
               borderRadius: "999px",
-              padding: "10px 16px",
+              padding: "12px 18px",
               cursor: "pointer",
-              fontWeight: "700",
-              background: isActive ? "#e53935" : "#ffffff",
-              color: isActive ? "#ffffff" : "#222222",
+              whiteSpace: "nowrap",
+              fontWeight: 700,
+              fontSize: "15px",
+              transition: "0.2s ease",
+              background: isActive ? "#ef4444" : "#fff",
+              color: isActive ? "#fff" : "#111",
               boxShadow: isActive
-                ? "0 8px 18px rgba(229,57,53,0.25)"
-                : "0 4px 12px rgba(0,0,0,0.06)",
+                ? "0 8px 20px rgba(239,68,68,0.28)"
+                : "0 4px 14px rgba(0,0,0,0.06)",
             }}
           >
             {category.label}

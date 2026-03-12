@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import Header from "../components/Header";
 import Hero from "../components/Hero";
 import ProductGrid from "../components/ProductGrid";
+import ProductCard from "../components/ProductCard";
 import CategoryTabs from "../components/CategoryTabs";
 import CartDrawer from "../components/CartDrawer";
 import MobileCartBar from "../components/MobileCartBar";
@@ -98,6 +99,120 @@ export default function Home() {
           </div>
         ) : null}
       </section>
+      <section
+        style={{
+          maxWidth: "1200px",
+          margin: "0 auto",
+          padding: "50px 20px",
+        }}
+      >
+        <div style={{ marginBottom: "24px" }}>
+          <h2
+            style={{
+              fontSize: "30px",
+              fontWeight: "800",
+              marginBottom: "8px",
+            }}
+          >
+            🎁 Акції
+          </h2>
+
+          <p
+            style={{
+              color: "#666",
+              margin: 0,
+            }}
+          >
+            Спеціальні пропозиції для наших клієнтів
+          </p>
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+            gap: "20px",
+          }}
+        >
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: "20px",
+              padding: "24px",
+              boxShadow: "0 10px 25px rgba(0,0,0,0.08)",
+            }}
+          >
+            <div style={{ fontSize: "24px", marginBottom: "10px" }}>
+              🍣 2+1 на рол Кокаин
+            </div>
+
+            <div style={{ color: "#666", marginBottom: "14px" }}>
+              Купи два роли Кокаин — третій отримай безкоштовно
+            </div>
+
+            <div
+              style={{
+                fontWeight: "700",
+                color: "#e53935",
+              }}
+            >
+              Тільки сьогодні
+            </div>
+          </div>
+
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: "20px",
+              padding: "24px",
+              boxShadow: "0 10px 25px rgba(0,0,0,0.08)",
+            }}
+          >
+            <div style={{ fontSize: "24px", marginBottom: "10px" }}>
+              🥤 Напій у подарунок
+            </div>
+
+            <div style={{ color: "#666", marginBottom: "14px" }}>
+              При замовленні від 500 грн отримай Pepsi 0.5 у подарунок
+            </div>
+
+            <div
+              style={{
+                fontWeight: "700",
+                color: "#e53935",
+              }}
+            >
+              Щодня
+            </div>
+          </div>
+
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: "20px",
+              padding: "24px",
+              boxShadow: "0 10px 25px rgba(0,0,0,0.08)",
+            }}
+          >
+            <div style={{ fontSize: "24px", marginBottom: "10px" }}>
+              🍱 Знижка на сет
+            </div>
+
+            <div style={{ color: "#666", marginBottom: "14px" }}>
+              Щотижнева акція на популярний сет
+            </div>
+
+            <div
+              style={{
+                fontWeight: "700",
+                color: "#e53935",
+              }}
+            >
+              Дивись у меню
+            </div>
+          </div>
+        </div>
+      </section>
       <CartDrawer />
       <MobileCartBar />
 
@@ -108,7 +223,7 @@ export default function Home() {
           padding: "32px 20px 100px",
         }}
       >
-        <section id="menu" style={{ marginBottom: "28px" }}>
+        <section id="menu" style={{ marginBottom: "20px" }}>
           <h2
             style={{
               fontSize: "34px",
@@ -122,17 +237,29 @@ export default function Home() {
           <p
             style={{
               color: "#666",
-              marginBottom: "20px",
+              marginBottom: "0",
             }}
           >
             Обирайте роли, сети, закуски та напої
           </p>
+        </section>
 
+        <div
+          style={{
+            position: "sticky",
+            top: "90px",
+            zIndex: 30,
+            background: "#fafafa",
+            paddingTop: "10px",
+            paddingBottom: "0px",
+            marginBottom: "24px",
+          }}
+        >
           <CategoryTabs
             activeCategory={activeCategory}
             onChange={setActiveCategory}
           />
-        </section>
+        </div>
 
         {loading && (
           <div

@@ -79,3 +79,8 @@ body {
     transform: scale(1);
   }
 }
+
+
+.category-tabs-scroll::-webkit-scrollbar {
+  display: none;
+}

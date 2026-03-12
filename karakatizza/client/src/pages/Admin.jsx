@@ -234,11 +234,16 @@ export default function Admin() {
               style={inputStyle}
             >
               <option value="">Оберіть категорію</option>
+
               <option value="rolls">Роли</option>
-              <option value="baked">Запечені</option>
+              <option value="maki">Маки</option>
               <option value="sets">Сети</option>
-              <option value="snacks">Закуски</option>
+              <option value="sushi">Суші</option>
+              <option value="baked">Запечені</option>
+              <option value="snacks">Салати і закуски</option>
+              <option value="bowls">Суші боули</option>
               <option value="drinks">Напої</option>
+              <option value="extras">Додатково</option>
             </select>
 
             <textarea

@@ -35,10 +35,12 @@ export default function Checkout() {
 
       const payload = {
         items: cartItems.map((item) => ({
-          id: item.id,
           name: item.name,
-          price: item.price,
           quantity: item.quantity,
+          paidQuantity: item.paidQuantity ?? item.quantity,
+          freeQuantity: item.freeQuantity ?? 0,
+          price: item.price,
+          lineTotal: item.price * (item.paidQuantity ?? item.quantity),
         })),
         total: totalPrice,
         customer: {

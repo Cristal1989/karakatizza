@@ -6,7 +6,7 @@ import path from "path";
 import multer from "multer";
 import { v4 as uuidv4 } from "uuid";
 import { fileURLToPath } from "url";
-import cloudinary from "./cloudinary.js";
+import fetch from "node-fetch";
 
 dotenv.config();
 
@@ -19,6 +19,7 @@ const uploadsDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
+
 const app = express();
 
 const storage = multer.diskStorage({
@@ -58,6 +59,10 @@ const PORT = process.env.PORT || 5000;
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const CHAT_ID = process.env.CHAT_ID;
 
+app.get("/", (req, res) => {
+  res.send("Server running");
+});
+
 app.get("/products", (req, res) => {
   try {
     const products = readProducts();
@@ -68,10 +73,6 @@ app.get("/products", (req, res) => {
       error: error.message,
     });
   }
-});
-
-app.get("/", (req, res) => {
-  res.send("Server running");
 });
 
 app.post("/products", upload.single("image"), async (req, res) => {
@@ -235,69 +236,59 @@ app.delete("/products/:id", (req, res) => {
   }
 });
 
-app.put("/products/:id", upload.single("image"), (req, res) => {
+app.post("/order", async (req, res) => {
   try {
-    const { id } = req.params;
-    const { name, price, category, description } = req.body;
+    const order = req.body;
 
-    if (!name || !price || !category) {
-      return res.status(400).json({
-        message: "Заповни назву, ціну і категорію",
-      });
+    let text = `🛒 НОВЕ ЗАМОВЛЕННЯ\n\n`;
+
+    text += `👤 Ім'я: ${order.name}\n`;
+    text += `📞 Телефон: ${order.phone}\n`;
+    text += `📍 Адреса: ${order.address}\n`;
+
+    if (order.comment) {
+      text += `💬 Коментар: ${order.comment}\n`;
     }
 
-    const products = readProducts();
-    const productIndex = products.findIndex(
-      (product) => String(product.id) === String(id)
-    );
+    text += `\n📦 Замовлення:\n`;
 
-    if (productIndex === -1) {
-      return res.status(404).json({
-        message: "Товар не знайдено",
-      });
-    }
+    order.items.forEach((item) => {
+      const paidQty = item.paidQuantity ?? item.quantity ?? 0;
+      const freeQty = item.freeQuantity ?? 0;
+      const lineTotal = item.lineTotal ?? item.price * paidQty;
 
-    const oldProduct = products[productIndex];
+      text += `• ${item.name} — ${item.quantity} шт`;
 
-    let imagePath = oldProduct.image || "";
-
-    if (req.file) {
-      if (oldProduct.image && oldProduct.image.startsWith("/uploads/")) {
-        try {
-          const oldFileName = oldProduct.image.replace("/uploads/", "");
-          const oldImageFullPath = path.join(uploadsDir, oldFileName);
-
-          if (fs.existsSync(oldImageFullPath)) {
-            fs.unlinkSync(oldImageFullPath);
-          }
-        } catch (fileError) {
-          console.error("Помилка видалення старого фото:", fileError.message);
-        }
+      if (freeQty > 0) {
+        text += ` (${paidQty} платно + ${freeQty} подарунок)`;
       }
 
-      imagePath = `/uploads/${req.file.filename}`;
-    }
+      text += ` — ${lineTotal} грн\n`;
+    });
 
-    const updatedProduct = {
-      ...oldProduct,
-      name,
-      price: Number(price),
-      category,
-      description: description || "",
-      image: imagePath,
-    };
+    text += `\n💰 Разом: ${order.totalPrice} грн`;
 
-    products[productIndex] = updatedProduct;
-    writeProducts(products);
+    const telegramUrl = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+
+    await fetch(telegramUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        chat_id: CHAT_ID,
+        text,
+      }),
+    });
 
     return res.json({
       success: true,
-      product: updatedProduct,
     });
   } catch (error) {
-    console.error("UPDATE PRODUCT ERROR:", error);
+    console.error("ORDER ERROR:", error);
+
     return res.status(500).json({
-      message: "Не вдалося оновити товар",
+      message: "Помилка відправки замовлення",
       error: error.message,
     });
   }
@@ -306,21 +297,10 @@ app.put("/products/:id", upload.single("image"), (req, res) => {
 app.use((err, req, res, next) => {
   console.error("GLOBAL SERVER ERROR:");
   console.error(err);
-  console.error("MESSAGE:", err?.message);
-  console.error("STACK:", err?.stack);
-
-  if (err instanceof multer.MulterError) {
-    return res.status(500).json({
-      message: "Помилка завантаження файлу",
-      error: err.message,
-      stack: err.stack,
-    });
-  }
 
   return res.status(500).json({
     message: "Внутрішня помилка сервера",
     error: err?.message || "Unknown error",
-    stack: err?.stack || "",
   });
 });
 

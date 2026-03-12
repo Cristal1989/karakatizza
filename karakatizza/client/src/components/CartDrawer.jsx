@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { useCart } from "../hooks/useCart";
 import { FREE_DELIVERY_THRESHOLD } from "../data/products";
+import { getProducts, getImageUrl } from "../api/productsApi";
 
 export default function CartDrawer() {
   const {
@@ -12,7 +14,31 @@ export default function CartDrawer() {
     removeFromCart,
     increaseQuantity,
     decreaseQuantity,
+    addToCart,
   } = useCart();
+
+  const [upsellProducts, setUpsellProducts] = useState([]);
+
+  useEffect(() => {
+    loadUpsell();
+  }, []);
+
+  async function loadUpsell() {
+    try {
+      const products = await getProducts();
+
+      const filtered = products.filter(
+        (p) =>
+          p.category === "drinks" ||
+          p.category === "snacks" ||
+          p.category === "extras"
+      );
+
+      setUpsellProducts(filtered);
+    } catch (error) {
+      console.error("Upsell load error:", error);
+    }
+  }
 
   const remainingForFreeDelivery = Math.max(
     FREE_DELIVERY_THRESHOLD - totalPrice,
@@ -20,6 +46,12 @@ export default function CartDrawer() {
   );
 
   const hasFreeDelivery = totalPrice >= FREE_DELIVERY_THRESHOLD;
+
+  const cartItemIds = cartItems.map((item) => item.id);
+
+  const visibleUpsellProducts = upsellProducts
+    .filter((product) => !cartItemIds.includes(product.id))
+    .slice(0, 3);
 
   if (!isCartOpen) return null;
 
@@ -57,6 +89,7 @@ export default function CartDrawer() {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            flexShrink: 0,
           }}
         >
           <div>
@@ -97,6 +130,7 @@ export default function CartDrawer() {
         <div
           style={{
             padding: "16px 20px 0",
+            flexShrink: 0,
           }}
         >
           <div
@@ -160,11 +194,12 @@ export default function CartDrawer() {
             flex: 1,
             overflowY: "auto",
             padding: "20px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "20px",
           }}
         >
-          {cartItems.
-
-length === 0 ? (
+          {cartItems.length === 0 ? (
             <div
               style={{
                 textAlign: "center",
@@ -176,139 +211,258 @@ length === 0 ? (
               Кошик поки порожній
             </div>
           ) : (
-            <div style={{ display: "grid", gap: "14px" }}>
-              {cartItems.map((item) => (
-                <div
-                  key={item.id}
-                  style={{
-                    border: "1px solid #ececec",
-                    borderRadius: "16px",
-                    padding: "14px",
-                    backgroundColor: "#fafafa",
-                  }}
-                >
-                  <div style={{ display: "flex", gap: "12px" }}>
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      style={{
-                        width: "74px",
-                        height: "74px",
-                        objectFit: "cover",
-                        borderRadius: "12px",
-                        flexShrink: 0,
-                      }}
-                    />
-
-                    <div style={{ flex: 1 }}>
-                      <div
+            <>
+              <div style={{ display: "grid", gap: "14px" }}>
+                {cartItems.map((item) => (
+                  <div
+                    key={item.id}
+                    style={{
+                      border: "1px solid #ececec",
+                      borderRadius: "16px",
+                      padding: "14px",
+                      backgroundColor: "#fafafa",
+                    }}
+                  >
+                    <div style={{ display: "flex", gap: "12px" }}>
+                      <img
+                        src={getImageUrl(item.image)}
+                        alt={item.name}
                         style={{
-                          fontSize: "18px",
-                          fontWeight: "700",
-                          color: "#222",
+                          width: "74px",
+                          height: "74px",
+                          objectFit: "cover",
+                          borderRadius: "12px",
+                          flexShrink: 0,
                         }}
-                      >
-                        {item.name}
-                      </div>
+                      />
 
-                      <div
-                        style={{
-                          marginTop: "6px",
-                          color: "#666",
-                          fontSize: "14px",
-                        }}
-                      >
-                        {item.price} грн за шт
-                      </div>
-
-                      <div
-                        style={{
-                          marginTop: "12px",
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          gap: "10px",
-                          flexWrap: "wrap",
-                        }}
-                      >
+                      <div style={{ flex: 1 }}>
                         <div
                           style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
+                            fontSize: "18px",
+                            fontWeight: "700",
+                            color: "#222",
                           }}
                         >
-                          <button
-                            onClick={() => decreaseQuantity(item.id)}
-                            style={{
-                              width: "32px",
-                              height: "32px",
-                              border: "none",
-                              borderRadius: "8px",
-                              backgroundColor: "#e9e9e9",
-                              cursor: "pointer",
-                              fontSize: "18px",
-                            }}
-                          >
-                            -
-                          </button>
+                          {item.name}
+                        </div>
 
-                          <span
+                        <div
+                          style={{
+                            marginTop: "6px",
+                            color: "#666",
+                            fontSize: "14px",
+                          }}
+                        >
+                          {item.price} грн за шт
+                        </div>
+                        {item.freeQuantity > 0 && (
+                          <div
                             style={{
-                              minWidth: "20px",
-                              textAlign: "center",
+                              marginTop: "6px",
+                              color: "#2e7d32",
+                              fontSize: "13px",
                               fontWeight: "700",
                             }}
                           >
-                            {item.quantity}
-                          </span>
-
-                          <button
-                            onClick={() => increaseQuantity(item.id)}
-                            style={{
-                              width: "32px",
-                              height: "32px",
-                              border: "none",
-                              borderRadius: "8px",
-                              backgroundColor: "#e9e9e9",
-                              cursor: "pointer",
-                              fontSize: "18px",
-                            }}
-                          >
-                            +
-                          </button>
-                        </div>
-
+                            Акція 2+1: {item.freeQuantity} шт у подарунок
+                          </div>
+                        )}
                         <div
-
-style={{
-                            fontWeight: "800",
-                            color: "#111",
+                          style={{
+                            marginTop: "12px",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            gap: "10px",
+                            flexWrap: "wrap",
                           }}
                         >
-                          {item.price * item.quantity} грн
-                        </div>
-                      </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                            }}
+                          >
+                            <button
+                              onClick={() => decreaseQuantity(item.id)}
+                              style={{
+                                width: "32px",
+                                height: "32px",
+                                border: "none",
+                                borderRadius: "8px",
+                                backgroundColor: "#e9e9e9",
+                                cursor: "pointer",
+                                fontSize: "18px",
+                              }}
+                            >
+                              -
+                            </button>
 
-                      <button
-                        onClick={() => removeFromCart(item.id)}
-                        style={{
-                          marginTop: "12px",
-                          border: "none",
-                          background: "none",
-                          color: "#d32f2f",
-                          cursor: "pointer",
-                          padding: 0,
-                          fontWeight: "600",
-                        }}
-                      >
-                        Видалити
-                      </button>
+                            <span
+                              style={{
+                                minWidth: "20px",
+                                textAlign: "center",
+                                fontWeight: "700",
+                              }}
+                            >
+                              {item.quantity}
+                            </span>
+
+                            <button
+                              onClick={() => increaseQuantity(item.id)}
+                              style={{
+                                width: "32px",
+                                height: "32px",
+                                border: "none",
+                                borderRadius: "8px",
+                                backgroundColor: "#e9e9e9",
+                                cursor: "pointer",
+                                fontSize: "18px",
+                              }}
+                            >
+                              +
+                            </button>
+                          </div>
+
+                          <div
+                            style={{
+                              fontWeight: "800",
+                              color: "#111",
+                            }}
+                          >
+                            {item.price * item.quantity} грн
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => removeFromCart(item.id)}
+                          style={{
+                            marginTop: "12px",
+                            border: "none",
+                            background: "none",
+                            color: "#d32f2f",
+                            cursor: "pointer",
+                            padding: 0,
+                            fontWeight: "600",
+                          }}
+                        >
+                          Видалити
+                        </button>
+                      </div>
                     </div>
                   </div>
+                ))}
+              </div>
+
+              {visibleUpsellProducts.length > 0 && (
+                <div
+                  style={{
+                    borderTop: "1px solid #eeeeee",
+                    paddingTop: "16px",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "24px",
+                      fontWeight: "800",
+                      color: "#222",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    Додайте до замовлення
+                  </div>
+
+                  <div
+                    style={{
+                      color: "#666",
+                      fontSize: "14px",
+                      marginBottom: "14px",
+                    }}
+                  >
+                    Те, що часто беруть разом із ролами та сетами
+                  </div>
+
+                  <div style={{ display: "grid", gap: "12px" }}>
+                    {visibleUpsellProducts.map((product) => (
+                      <div
+                        key={product.id}
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "72px 1fr auto",
+                          gap: "12px",
+                          alignItems: "center",
+                          border: "1px solid #ececec",
+                          borderRadius: "14px",
+                          padding: "10px",
+                          background: "#fafafa",
+                        }}
+                      >
+                        <img
+                          src={getImageUrl(product.image)}
+                          alt={product.name}
+                          style={{
+                            width: "72px",
+                            height: "72px",
+                            objectFit: "cover",
+                            borderRadius: "12px",
+                          }}
+                        />
+
+                        <div>
+                          <div
+                            style={{
+                              fontWeight: "700",
+                              fontSize: "16px",
+                              color: "#222",
+                            }}
+                          >
+                            {product.name}
+                          </div>
+
+                          <div
+                            style={{
+                              color: "#666",
+                              fontSize: "13px",
+                              marginTop: "4px",
+                            }}
+                          >
+                            {product.description || "Без опису"}
+                          </div>
+
+                          <div
+                            style={{
+                              marginTop: "8px",
+                              fontWeight: "800",
+                              fontSize: "18px",
+                              color: "#111",
+                            }}
+                          >
+                            {product.price} грн
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => addToCart(product, 1)}
+                          style={{
+                            border: "none",
+                            backgroundColor: "#e53935",
+                            color: "#fff",
+                            borderRadius: "10px",
+                            padding: "10px 12px",
+                            fontWeight: "700",
+                            cursor: "pointer",
+                          }}
+                        >
+                          +
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
 
@@ -316,6 +470,8 @@ style={{
           style={{
             borderTop: "1px solid #eeeeee",
             padding: "20px",
+            flexShrink: 0,
+            background: "#fff",
           }}
         >
           <div
