@@ -77,7 +77,7 @@ app.get("/products", (req, res) => {
 app.post("/products", upload.single("image"), async (req, res) => {
   try {
     const products = readProducts();
-    const { name, price, category, description, popular } = req.body;
+    const { name, price, category, description, popular, promoType } = req.body;
 
     if (!name || !price || !category) {
       return res.status(400).json({
@@ -99,6 +99,7 @@ app.post("/products", upload.single("image"), async (req, res) => {
       description: description || "",
       image: imageUrl,
       popular: popular === "true",
+      promoType: promoType || "none",
     };
 
     products.push(newProduct);
@@ -121,7 +122,7 @@ app.post("/products", upload.single("image"), async (req, res) => {
 app.put("/products/:id", upload.single("image"), (req, res) => {
   try {
     const { id } = req.params;
-    const { name, price, category, description, popular } = req.body;
+    const { name, price, category, description, popular, promoType } = req.body;
 
     if (!name || !price || !category) {
       return res.status(400).json({
@@ -166,6 +167,7 @@ app.put("/products/:id", upload.single("image"), (req, res) => {
       description: description || "",
       image: imageUrl,
       popular: popular === "true",
+      promoType: promoType || "none",
     };
 
     products[productIndex] = updatedProduct;
@@ -239,11 +241,15 @@ app.post("/order", async (req, res) => {
   try {
     const order = req.body;
 
+    if (!order) {
+      return res.status(400).json({ message: "Немає даних замовлення" });
+    }
+
     let text = `🛒 НОВЕ ЗАМОВЛЕННЯ\n\n`;
 
-    text += `👤 Ім'я: ${order.name}\n`;
-    text += `📞 Телефон: ${order.phone}\n`;
-    text += `📍 Адреса: ${order.address}\n`;
+    text += `👤 Ім'я: ${order.name || "-"}\n`;
+    text += `📞 Телефон: ${order.phone || "-"}\n`;
+    text += `📍 Адреса: ${order.address || "-"}\n`;
 
     if (order.comment) {
       text += `💬 Коментар: ${order.comment}\n`;
@@ -251,7 +257,7 @@ app.post("/order", async (req, res) => {
 
     text += `\n📦 Замовлення:\n`;
 
-    order.items.forEach((item) => {
+    (order.items || []).forEach((item) => {
       const paidQty = item.paidQuantity ?? item.quantity ?? 0;
       const freeQty = item.freeQuantity ?? 0;
       const lineTotal = item.lineTotal ?? item.price * paidQty;
@@ -267,9 +273,15 @@ app.post("/order", async (req, res) => {
 
     text += `\n💰 Разом: ${order.totalPrice} грн`;
 
+    if (!BOT_TOKEN || !CHAT_ID) {
+      return res.status(500).json({
+        message: "Не задані BOT_TOKEN або CHAT_ID",
+      });
+    }
+
     const telegramUrl = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
 
-    await fetch(telegramUrl, {
+    const telegramResponse = await fetch(telegramUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -280,8 +292,18 @@ app.post("/order", async (req, res) => {
       }),
     });
 
+    const telegramData = await telegramResponse.json();
+
+    if (!telegramResponse.ok || !telegramData.ok) {
+      return res.status(500).json({
+        message: "Помилка відправки в Telegram",
+        telegramData,
+      });
+    }
+
     return res.json({
       success: true,
+      message: "Замовлення відправлено",
     });
   } catch (error) {
     console.error("ORDER ERROR:", error);

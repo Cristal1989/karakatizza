@@ -26,14 +26,16 @@ export default function Checkout() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    console.log("1. handleSubmit запустився");
-
     try {
-      console.log("2. cartItems:", cartItems);
-      console.log("3. totalPrice:", totalPrice);
-      console.log("4. form:", form);
+      setLoading(true);
+      setError("");
 
-      const payload = {
+      const orderData = {
+        name: form.name,
+        phone: form.phone,
+        address: form.address,
+        comment: form.comment,
+        totalPrice,
         items: cartItems.map((item) => ({
           name: item.name,
           quantity: item.quantity,
@@ -42,26 +44,17 @@ export default function Checkout() {
           price: item.price,
           lineTotal: item.price * (item.paidQuantity ?? item.quantity),
         })),
-        total: totalPrice,
-        customer: {
-          name: form.name,
-          phone: form.phone,
-          address: form.address,
-          comment: form.comment,
-        },
       };
 
-      console.log("5. payload готовий:", payload);
-
-      const result = await createOrder(payload);
-
-      console.log("6. server result:", result);
+      await createOrder(orderData);
 
       clearCart();
       navigate("/success");
     } catch (error) {
-      console.error("7. ПОМИЛКА У HANDLESUBMIT:", error);
-      alert("Помилка відправки замовлення");
+      console.error(error);
+      setError(error.message || "Не вдалося відправити замовлення");
+    } finally {
+      setLoading(false);
     }
   };
 

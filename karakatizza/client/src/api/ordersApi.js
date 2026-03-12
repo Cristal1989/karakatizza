@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "./config";
+import { API_BASE_URL } from "./productsApi";
 
 export async function createOrder(orderData) {
   const response = await fetch(`${API_BASE_URL}/order`, {
@@ -9,7 +9,16 @@ export async function createOrder(orderData) {
     body: JSON.stringify(orderData),
   });
 
-  const data = await response.json();
+  const contentType = response.headers.get("content-type") || "";
+
+  let data;
+
+  if (contentType.includes("application/json")) {
+    data = await response.json();
+  } else {
+    const text = await response.text();
+    throw new Error(`Сервер повернув не JSON: ${text.slice(0, 200)}`);
+  }
 
   if (!response.ok) {
     throw new Error(data.message || "Помилка відправки замовлення");
