@@ -1,4 +1,4 @@
-import HeroSlider from "../components/HeroSlider";
+import HeroSlider from "./HeroSlider";
 
 const scrollToMenu = () => {
   const menu = document.getElementById("menu");
@@ -7,30 +7,33 @@ const scrollToMenu = () => {
   }
 };
 
-export default function Hero() {
+export default function Hero({ banners = [] }) {
   return (
     <section
       style={{
-        padding: "40px 20px",
+        padding: "16px 20px 0px",
         background: "#ffffff",
       }}
     >
       <div
         style={{
-          maxWidth: "1200px",
+          maxWidth: "1280px",
           margin: "0 auto",
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-          gap: "40px",
+          gridTemplateColumns: "minmax(320px, 520px) minmax(320px, 620px)",
+          justifyContent: "space-between",
+          gap: "28px",
           alignItems: "center",
         }}
       >
-        <div>
+        <div style={{ maxWidth: "520px" }}>
           <h1
             style={{
-              fontSize: "44px",
-              fontWeight: "800",
-              marginBottom: "16px",
+              fontSize: "56px",
+              lineHeight: 1.05,
+              fontWeight: 900,
+              margin: "0 0 16px",
+              color: "#1b1b1b",
             }}
           >
             Свіжі роли з доставкою
@@ -39,23 +42,31 @@ export default function Hero() {
           <p
             style={{
               fontSize: "18px",
+              lineHeight: 1.55,
               color: "#666",
-              marginBottom: "24px",
+              margin: "0 0 24px",
             }}
           >
             Готуємо тільки після замовлення. Швидка доставка по місту.
           </p>
 
-          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: "12px",
+              flexWrap: "wrap",
+            }}
+          >
             <button
+              type="button"
               onClick={scrollToMenu}
               style={{
-                background: "#e53935",
-                color: "#fff",
                 border: "none",
+                background: "#e85d3f",
+                color: "#fff",
                 padding: "14px 22px",
-                borderRadius: "10px",
-                fontWeight: "600",
+                borderRadius: "12px",
+                fontWeight: 700,
                 cursor: "pointer",
               }}
             >
@@ -63,12 +74,15 @@ export default function Hero() {
             </button>
 
             <button
+              type="button"
+              onClick={scrollToMenu}
               style={{
-                background: "#eee",
                 border: "none",
+                background: "#f2f2f2",
+                color: "#333",
                 padding: "14px 22px",
-                borderRadius: "10px",
-                fontWeight: "600",
+                borderRadius: "12px",
+                fontWeight: 600,
                 cursor: "pointer",
               }}
             >
@@ -80,14 +94,13 @@ export default function Hero() {
         <div
           style={{
             width: "100%",
-            maxHeight: "340px",
-            overflow: "hidden",
-            borderRadius: "20px",
-            boxShadow: "0 20px 40px rgba(0,0,0,0.15)",
-            background: "#f5f5f5",
+            maxWidth: "680px",
+            marginLeft: "auto",
+            display: "flex",
+            alignItems: "center",
           }}
         >
-          <HeroSlider />
+          <HeroSlider banners={banners} />
         </div>
       </div>
     </section>

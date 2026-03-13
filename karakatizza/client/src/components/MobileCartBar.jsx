@@ -7,42 +7,58 @@ export default function MobileCartBar() {
 
   return (
     <div
-      id='mobile-cart-bar'
+      id="mobile-cart-bar"
       onClick={openCart}
       style={{
         position: "fixed",
-        bottom: "16px",
+        bottom: "14px",
         left: "50%",
         transform: "translateX(-50%)",
-        width: "420px",
-        maxWidth: "calc(100% - 24px)",
-        background: "#e53935",
+        width: "min(460px, calc(100% - 24px))",
+        background: "#e85d3f",
         color: "#fff",
         borderRadius: "16px",
-        padding: "14px 18px",
-        display: "flex",
+        padding: "12px 16px",
+        display: "grid",
+        gridTemplateColumns: "1fr auto auto",
         alignItems: "center",
-        justifyContent: "space-between",
-        gap: "12px",
-        boxShadow: "0 12px 30px rgba(0,0,0,0.22)",
+        gap: "14px",
+        boxShadow: "0 12px 30px rgba(232, 93, 63, 0.28)",
         zIndex: 100,
         cursor: "pointer",
         animation:
           "mobileCartSlideUp 0.35s ease-out, mobileCartPulse 0.45s ease-out 0.2s",
       }}
     >
-      <div style={{ fontWeight: 700 }}>
+      <div
+        style={{
+          fontWeight: 700,
+          fontSize: "15px",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+      >
         🛒 {totalItems} {getItemsLabel(totalItems)}
       </div>
 
-      <div style={{ fontWeight: 800 }}>{totalPrice} грн</div>
+      <div
+        style={{
+          fontWeight: 800,
+          fontSize: "16px",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {totalPrice} грн
+      </div>
 
       <div
         style={{
           background: "rgba(255,255,255,0.18)",
-          padding: "8px 12px",
-          borderRadius: "10px",
+          padding: "10px 16px",
+          borderRadius: "12px",
           fontWeight: 700,
+          fontSize: "14px",
           whiteSpace: "nowrap",
         }}
       >

@@ -8,20 +8,17 @@ export function getImageUrl(image, options = {}) {
   const { width = 600, height = 600, crop = "fill" } = options;
 
   if (image.startsWith("http")) {
-    let result = image;
-
     if (image.includes("/image/upload/")) {
-      result = image.replace(
+      return image.replace(
         `"/image/upload/",
         /image/upload/f_auto,q_auto,w_${width},h_${height},c_${crop}/`
       );
     }
 
-    const separator = result.includes("?") ? "&" : "?";
-    return `${result}${separator}v=${Date.now()}`;
+    return image;
   }
 
-  return `${API_BASE_URL}${image}?v=${Date.now()}`;
+  return `${API_BASE_URL}${image}`;
 }
 
 export async function getProducts() {

@@ -1,169 +1,173 @@
 import { useEffect, useMemo, useState } from "react";
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay, Pagination } from "swiper/modules";
-
-import "swiper/css";
-import "swiper/css/pagination";
-
-import "./HeroSlider.css";
-import { getBanners, trackBannerClick } from "../api/bannersApi";
 import { getImageUrl } from "../api/productsApi";
 
-function formatTimeLeft(endAt) {
-  if (!endAt) return "";
+export default function HeroSlider({ banners = [] }) {
+  const [current, setCurrent] = useState(0);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
-  const diff = new Date(endAt).getTime() - Date.now();
-
-  if (diff <= 0) return "Акція завершилась";
-
-  const totalSeconds = Math.floor(diff / 1000);
-  const days = Math.floor(totalSeconds / 86400);
-  const hours = Math.floor((totalSeconds % 86400) / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  if (days > 0) {
-    return `${days}д ${hours}г ${minutes}хв`;
-  }
-
-  return `${hours.toString().padStart(2, "0")}:${minutes
-    .toString()
-    .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-}
-
-export default function HeroSlider() {
-  const [banners, setBanners] = useState([]);
-  const [, setTick] = useState(0);
+  const activeBanners = useMemo(() => {
+    return [...banners]
+      .filter((banner) => banner?.image)
+      .sort((a, b) => Number(a.priority || 10) - Number(b.priority || 10));
+  }, [banners]);
 
   useEffect(() => {
-    async function loadBanners() {
-      try {
-        const data = await getBanners();
-        const activeBanners = data
-          .filter((banner) => banner.isActive)
-          .sort((a, b) => Number(a.priority ?? 10) - Number(b.priority ?? 10));
-        setBanners(activeBanners);
-      } catch (error) {
-        console.error("BANNERS LOAD ERROR:", error);
-      }
-    }
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
 
-    loadBanners();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTick((v) => v + 1);
-    }, 1000);
+    if (activeBanners.length <= 1) return;
 
-    return () => clearInterval(timer);
-  }, []);
+    const interval = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % activeBanners.length);
+    }, 5000);
 
-  const isMobile = useMemo(() => window.innerWidth <= 768, []);
+    return () => clearInterval(interval);
+  }, [activeBanners.length]);
 
-  const handleBannerClick = async (banner, e) => {
-    e.preventDefault();
-
-    try {
-      await trackBannerClick(banner.id);
-    } catch (error) {
-      console.error("BANNER CLICK TRACK ERROR:", error);
+  useEffect(() => {
+    if (current >= activeBanners.length) {
+      setCurrent(0);
     }
+  }, [current, activeBanners.length]);
 
-    const link = banner.link || "#menu";
+  const currentBanner = activeBanners[current];
 
-    if (link.startsWith("#")) {
-      const id = link.replace("#", "");
-      const target = document.getElementById(id);
+  if (!currentBanner) return null;
 
-      if (target) {
-        target.scrollIntoView({ behavior: "smooth" });
-      }
+  const selectedImage =
+    isMobile && currentBanner.mobileImage
+      ? currentBanner.mobileImage
+      : currentBanner.image;
 
-      return;
-    }
+  const bannerImageUrl = getImageUrl(
+    selectedImage,
+    isMobile
+      ? { width: 900, height: 420, crop: "fill" }
+      : { width: 1600, height: 560, crop: "fill" }
+  );
 
-    if (link.startsWith("category:")) {
-      const categoryId = link.replace("category:", "");
-      const tabsButton = document.querySelector(
-        `[data-category-tab="${categoryId}"]`
-      );
-      if (tabsButton) {
-        tabsButton.click();
-      }
-
-      const menu = document.getElementById("menu");
-      if (menu) {
-        menu.scrollIntoView({ behavior: "smooth" });
-      }
-
-      return;
-    }
-
-    if (link.startsWith("product:")) {
-      const productId = link.replace("product:", "");
-      const menu = document.getElementById("menu");
-      if (menu) {
-        menu.scrollIntoView({ behavior: "smooth" });
-      }
-
-      setTimeout(() => {
-        const target = document.querySelector(
-          `[data-product-id="${productId}"]`
-        );
-        if (target) {
-          target.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-      }, 350);
-
-      return;
-    }
-
-    window.location.href = link;
+  const handlePrev = () => {
+    setCurrent((prev) => (prev === 0 ? activeBanners.length - 1 : prev - 1));
   };
 
-  if (!banners.length) return null;
+  const handleNext = () => {
+    setCurrent((prev) => (prev + 1) % activeBanners.length);
+  };
 
   return (
-    <div className="heroSlider">
-      <Swiper
-        modules={[Autoplay, Pagination]}
-        autoplay={{ delay: 4500 }}
-        pagination={{ clickable: true }}
-        loop={banners.length > 1}
+    <section
+      style={{
+        width: "100%",
+        marginBottom: "32px",
+      }}
+    >
+      <div
+        style={{
+          position: "relative",
+          width: "100%",
+          maxWidth: "1100px",
+          margin: "0 auto",
+          borderRadius: "24px",
+          overflow: "hidden",
+          background: "#111",
+          minHeight: isMobile ? "220px" : "320px",
+          boxShadow: "0 16px 40px rgba(0,0,0,0.08)",
+        }}
       >
-        {banners.map((banner) => {
-          const image =
-            isMobile && banner.mobileImage ? banner.mobileImage : banner.image;
+        <img
+          src={bannerImageUrl}
+          alt={currentBanner.title || "Банер"}
+          loading="eager"
+          decoding="async"
+          style={{
+            width: "100%",
+            height: isMobile ? "220px" : "320px",
+            objectFit: "cover",
+            display: "block",
+          }}
+        />
 
-          const optimizedImage = getImageUrl(
-            image,
-            isMobile
-              ? { width: 900, height: 420, crop: "fill" }
-              : { width: 1600, height: 500, crop: "fill" }
-          );
+        {activeBanners.length > 1 && (
+          <>
+            <button
+              type="button"
+              onClick={handlePrev}
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "12px",
+                transform: "translateY(-50%)",
+                width: "40px",
+                height: "40px",
+                borderRadius: "999px",
+                border: "none",
+                background: "rgba(0,0,0,0.45)",
+                color: "#fff",
+                cursor: "pointer",
+                fontSize: "18px",
+              }}
+            >
+              ‹
+            </button>
 
-          return (
-            <SwiperSlide key={banner.id}>
-              <a
-                href={banner.link || "#menu"}
-                onClick={(e) => handleBannerClick(banner, e)}
-              >
-                <div
-                  className="heroSlide"
-                  style={{ backgroundImage: `url(${optimizedImage})` }}
-                >
-                  {banner.endAt && (
-                    <div className="heroTimer">
-                      ⏳ {formatTimeLeft(banner.endAt)}
-                    </div>
-                  )}
-                </div>
-              </a>
-            </SwiperSlide>
-          );
-        })}
-      </Swiper>
-    </div>
+            <button
+              type="button"
+              onClick={handleNext}
+              style={{
+                position: "absolute",
+                top: "50%",
+                right: "12px",
+                transform: "translateY(-50%)",
+                width: "40px",
+                height: "40px",
+                borderRadius: "999px",
+                border: "none",
+                background: "rgba(0,0,0,0.45)",
+                color: "#fff",
+                cursor: "pointer",
+                fontSize: "18px",
+              }}
+            >
+              ›
+            </button>
+
+            <div
+              style={{
+                position: "absolute",
+                left: "50%",
+                bottom: "14px",
+                transform: "translateX(-50%)",
+                display: "flex",
+                gap: "8px",
+              }}
+            >
+              {activeBanners.map((_, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => setCurrent(index)}
+                  style={{
+                    width: index === current ? "18px" : "8px",
+                    height: "8px",
+                    borderRadius: "999px",
+                    border: "none",
+                    background:
+                      index === current ? "#fff" : "rgba(255,255,255,0.55)",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                  }}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </section>
   );
 }

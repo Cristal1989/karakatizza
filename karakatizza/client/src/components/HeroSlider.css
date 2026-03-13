@@ -1,16 +1,20 @@
 .heroSlider {
-  margin-bottom: 40px;
+  width: 100%;
+  margin: 0;
 }
 
 .heroSlide {
-  height: 340px;
-  border-radius: 18px;
+  width: 100%;
+  height: 360px;
+  border-radius: 22px;
   background-size: cover;
   background-position: center;
+  background-repeat: no-repeat;
   cursor: pointer;
   transition: transform 0.25s ease;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12);
 }
 
 .heroSlide:hover {
@@ -37,6 +41,12 @@
 
 .swiper-pagination-bullet-active {
   opacity: 1;
+}
+
+@media (max-width: 992px) {
+  .heroSlide {
+    height: 280px;
+  }
 }
 
 @media (max-width: 768px) {

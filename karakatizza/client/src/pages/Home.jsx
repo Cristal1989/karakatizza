@@ -9,15 +9,18 @@ import MobileCartBar from "../components/MobileCartBar";
 import CartToast from "../components/CartToast";
 import UpsellSection from "../components/UpsellSection";
 import { getProducts } from "../api/productsApi";
+import { getBanners } from "../api/bannersApi";
 
 export default function Home() {
   const [products, setProducts] = useState([]);
   const [activeCategory, setActiveCategory] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [banners, setBanners] = useState([]);
 
   useEffect(() => {
     loadProducts();
+    loadBanners();
   }, []);
 
   async function loadProducts() {
@@ -32,6 +35,16 @@ export default function Home() {
       setError("Не вдалося завантажити меню");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadBanners() {
+    try {
+      const data = await getBanners();
+      console.log("HOME BANNERS:", data);
+      setBanners(data);
+    } catch (error) {
+      console.error("Помилка завантаження банерів:", error);
     }
   }
 
@@ -66,12 +79,12 @@ export default function Home() {
     <div style={{ minHeight: "100vh", background: "#fafafa" }}>
       <Header />
       <CartToast />
-      <Hero />
+      <Hero banners={banners} />
       <section
         style={{
-          maxWidth: "1200px",
+          maxWidth: "1280px",
           margin: "0 auto",
-          padding: "32px 20px 0",
+          padding: "4px 20px 0",
         }}
       >
         <div style={{ marginBottom: "20px" }}>
@@ -118,7 +131,7 @@ export default function Home() {
 
       <main
         style={{
-          maxWidth: "1200px",
+          maxWidth: "1280px",
           margin: "0 auto",
           padding: "32px 20px 100px",
         }}

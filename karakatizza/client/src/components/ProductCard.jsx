@@ -1,11 +1,21 @@
+import { memo } from "react";
 import { useCart } from "../hooks/useCart";
 import { getImageUrl } from "../api/productsApi";
-import { memo } from "react";
 
 function ProductCard({ product }) {
   const { addToCart } = useCart();
 
-  const imageSrc = getImageUrl(product.image);
+  const shouldContainImage =
+    product.category === "drinks" ||
+    product.category === "snacks" ||
+    product.category === "extras";
+
+  const imageSrc = getImageUrl(
+    product.image,
+    shouldContainImage
+      ? { width: 900, height: 540, crop: "fit" }
+      : { width: 900, height: 540, crop: "fill" }
+  );
 
   return (
     <div
@@ -23,18 +33,27 @@ function ProductCard({ product }) {
       <div
         style={{
           position: "relative",
+          width: "100%",
+          height: "220px",
+          overflow: "hidden",
+          background: "#fff",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
         }}
       >
         <img
-          src={getImageUrl(product.image, { width: 500, height: 500 })}
+          src={imageSrc}
           alt={product.name}
           loading="lazy"
           decoding="async"
           style={{
-            width: "100%",
-            height: "220px",
-            objectFit: "cover",
+            width: shouldContainImage ? "88%" : "100%",
+            height: shouldContainImage ? "88%" : "100%",
+            objectFit: shouldContainImage ? "contain" : "cover",
+            objectPosition: "center",
             display: "block",
+            padding: "10px",
           }}
         />
 
