@@ -206,10 +206,9 @@ app.delete("/products/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
-    const existing = await pool.query(
-      SELECT * FROM products WHERE id = $1,
-      [id]
-    );
+    const existing = await pool.query(`SELECT * FROM products WHERE id = $1`, [
+      id,
+    ]);
 
     if (existing.rows.length === 0) {
       return res.status(404).json({

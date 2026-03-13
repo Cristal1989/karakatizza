@@ -1,10 +1,10 @@
 export const API_BASE_URL = "https://karakatizza-production.up.railway.app";
 
 export async function getProducts() {
-  const response = await fetch(`${API_BASE_URL}/products`);
-  const data = await response.json();
+  const res = await fetch(`${API_BASE_URL}/products`);
+  const data = await res.json();
 
-  if (!response.ok) {
+  if (!res.ok) {
     throw new Error(data.message || "Не вдалося отримати товари");
   }
 
@@ -12,64 +12,63 @@ export async function getProducts() {
 }
 
 export async function createProduct(formData) {
-  const response = await fetch(`${API_BASE_URL}/products`, {
+  const res = await fetch(`${API_BASE_URL}/products`, {
     method: "POST",
     body: formData,
   });
 
-  const contentType = response.headers.get("content-type") || "";
+  const data = await res.json();
 
-  if (!contentType.includes("application/json")) {
-    const text = await response.text();
-    throw new Error(`Сервер повернув не JSON: ${text.slice(0, 300)}`);
-  }
-
-  const data = await response.json();
-
-  if (!response.ok) {
+  if (!res.ok) {
     throw new Error(data.message || "Помилка створення товару");
   }
 
   return data;
 }
 
+export async function updateProduct(id, formData) {
+  const res = await fetch(`${API_BASE_URL}/products/${id}`, {
+    method: "PUT",
+    body: formData,
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.message || "Не вдалося оновити товар");
+  }
+
+  return data;
+}
+
 export async function deleteProduct(id) {
-  const response = await fetch(`${API_BASE_URL}/products/${id}`, {
+  const res = await fetch(`${API_BASE_URL}/products/${id}`, {
     method: "DELETE",
   });
 
-  const contentType = response.headers.get("content-type") || "";
+  const data = await res.json();
 
-  let data = {};
-
-  if (contentType.includes("application/json")) {
-    data = await response.json();
-  } else {
-    const text = await response.text();
-    throw new Error(`Сервер повернув не JSON: ${text.slice(0, 200)}`);
-  }
-
-  if (!response.ok) {
+  if (!res.ok) {
     throw new Error(data.message || "Не вдалося видалити товар");
   }
 
   return data;
 }
 
-export function getImageUrl(imagePath) {
-  if (!imagePath) return "";
+export function getImageUrl(image) {
+  if (!image) return "";
 
-  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
-    return imagePath;
+  if (image.startsWith("http")) {
+    return image;
   }
 
-  if (imagePath.startsWith("/uploads/")) {
-    return `${API_BASE_URL}${imagePath}`;
+  if (image.startsWith("/uploads/")) {
+    return `${API_BASE_URL}${image}`;
   }
 
-  if (imagePath.startsWith("/images/")) {
-    return imagePath;
+  if (image.startsWith("/images/")) {
+    return image;
   }
 
-  return imagePath;
+  return image;
 }
