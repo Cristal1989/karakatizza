@@ -268,97 +268,126 @@ app.post(
   }
 );
 
-app.put("/products/:id", upload.single("image"), async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, price, category, description, popular, promoType, priority } =
-      req.body;
+app.put("/products/:id", (req, res) => {
+  upload.single("image")(req, res, async (uploadError) => {
+    if (uploadError) {
+      console.error("UPLOAD PRODUCT ERROR:", uploadError);
 
-    if (!name || !price || !category) {
-      return res.status(400).json({
-        message: "Необхідні поля: name, price, category",
+      return res.status(500).json({
+        message: "Помилка завантаження фото",
+        error: uploadError.message,
       });
     }
 
-    const existing = await pool.query(`SELECT * FROM products WHERE id = $1`, [
-      id,
-    ]);
+    try {
+      const { id } = req.params;
+      const {
+        name,
+        price,
+        category,
+        description,
+        popular,
+        promoType,
+        priority,
+      } = req.body;
 
-    if (existing.rows.length === 0) {
-      return res.status(404).json({ message: "Товар не знайдено" });
-    }
+      console.log("PUT PRODUCT BODY:", req.body);
+      console.log("PUT PRODUCT FILE:", req.file);
 
-    const oldProduct = existing.rows[0];
-    let imageUrl = oldProduct.image || "";
+      if (!name || !price || !category) {
+        return res.status(400).json({
+          message: "Необхідні поля: name, price, category",
+        });
+      }
 
-    if (req.file) {
-      imageUrl = req.file.path || "";
+      const existing = await pool.query(
+        `SELECT * FROM products WHERE id = $1`,
+        [id]
+      );
 
-      if (oldProduct.image && oldProduct.image.includes("res.cloudinary.com")) {
-        try {
-          const parts = oldProduct.image.split("/");
-          const uploadIndex = parts.findIndex((part) => part === "upload");
-          const publicIdWithExt = parts.slice(uploadIndex + 2).join("/");
-          const publicId = publicIdWithExt.replace(/\.[^/.]+$/, "");
+      if (existing.rows.length === 0) {
+        return res.status(404).json({ message: "Товар не знайдено" });
+      }
 
+      const oldProduct = existing.rows[0];
+      let imageUrl = oldProduct.image || "";
+
+      if (req.file) {
+        imageUrl = req.file.path || "";
+
+        if (
+          oldProduct.image &&
+          oldProduct.image.includes("res.cloudinary.com")
+        ) {
           try {
-            await cloudinary.uploader.destroy(publicId);
-          } catch (err) {
-            console.log("Cloudinary delete error:", err.message);
+            const parts = oldProduct.image.split("/");
+            const uploadIndex = parts.findIndex((part) => part === "upload");
+            const publicIdWithExt = parts.slice(uploadIndex + 2).join("/");
+            const publicId = publicIdWithExt.replace(/\.[^/.]+$/, "");
+
+            try {
+              await cloudinary.uploader.destroy(publicId);
+            } catch (err) {
+              console.log("Cloudinary delete error:", err.message);
+            }
+          } catch (deleteError) {
+            console.error(
+              "Помилка видалення старого фото:",
+              deleteError.message
+            );
           }
-        } catch (deleteError) {
-          console.error("Помилка видалення старого фото:", deleteError.message);
         }
       }
+
+      const updatedProduct = {
+        id,
+        name,
+        price: Number(price),
+        category,
+        description: description || "",
+        image: imageUrl,
+        popular: popular === "true",
+        promoType: promoType || "none",
+        priority: Number(priority) || 10,
+      };
+
+      await pool.query(
+        `UPDATE products
+         SET name = $1,
+             price = $2,
+             category = $3,
+             description = $4,
+             image = $5,
+             popular = $6,
+             promo_type = $7,
+             priority = $8
+         WHERE id = $9`,
+        [
+          updatedProduct.name,
+          updatedProduct.price,
+          updatedProduct.category,
+          updatedProduct.description,
+          updatedProduct.image,
+          updatedProduct.popular,
+          updatedProduct.promoType,
+          updatedProduct.priority,
+          updatedProduct.id,
+        ]
+      );
+
+      return res.json({
+        success: true,
+        product: updatedProduct,
+      });
+    } catch (error) {
+      console.error("PUT PRODUCT ERROR:", error);
+
+      return res.status(500).json({
+        message: "Помилка оновлення товару",
+        error: error.message,
+      });
     }
-
-    const updatedProduct = {
-      id,
-      name,
-      price: Number(price),
-      category,
-      description: description || "",
-      image: imageUrl,
-      popular: popular === "true",
-      promoType: promoType || "none",
-      priority: Number(priority) || 10,
-    };
-
-    await pool.query(
-      `UPDATE products
-       SET name = $1,
-           price = $2,
-           category = $3,
-           description = $4,
-           image = $5,
-           popular = $6,
-           promo_type = $7,
-           priority = $8
-       WHERE id = $9`,
-      [
-        updatedProduct.name,
-        updatedProduct.price,
-        updatedProduct.category,
-        updatedProduct.description,
-        updatedProduct.image,
-        updatedProduct.popular,
-        updatedProduct.promoType,
-        updatedProduct.priority,
-        updatedProduct.id,
-      ]
-    );
-
-    return res.json({
-      success: true,
-      product: updatedProduct,
-    });
-  } catch (error) {
-    console.error("PUT PRODUCT ERROR:", error);
-    return res.status(500).json({
-      message: "Помилка оновлення товару",
-      error: error.message,
-    });
-  }
+  });
 });
 
 app.put(
