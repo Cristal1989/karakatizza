@@ -11,6 +11,7 @@ import {
   createBanner,
   updateBanner,
   deleteBanner,
+  reorderBanners,
 } from "../api/bannersApi";
 
 const sidebarItems = [
@@ -61,12 +62,17 @@ export default function Admin() {
   const [bannersLoading, setBannersLoading] = useState(true);
   const [bannerEditingId, setBannerEditingId] = useState(null);
   const [bannerImage, setBannerImage] = useState(null);
+  const [bannerMobileImage, setBannerMobileImage] = useState(null);
   const [bannerPreview, setBannerPreview] = useState("");
+  const [bannerMobilePreview, setBannerMobilePreview] = useState("");
+  const [dragBannerId, setDragBannerId] = useState(null);
+
   const [bannerForm, setBannerForm] = useState({
     title: "",
     link: "#menu",
     priority: 10,
     isActive: true,
+    endAt: "",
   });
 
   useEffect(() => {
@@ -317,6 +323,18 @@ export default function Admin() {
     }
   };
 
+  const handleBannerMobileFileChange = (e) => {
+    const file = e.target.files[0] || null;
+    setBannerMobileImage(file);
+
+    if (file) {
+      const previewUrl = URL.createObjectURL(file);
+      setBannerMobilePreview(previewUrl);
+    } else {
+      setBannerMobilePreview("");
+    }
+  };
+
   const handleBannerSubmit = async (e) => {
     e.preventDefault();
 
@@ -329,9 +347,14 @@ export default function Admin() {
       formData.append("link", bannerForm.link);
       formData.append("priority", bannerForm.priority);
       formData.append("isActive", bannerForm.isActive);
+      formData.append("endAt", bannerForm.endAt || "");
 
       if (bannerImage) {
         formData.append("image", bannerImage);
+      }
+
+      if (bannerMobileImage) {
+        formData.append("mobileImage", bannerMobileImage);
       }
 
       if (bannerEditingId) {
@@ -347,14 +370,22 @@ export default function Admin() {
         link: "#menu",
         priority: 10,
         isActive: true,
+        endAt: "",
       });
 
       setBannerImage(null);
+      setBannerMobileImage(null);
       setBannerPreview("");
+      setBannerMobilePreview("");
       setBannerEditingId(null);
 
       const fileInput = document.getElementById("banner-image-input");
       if (fileInput) fileInput.value = "";
+
+      const mobileFileInput = document.getElementById(
+        "banner-mobile-image-input"
+      );
+      if (mobileFileInput) mobileFileInput.value = "";
 
       await loadBanners();
     } catch (error) {
@@ -374,11 +405,66 @@ export default function Admin() {
       link: banner.link || "#menu",
       priority: Number(banner.priority ?? 10),
       isActive: !!banner.isActive,
+      endAt: banner.endAt
+        ? new Date(banner.endAt).toISOString().slice(0, 16)
+        : "",
     });
 
     setBannerImage(null);
+    setBannerMobileImage(null);
     setBannerPreview(getImageUrl(banner.image));
+    setBannerMobilePreview(
+      banner.mobileImage ? getImageUrl(banner.mobileImage) : ""
+    );
     setMessage("");
+  };
+
+  const handleBannerDragStart = (bannerId) => {
+    setDragBannerId(bannerId);
+  };
+
+  const handleBannerDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  const handleBannerDrop = async (targetBannerId) => {
+    try {
+      if (!dragBannerId || dragBannerId === targetBannerId) {
+        setDragBannerId(null);
+        return;
+      }
+
+      const sorted = [...banners].sort(
+        (a, b) => Number(a.priority ?? 10) - Number(b.priority ?? 10)
+      );
+
+      const fromIndex = sorted.findIndex((item) => item.id === dragBannerId);
+      const toIndex = sorted.findIndex((item) => item.id === targetBannerId);
+
+      if (fromIndex === -1 || toIndex === -1) {
+        setDragBannerId(null);
+        return;
+      }
+
+      const updated = [...sorted];
+      const [moved] = updated.splice(fromIndex, 1);
+      updated.splice(toIndex, 0, moved);
+
+      const payload = updated.map((item, index) => ({
+        id: item.id,
+        priority: index + 1,
+      }));
+
+      await reorderBanners(payload);
+      await loadBanners();
+
+      setMessage("✅ Порядок банерів оновлено");
+    } catch (error) {
+      console.error(error);
+      setMessage(`❌ ${error.message}`);
+    } finally {
+      setDragBannerId(null);
+    }
   };
 
   const handleBannerDelete = async (id) => {
@@ -995,7 +1081,8 @@ export default function Admin() {
                     marginBottom: "24px",
                   }}
                 >
-                  Додавай дизайнерські банери для головного слайдера
+                  Додавай desktop і mobile банери, таймери та посилання на
+                  товари або категорії
                 </p>
 
                 <form
@@ -1014,14 +1101,14 @@ export default function Admin() {
                   <div
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "1fr 180px",
+                      gridTemplateColumns: "1fr 180px 220px",
                       gap: "16px",
                     }}
                   >
                     <input
                       type="text"
                       name="link"
-                      placeholder="Посилання, наприклад #menu"
+                      placeholder="Посилання: #menu, category:rolls, product:ID"
                       value={bannerForm.link}
                       onChange={handleBannerChange}
                       style={inputStyle}
@@ -1031,8 +1118,16 @@ export default function Admin() {
                       type="number"
                       name="priority"
                       min="1"
-                      max="10"
+                      max="20"
                       value={bannerForm.priority}
+                      onChange={handleBannerChange}
+                      style={inputStyle}
+                    />
+
+                    <input
+                      type="datetime-local"
+                      name="endAt"
+                      value={bannerForm.endAt}
                       onChange={handleBannerChange}
                       style={inputStyle}
                     />
@@ -1059,46 +1154,104 @@ export default function Admin() {
                     <span style={{ fontWeight: 700 }}>Показувати банер</span>
                   </label>
 
-                  <input
-                    id="banner-image-input"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleBannerFileChange}
-                    style={inputStyle}
-                  />
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "16px",
+                    }}
+                  >
+                    <input
+                      id="banner-image-input"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleBannerFileChange}
+                      style={inputStyle}
+                    />
 
-                  {bannerPreview && (
+                    <input
+                      id="banner-mobile-image-input"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleBannerMobileFileChange}
+                      style={inputStyle}
+                    />
+                  </div>
+
+                  {(bannerPreview || bannerMobilePreview) && (
                     <div
                       style={{
-                        display: "flex",
-                        alignItems: "center",
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
                         gap: "16px",
-                        padding: "16px",
-                        borderRadius: "18px",
-                        border: "1px solid #eee",
-                        background: "#fafafa",
                       }}
                     >
-                      <img
-                        src={bannerPreview}
-                        alt="banner preview"
+                      <div
                         style={{
-                          width: "220px",
-                          height: "110px",
-                          objectFit: "cover",
-                          borderRadius: "16px",
+                          padding: "16px",
+                          borderRadius: "18px",
+                          border: "1px solid #eee",
+                          background: "#fafafa",
                         }}
-                      />
+                      >
+                        <div style={{ fontWeight: 800, marginBottom: "10px" }}>
+                          Desktop банер
+                        </div>
 
-                      <div>
-                        <div style={{ fontWeight: 800, marginBottom: "6px" }}>
-                          Попередній перегляд банера
+                        {bannerPreview ? (
+                          <img
+                            src={bannerPreview}
+                            alt="desktop preview"
+                            style={{
+                              width: "100%",
+                              height: "140px",
+                              objectFit: "cover",
+                              borderRadius: "16px",
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              height: "140px",
+                              borderRadius: "16px",
+                              background: "#f1f1f1",
+                            }}
+                          />
+                        )}
+                      </div>
+
+                      <div
+                        style={{
+                          padding: "16px",
+                          borderRadius: "18px",
+                          border: "1px solid #eee",
+                          background: "#fafafa",
+                        }}
+                      >
+                        <div style={{ fontWeight: 800, marginBottom: "10px" }}>
+                          Mobile банер
                         </div>
-                        <div style={{ color: "#667085", fontSize: "14px" }}>
-                          {bannerImage
-                            ? "Нове зображення вибрано, ще не збережено"
-                            : "Поточне зображення банера"}
-                        </div>
+
+                        {bannerMobilePreview ? (
+                          <img
+                            src={bannerMobilePreview}
+                            alt="mobile preview"
+                            style={{
+                              width: "100%",
+                              height: "140px",
+                              objectFit: "cover",
+                              borderRadius: "16px",
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              height: "140px",
+                              borderRadius: "16px",
+                              background: "#f1f1f1",
+                            }}
+                          />
+                        )}
                       </div>
                     </div>
                   )}
@@ -1124,17 +1277,25 @@ export default function Admin() {
                         onClick={() => {
                           setBannerEditingId(null);
                           setBannerImage(null);
+                          setBannerMobileImage(null);
                           setBannerPreview("");
+                          setBannerMobilePreview("");
                           setBannerForm({
                             title: "",
                             link: "#menu",
                             priority: 10,
                             isActive: true,
+                            endAt: "",
                           });
 
                           const fileInput =
                             document.getElementById("banner-image-input");
                           if (fileInput) fileInput.value = "";
+
+                          const mobileFileInput = document.getElementById(
+                            "banner-mobile-image-input"
+                          );
+                          if (mobileFileInput) mobileFileInput.value = "";
                         }}
                         style={secondaryButtonStyle}
                       >
@@ -1181,14 +1342,24 @@ export default function Admin() {
                       .map((banner) => (
                         <div
                           key={banner.id}
+                          draggable
+                          onDragStart={() => handleBannerDragStart(banner.id)}
+                          onDragOver={handleBannerDragOver}
+                          onDrop={() => handleBannerDrop(banner.id)}
                           style={{
                             display: "grid",
-                            gridTemplateColumns: "220px 1fr auto",
+                            gridTemplateColumns: "220px 140px 1fr auto",
                             gap: "16px",
                             alignItems: "center",
-                            border: "1px solid #eee",
+                            border:
+                              dragBannerId === banner.id
+                                ? "2px dashed #ef4444"
+                                : "1px solid #eee",
                             borderRadius: "18px",
                             padding: "14px",
+                            background:
+                              dragBannerId === banner.id ? "#fff5f5" : "#fff",
+                            cursor: "grab",
                           }}
                         >
                           <img
@@ -1201,6 +1372,28 @@ export default function Admin() {
                               borderRadius: "14px",
                             }}
                           />
+
+                          {banner.mobileImage ? (
+                            <img
+                              src={getImageUrl(banner.mobileImage)}
+                              alt="mobile banner"
+                              style={{
+                                width: "140px",
+                                height: "110px",
+                                objectFit: "cover",
+                                borderRadius: "14px",
+                              }}
+                            />
+                          ) : (
+                            <div
+                              style={{
+                                width: "140px",
+                                height: "110px",
+                                borderRadius: "14px",
+                                background: "#f1f1f1",
+                              }}
+                            />
+                          )}
 
                           <div>
                             <div
@@ -1224,6 +1417,7 @@ export default function Admin() {
                                 display: "flex",
                                 gap: "8px",
                                 flexWrap: "wrap",
+                                marginBottom: "6px",
                               }}
                             >
                               <span style={badgeStyle("#f3f4f6", "#111827")}>
@@ -1238,7 +1432,20 @@ export default function Admin() {
                               >
                                 {banner.isActive ? "Активний" : "Вимкнений"}
                               </span>
+
+                              <span style={badgeStyle("#eff6ff", "#2563eb")}>
+                                Кліки: {Number(banner.clickCount ?? 0)}
+                              </span>
                             </div>
+
+                            {banner.endAt && (
+                              <div
+                                style={{ color: "#667085", fontSize: "14px" }}
+                              >
+                                Таймер до:{" "}
+                                {new Date(banner.endAt).toLocaleString("uk-UA")}
+                              </div>
+                            )}
                           </div>
 
                           <div style={{ display: "grid", gap: "10px" }}>

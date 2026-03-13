@@ -8,6 +8,7 @@ export default function ProductCard({ product }) {
 
   return (
     <div
+      data-product-id={product.id}
       style={{
         background: "#ffffff",
         borderRadius: "18px",

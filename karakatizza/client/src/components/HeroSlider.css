@@ -9,10 +9,25 @@
   background-position: center;
   cursor: pointer;
   transition: transform 0.25s ease;
+  position: relative;
+  overflow: hidden;
 }
 
 .heroSlide:hover {
-  transform: scale(1.02);
+  transform: scale(1.01);
+}
+
+.heroTimer {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  background: rgba(17, 24, 39, 0.78);
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  backdrop-filter: blur(10px);
 }
 
 .swiper-pagination-bullet {
@@ -22,4 +37,18 @@
 
 .swiper-pagination-bullet-active {
   opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .heroSlide {
+    height: 220px;
+    border-radius: 16px;
+  }
+
+  .heroTimer {
+    right: 10px;
+    bottom: 10px;
+    font-size: 12px;
+    padding: 7px 10px;
+  }
 }

@@ -51,12 +51,20 @@ export async function initDb() {
     CREATE TABLE IF NOT EXISTS banners (
       id TEXT PRIMARY KEY,
       image TEXT NOT NULL,
+      mobile_image TEXT DEFAULT '',
       link TEXT DEFAULT '#menu',
       title TEXT DEFAULT '',
       is_active BOOLEAN DEFAULT TRUE,
       priority INTEGER DEFAULT 10,
+      click_count INTEGER DEFAULT 0,
+      end_at TIMESTAMP NULL,
       created_at TIMESTAMP DEFAULT NOW()
     );
+  `);
+
+  await pool.query(`
+    ALTER TABLE banners
+    ADD COLUMN IF NOT EXISTS mobile_image TEXT DEFAULT '';
   `);
 
   await pool.query(`
@@ -77,5 +85,15 @@ export async function initDb() {
   await pool.query(`
     ALTER TABLE banners
     ADD COLUMN IF NOT EXISTS priority INTEGER DEFAULT 10;
+  `);
+
+  await pool.query(`
+    ALTER TABLE banners
+    ADD COLUMN IF NOT EXISTS click_count INTEGER DEFAULT 0;
+  `);
+
+  await pool.query(`
+    ALTER TABLE banners
+    ADD COLUMN IF NOT EXISTS end_at TIMESTAMP NULL;
   `);
 }

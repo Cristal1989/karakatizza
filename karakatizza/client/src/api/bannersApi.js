@@ -54,3 +54,35 @@ export async function deleteBanner(id) {
 
   return data;
 }
+
+export async function trackBannerClick(id) {
+  const res = await fetch(`${API_BASE_URL}/banners/${id}/click`, {
+    method: "POST",
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.message || "Не вдалося зарахувати клік");
+  }
+
+  return data;
+}
+
+export async function reorderBanners(items) {
+  const res = await fetch(`${API_BASE_URL}/banners/reorder`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ items }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.message || "Не вдалося змінити порядок банерів");
+  }
+
+  return data;
+}

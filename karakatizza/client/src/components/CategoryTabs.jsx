@@ -30,6 +30,7 @@ export default function CategoryTabs({ activeCategory, onChange }) {
         return (
           <button
             key={category.id}
+            data-category-tab={category.id}
             onClick={() => onChange(category.id)}
             style={{
               border: "none",
