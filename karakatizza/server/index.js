@@ -305,14 +305,18 @@ app.post("/order", async (req, res) => {
     message += `🧾 Замовлення:\n`;
 
     items.forEach((item) => {
-      message += `• ${item.name} x${item.quantity}\n`;
+      const paidQuantity = item.paidQuantity ?? item.quantity ?? 0;
+      const freeQuantity = item.freeQuantity ?? 0;
+      const lineTotal = item.lineTotal ?? item.price * paidQuantity;
+
+      message += `• ${item.name} — ${item.quantity} шт`;
+
+      if (freeQuantity > 0) {
+        message += `(${paidQuantity} платно + ${freeQuantity} у подарунок)`;
+      }
+
+      message += `— ${lineTotal} грн\n`;
     });
-
-    message += `\n💰 Разом: ${totalPrice} грн\n`;
-
-    if (comment) {
-      message += `\n💬 Коментар: ${comment}`;
-    }
 
     const telegramUrl = `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`;
 

@@ -182,6 +182,43 @@ export default function Admin() {
     }
   };
 
+  const handlePriorityChange = async (product, direction) => {
+    try {
+      const currentPriority = Number(product.priority ?? 10);
+
+      let nextPriority = currentPriority;
+
+      if (direction === "up") {
+        nextPriority = Math.max(1, currentPriority - 1);
+      }
+
+      if (direction === "down") {
+        nextPriority = Math.min(10, currentPriority + 1);
+      }
+
+      if (nextPriority === currentPriority) {
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("name", product.name || "");
+      formData.append("price", product.price || "");
+      formData.append("category", product.category || "");
+      formData.append("description", product.description || "");
+      formData.append("popular", !!product.popular);
+      formData.append("promoType", product.promoType || "none");
+      formData.append("priority", nextPriority);
+
+      await updateProduct(product.id, formData);
+
+      setMessage(`✅ Пріоритет "${product.name}" змінено на ${nextPriority}`);
+      await loadProducts();
+    } catch (error) {
+      console.error(error);
+      setMessage(`❌ ${error.message}`);
+    }
+  };
+
   const handleEdit = (product) => {
     setActiveSection("products");
     setEditingId(product.id);
@@ -711,6 +748,52 @@ export default function Admin() {
 
                           <div>
                             <div style={{ display: "grid", gap: "10px" }}>
+                              <div
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns: "1fr 1fr",
+                                  gap: "8px",
+                                }}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handlePriorityChange(product, "up")
+                                  }
+                                  style={{
+                                    background: "#f8fafc",
+                                    color: "#111827",
+                                    border: "1px solid #dbe2ea",
+                                    borderRadius: "12px",
+                                    padding: "10px 12px",
+                                    fontWeight: 800,
+                                    cursor: "pointer",
+                                  }}
+                                  title="Підняти вище"
+                                >
+                                  ↑ Вище
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handlePriorityChange(product, "down")
+                                  }
+                                  style={{
+                                    background: "#f8fafc",
+                                    color: "#111827",
+                                    border: "1px solid #dbe2ea",
+                                    borderRadius: "12px",
+                                    padding: "10px 12px",
+                                    fontWeight: 800,
+                                    cursor: "pointer",
+                                  }}
+                                  title="Опустити нижче"
+                                >
+                                  ↓ Нижче
+                                </button>
+                              </div>
+
                               <button
                                 type="button"
                                 onClick={() => handleEdit(product)}

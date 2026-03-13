@@ -1,223 +1,161 @@
-import { createContext, useEffect, useMemo, useState, useContext } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
-export const CartContext = createContext(null);
+const CartContext = createContext();
 
-const STORAGE_KEY = "karakatizza_cart";
+function calculatePromo(quantity, promoType) {
+  const safeQuantity = Number(quantity) || 0;
 
-/**
- * Тут укажи, по какому товару работает акция.
- * Лучше по id, если он у тебя стабильный.
- * Пока делаем по имени.
- */
-const PROMO_PRODUCT_NAME = "Кокаїн";
-
-function isPromoProduct(product) {
-  return (
-    (product?.name || "").trim().toLowerCase() ===
-    PROMO_PRODUCT_NAME.toLowerCase()
-  );
-}
-
-function applyPromotions(items) {
-  return items.map((item) => {
-    if (!isPromoProduct(item)) {
-      const quantity = item.quantity ?? item.paidQuantity ?? 1;
-
-      return {
-        ...item,
-        paidQuantity: quantity,
-        freeQuantity: 0,
-        quantity,
-      };
-    }
-
-    const paidQuantity =
-      typeof item.paidQuantity === "number"
-        ? item.paidQuantity
-        : item.quantity ?? 1;
-
-    const freeQuantity = Math.floor(paidQuantity / 2);
-    const quantity = paidQuantity + freeQuantity;
+  if (promoType === "2plus1") {
+    const freeQuantity = Math.floor(safeQuantity / 3);
+    const paidQuantity = safeQuantity - freeQuantity;
 
     return {
-      ...item,
       paidQuantity,
       freeQuantity,
-      quantity,
     };
-  });
+  }
+
+  return {
+    paidQuantity: safeQuantity,
+    freeQuantity: 0,
+  };
 }
 
 export function CartProvider({ children }) {
   const [cartItems, setCartItems] = useState(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return [];
-      const parsed = JSON.parse(raw);
-      return applyPromotions(parsed);
-    } catch (error) {
-      console.error("Cart parse error:", error);
-      return [];
-    }
+    const savedCart = localStorage.getItem("cartItems");
+    return savedCart ? JSON.parse(savedCart) : [];
   });
 
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(cartItems));
+    localStorage.setItem("cartItems", JSON.stringify(cartItems));
   }, [cartItems]);
 
-  function openCart() {
-    setIsCartOpen(true);
-  }
+  const addToCart = (product, quantity = 1) => {
+    const safeQuantity = Number(quantity) || 1;
 
-  function closeCart() {
-    setIsCartOpen(false);
-  }
-
-  function addToCart(product, quantityToAdd = 1) {
     setCartItems((prev) => {
-      const existingIndex = prev.findIndex((item) => item.id === product.id);
+      const existingItem = prev.find((item) => item.id === product.id);
 
-      let next;
+      if (existingItem) {
+        const newQuantity = existingItem.quantity + safeQuantity;
+        const promo = calculatePromo(newQuantity, existingItem.promoType);
 
-      if (existingIndex !== -1) {
-        next = [...prev];
-        const existing = next[existingIndex];
-
-        if (isPromoProduct(existing)) {
-          const nextPaidQuantity =
-            (existing.paidQuantity ?? existing.quantity ?? 0) + quantityToAdd;
-
-          next[existingIndex] = {
-            ...existing,
-            paidQuantity: nextPaidQuantity,
-          };
-        } else {
-          next[existingIndex] = {
-            ...existing,
-            quantity: (existing.quantity ?? 0) + quantityToAdd,
-          };
-        }
-      } else {
-        if (isPromoProduct(product)) {
-          next = [
-            ...prev,
-            {
-              ...product,
-              paidQuantity: quantityToAdd,
-              freeQuantity: 0,
-              quantity: quantityToAdd,
-            },
-          ];
-        } else {
-          next = [
-            ...prev,
-            {
-              ...product,
-              quantity: quantityToAdd,
-              paidQuantity: quantityToAdd,
-              freeQuantity: 0,
-            },
-          ];
-        }
+        return prev.map((item) =>
+          item.id === product.id
+            ? {
+                ...item,
+                quantity: newQuantity,
+                paidQuantity: promo.paidQuantity,
+                freeQuantity: promo.freeQuantity,
+              }
+            : item
+        );
       }
 
-      return applyPromotions(next);
+      const promo = calculatePromo(safeQuantity, product.promoType);
+
+      return [
+        ...prev,
+        {
+          ...product,
+          quantity: safeQuantity,
+          paidQuantity: promo.paidQuantity,
+          freeQuantity: promo.freeQuantity,
+        },
+      ];
     });
 
     setIsCartOpen(true);
-  }
+  };
 
-  function removeFromCart(id) {
-    setCartItems((prev) => prev.filter((item) => item.id !== id));
-  }
+  const removeFromCart = (productId) => {
+    setCartItems((prev) => prev.filter((item) => item.id !== productId));
+  };
 
-  function clearCart() {
+  const clearCart = () => {
     setCartItems([]);
-  }
+  };
 
-  function increaseQuantity(id) {
-    setCartItems((prev) => {
-      const next = prev.map((item) => {
-        if (item.id !== id) return item;
+  const increaseQuantity = (productId) => {
+    setCartItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== productId) return item;
 
-        if (isPromoProduct(item)) {
-          return {
-            ...item,
-            paidQuantity: (item.paidQuantity ?? item.quantity ?? 0) + 1,
-          };
-        }
+        const newQuantity = item.quantity + 1;
+        const promo = calculatePromo(newQuantity, item.promoType);
 
         return {
           ...item,
-          quantity: (item.quantity ?? 0) + 1,
+          quantity: newQuantity,
+          paidQuantity: promo.paidQuantity,
+          freeQuantity: promo.freeQuantity,
         };
-      });
+      })
+    );
+  };
 
-      return applyPromotions(next);
-    });
-  }
-
-  function decreaseQuantity(id) {
-    setCartItems((prev) => {
-      const next = prev
+  const decreaseQuantity = (productId) => {
+    setCartItems((prev) =>
+      prev
         .map((item) => {
-          if (item.id !== id) return item;
+          if (item.id !== productId) return item;
 
-          if (isPromoProduct(item)) {
-            const nextPaidQuantity =
-              (item.paidQuantity ?? item.quantity ?? 0) - 1;
+          const newQuantity = item.quantity - 1;
 
-            if (nextPaidQuantity <= 0) return null;
-
-            return {
-              ...item,
-              paidQuantity: nextPaidQuantity,
-            };
+          if (newQuantity <= 0) {
+            return null;
           }
 
-          const nextQuantity = (item.quantity ?? 0) - 1;
-
-          if (nextQuantity <= 0) return null;
+          const promo = calculatePromo(newQuantity, item.promoType);
 
           return {
             ...item,
-            quantity: nextQuantity,
+            quantity: newQuantity,
+            paidQuantity: promo.paidQuantity,
+            freeQuantity: promo.freeQuantity,
           };
         })
-        .filter(Boolean);
-
-      return applyPromotions(next);
-    });
-  }
+        .filter(Boolean)
+    );
+  };
 
   const totalItems = useMemo(() => {
-    return cartItems.reduce((sum, item) => sum + (item.quantity ?? 0), 0);
+    return cartItems.reduce((sum, item) => sum + item.quantity, 0);
   }, [cartItems]);
 
   const totalPrice = useMemo(() => {
     return cartItems.reduce((sum, item) => {
-      const paidQty = item.paidQuantity ?? item.quantity ?? 0;
-      return sum + item.price * paidQty;
+      const paidQuantity = item.paidQuantity ?? item.quantity;
+      return sum + item.price * paidQuantity;
     }, 0);
   }, [cartItems]);
 
-  const value = {
-    cartItems,
-    isCartOpen,
-    openCart,
-    closeCart,
-    addToCart,
-    removeFromCart,
-    clearCart,
-    increaseQuantity,
-    decreaseQuantity,
-    totalItems,
-    totalPrice,
-  };
+  const openCart = () => setIsCartOpen(true);
+  const closeCart = () => setIsCartOpen(false);
 
-  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+  return (
+    <CartContext.Provider
+      value={{
+        cartItems,
+        setCartItems,
+        isCartOpen,
+        openCart,
+        closeCart,
+        addToCart,
+        removeFromCart,
+        clearCart,
+        increaseQuantity,
+        decreaseQuantity,
+        totalItems,
+        totalPrice,
+      }}
+    >
+      {children}
+    </CartContext.Provider>
+  );
 }
 
 export const useCart = () => useContext(CartContext);
