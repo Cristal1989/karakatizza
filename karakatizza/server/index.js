@@ -18,10 +18,6 @@ const __dirname = path.dirname(__filename);
 
 const productsFilePath = path.join(__dirname, "data", "products.json");
 
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
 const app = express();
 
 await initDb();
