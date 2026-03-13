@@ -254,7 +254,7 @@ app.delete("/products/:id", (req, res) => {
 
 app.post("/order", async (req, res) => {
   try {
-    const { name, phone, address, comment, items, total } = req.body;
+    const { name, phone, address, comment, items, totalPrice } = req.body;
 
     let message = `🆕 НОВЕ ЗАМОВЛЕННЯ\n\n`;
 
@@ -268,7 +268,7 @@ app.post("/order", async (req, res) => {
       message += `• ${item.name} x${item.quantity}\n`;
     });
 
-    message += `\n💰 Разом: ${total} грн\n`;
+    message += `\n💰 Разом: ${totalPrice} грн\n`;
 
     if (comment) {
       message += `\n💬 Коментар: ${comment}`;
