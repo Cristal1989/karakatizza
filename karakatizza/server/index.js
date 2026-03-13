@@ -63,9 +63,23 @@ app.get("/", (req, res) => {
   res.send("Server running");
 });
 
-app.get("/products", (req, res) => {
+app.get("/products", async (req, res) => {
   try {
-    const products = readProducts();
+    const result = await pool.query(`
+      SELECT id, name, price, category, description, image,
+      popular,
+      promo_type AS "promoType"
+      FROM products
+      ORDER BY created_at ASC
+    `);
+
+    const products = result.rows.map((p) => ({
+      ...p,
+      price: Number(p.price),
+      popular: !!p.popular,
+      promoType: p.promoType || "none",
+    }));
+
     return res.json(products);
   } catch (error) {
     return res.status(500).json({
