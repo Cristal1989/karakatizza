@@ -1,40 +1,138 @@
-import { createOrder } from "../api/ordersApi";
-import { Link, useNavigate } from "react-router-dom";
-import { useCart } from "../hooks/useCart";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useCart } from "../context/CartContext";
+import { createOrder } from "../api/ordersApi";
 
 export default function Checkout() {
-  const { cartItems, totalPrice, clearCart } = useCart();
   const navigate = useNavigate();
+  const { cartItems, clearCart, totalPrice } = useCart();
 
   const [form, setForm] = useState({
     name: "",
-    phone: "",
+    phone: "+380",
     address: "",
     comment: "",
   });
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const inputStyle = {
+    width: "100%",
+    padding: "14px 16px",
+    borderRadius: "12px",
+    border: "1px solid #ddd",
+    fontSize: "16px",
+    boxSizing: "border-box",
+  };
+
+  const nameRegex = /^[A-Za-zА-Яа-яІіЇїЄєҐґ\s'-]+$/;
+  const phoneRegex = /^\+380\d{9}$/;
+  const addressRegex = /^[A-Za-zА-Яа-яІіЇїЄєҐґ0-9\s./,\-]+$/;
+
+  const handleNameChange = (e) => {
+    const value = e.target.value;
+
+    if (value === "" || nameRegex.test(value)) {
+      setForm((prev) => ({
+        ...prev,
+        name: value,
+      }));
+    }
+  };
+
+  const handlePhoneChange = (e) => {
+    let value = e.target.value.replace(/[^\d+]/g, "");
+
+    if (!value.startsWith("+380")) {
+      if (value.startsWith("380")) {
+        value = `+${value}`;
+      } else {
+        value = "+380";
+      }
+    }
+
+    if (value.length > 13) {
+      value = value.slice(0, 13);
+    }
 
     setForm((prev) => ({
       ...prev,
-      [name]: value,
+      phone: value,
     }));
+  };
+
+  const handlePhoneFocus = () => {
+    if (!form.phone || !form.phone.startsWith("+380")) {
+      setForm((prev) => ({
+        ...prev,
+        phone: "+380",
+      }));
+    }
+  };
+
+  const handleAddressChange = (e) => {
+    const value = e.target.value;
+
+    if (value === "" || addressRegex.test(value)) {
+      setForm((prev) => ({
+        ...prev,
+        address: value,
+      }));
+    }
+  };
+
+  const validateForm = () => {
+    const trimmedName = form.name.trim();
+    const trimmedPhone = form.phone.trim();
+    const trimmedAddress = form.address.trim();
+
+    if (!trimmedName) {
+      return "Вкажіть ім'я";
+    }
+
+    if (!nameRegex.test(trimmedName)) {
+      return "Ім'я може містити лише літери, пробіли, апостроф і дефіс";
+    }
+
+    if (!phoneRegex.test(trimmedPhone)) {
+      return "Номер телефону має бути у форматі +380XXXXXXXXX";
+    }
+
+    if (!trimmedAddress) {
+      return "Вкажіть адресу доставки";
+    }
+
+    if (!addressRegex.test(trimmedAddress)) {
+      return "Адреса може містити лише літери, цифри, пробіли, крапку, кому, дефіс і слеш";
+    }
+
+    if (cartItems.length === 0) {
+      return "Кошик порожній";
+    }
+
+    return "";
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const validationError = validateForm();
+
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
 
     try {
       setLoading(true);
       setError("");
 
       const orderData = {
-        name: form.name,
-        phone: form.phone,
-        address: form.address,
-        comment: form.comment,
+        name: form.name.trim(),
+        phone: form.phone.trim(),
+        address: form.address.trim(),
+        comment: form.comment.trim(),
         totalPrice,
         items: cartItems.map((item) => ({
           name: item.name,
@@ -50,9 +148,9 @@ export default function Checkout() {
 
       clearCart();
       navigate("/success");
-    } catch (error) {
-      console.error(error);
-      setError(error.message || "Не вдалося відправити замовлення");
+    } catch (err) {
+      console.error(err);
+      setError("Не вдалося відправити замовлення");
     } finally {
       setLoading(false);
     }
@@ -62,9 +160,8 @@ export default function Checkout() {
     <div
       style={{
         minHeight: "100vh",
-        backgroundColor: "#f6f6f6",
+        background: "#f7f7f7",
         padding: "40px 20px",
-        fontFamily: "Arial, sans-serif",
       }}
     >
       <div
@@ -78,212 +175,201 @@ export default function Checkout() {
       >
         <div
           style={{
-            backgroundColor: "#fff",
+            background: "#fff",
             borderRadius: "20px",
             padding: "24px",
-            boxShadow: "0 6px 18px rgba(0,0,0,0.08)",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
           }}
         >
-          <Link
-            to="/"
+          <button
+            onClick={() => navigate("/")}
             style={{
-              color: "#e53935",
-              textDecoration: "none",
-              fontWeight: "700",
+              border: "none",
+              background: "none",
+              color: "#ef4444",
+              fontWeight: 700,
+              cursor: "pointer",
+              marginBottom: "16px",
             }}
           >
-            ← Назад в меню
-          </Link>
+            ← Назад у меню
+          </button>
 
           <h1
             style={{
-              marginTop: "18px",
-              marginBottom: "8px",
-              fontSize: "34px",
-              color: "#222",
+              fontSize: "30px",
+              fontWeight: 800,
+              marginBottom: "10px",
             }}
           >
-            Оформление заказа
+            Оформлення замовлення
           </h1>
 
           <p
             style={{
-              marginTop: 0,
               color: "#666",
               marginBottom: "24px",
             }}
           >
-            Заполни данные для доставки
+            Заповніть дані для доставки
           </p>
 
           <form
             onSubmit={handleSubmit}
-            style={{ display: "grid", gap: "16px" }}
+            style={{ display: "grid", gap: "14px" }}
           >
             <input
               type="text"
-              name="name"
-              placeholder="Имя"
+              placeholder="Ім'я"
               value={form.name}
-              onChange={handleChange}
-              style={{
-                padding: "14px 16px",
-                borderRadius: "12px",
-                border: "1px solid #ddd",
-                fontSize: "16px",
-              }}
+              onChange={handleNameChange}
+              required
+              style={inputStyle}
             />
 
             <input
-              type="text"
-              name="phone"
-              placeholder="Телефон"
+              type="tel"
+              placeholder="+380XXXXXXXXX"
               value={form.phone}
-              onChange={handleChange}
-              style={{
-                padding: "14px 16px",
-                borderRadius: "12px",
-                border: "1px solid #ddd",
-                fontSize: "16px",
-              }}
+              onChange={handlePhoneChange}
+              onFocus={handlePhoneFocus}
+              required
+              style={inputStyle}
             />
 
             <input
               type="text"
-              name="address"
-              placeholder="Адрес"
+              placeholder="Адреса доставки"
               value={form.address}
-              onChange={handleChange}
-              style={{
-                padding: "14px 16px",
-                borderRadius: "12px",
-                border: "1px solid #ddd",
-                fontSize: "16px",
-              }}
+              onChange={handleAddressChange}
+              required
+              style={inputStyle}
             />
 
             <textarea
-              name="comment"
-              placeholder="Комментарий к заказу"
+              placeholder="Коментар до замовлення"
+              rows="4"
               value={form.comment}
-              onChange={handleChange}
-              rows={4}
-              style={{
-                padding: "14px 16px",
-                borderRadius: "12px",
-                border: "1px solid #ddd",
-                fontSize: "16px",
-                resize: "vertical",
-              }}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  comment: e.target.value,
+                }))
+              }
+              style={inputStyle}
             />
+
+            {error && (
+              <div
+                style={{
+                  padding: "12px",
+                  background: "#fff1f1",
+                  color: "#b42318",
+                  borderRadius: "10px",
+                  fontWeight: "600",
+                }}
+              >
+                {error}
+              </div>
+            )}
 
             <button
               type="submit"
+              disabled={loading}
               style={{
-                backgroundColor: "#e53935",
+                background: "#ef4444",
                 color: "#fff",
                 border: "none",
-                borderRadius: "12px",
+                borderRadius: "14px",
                 padding: "16px",
                 fontSize: "16px",
-
                 fontWeight: "700",
-                cursor: "pointer",
+                cursor: loading ? "default" : "pointer",
+                opacity: loading ? 0.7 : 1,
               }}
             >
-              Подтвердить заказ
+              {loading ? "Відправка..." : "Підтвердити замовлення"}
             </button>
           </form>
         </div>
 
         <div
           style={{
-            backgroundColor: "#fff",
+            background: "#fff",
             borderRadius: "20px",
             padding: "24px",
-            boxShadow: "0 6px 18px rgba(0,0,0,0.08)",
-            height: "fit-content",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
           }}
         >
           <h2
             style={{
-              marginTop: 0,
-              marginBottom: "18px",
-              fontSize: "26px",
-              color: "#222",
+              fontSize: "22px",
+              fontWeight: 800,
+              marginBottom: "16px",
             }}
           >
-            Ваш заказ
+            Ваше замовлення
           </h2>
 
-          {cartItems.length === 0 ? (
-            <p style={{ color: "#777" }}>Корзина пустая</p>
-          ) : (
-            <div style={{ display: "grid", gap: "14px" }}>
-              {cartItems.map((item) => (
+          <div style={{ display: "grid", gap: "14px" }}>
+            {cartItems.map((item) => (
+              <div
+                key={item.id}
+                style={{
+                  borderBottom: "1px solid #eee",
+                  paddingBottom: "10px",
+                }}
+              >
                 <div
-                  key={item.id}
                   style={{
-                    borderBottom: "1px solid #eee",
-                    paddingBottom: "12px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontWeight: 700,
                   }}
                 >
+                  <span>{item.name}</span>
+                  <span>
+                    {item.price * (item.paidQuantity ?? item.quantity)} грн
+                  </span>
+                </div>
+
+                <div
+                  style={{
+                    color: "#666",
+                    fontSize: "14px",
+                    marginTop: "4px",
+                  }}
+                >
+                  {item.quantity} × {item.price} грн
+                </div>
+
+                {item.freeQuantity > 0 && (
                   <div
                     style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: "12px",
+                      color: "#2e7d32",
+                      fontSize: "13px",
+                      fontWeight: "700",
                     }}
                   >
-                    <div>
-                      <div
-                        style={{
-                          fontWeight: "700",
-                          color: "#222",
-                        }}
-                      >
-                        {item.name}
-                      </div>
-
-                      <div
-                        style={{
-                          fontSize: "14px",
-                          color: "#666",
-                          marginTop: "4px",
-                        }}
-                      >
-                        {item.quantity} × {item.price} грн
-                      </div>
-                    </div>
-
-                    <div
-                      style={{
-                        fontWeight: "700",
-                        color: "#111",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {item.quantity * item.price} грн
-                    </div>
+                    Акція: {item.freeQuantity} шт у подарунок
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
+                )}
+              </div>
+            ))}
+          </div>
 
           <div
             style={{
               marginTop: "20px",
-              paddingTop: "16px",
-              borderTop: "2px solid #f0f0f0",
+              paddingTop: "14px",
+              borderTop: "1px solid #eee",
               display: "flex",
               justifyContent: "space-between",
-              fontSize: "24px",
-              fontWeight: "800",
-              color: "#111",
+              fontSize: "22px",
+              fontWeight: 800,
             }}
           >
-            <span>Итого</span>
+            <span>Разом</span>
             <span>{totalPrice} грн</span>
           </div>
         </div>

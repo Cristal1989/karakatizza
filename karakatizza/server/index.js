@@ -258,11 +258,11 @@ app.post("/order", async (req, res) => {
 
     let message = `🆕 НОВЕ ЗАМОВЛЕННЯ\n\n`;
 
-    message`+= 👤 Ім'я: ${name}\n`;
-    message`+= 📞 Телефон: ${phone}\n`;
-    message`+= 📍 Адреса: ${address}\n\n`;
+    message += `👤 Ім'я: ${name}\n`;
+    message += `📞 Телефон: ${phone}\n`;
+    message += `📍 Адреса: ${address}\n\n`;
 
-    message`+= 🧾 Замовлення:\n`;
+    message += `🧾 Замовлення:\n`;
 
     items.forEach((item) => {
       message += `• ${item.name} x${item.quantity}\n`;
