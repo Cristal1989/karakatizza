@@ -1,6 +1,7 @@
 import ProductCard from "./ProductCard";
+import { memo } from "react";
 
-export default function ProductGrid({ products }) {
+function ProductGrid({ products }) {
   if (!products || products.length === 0) {
     return (
       <div
@@ -31,3 +32,5 @@ export default function ProductGrid({ products }) {
     </div>
   );
 }
+
+export default memo(ProductGrid);

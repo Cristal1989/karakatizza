@@ -1,7 +1,8 @@
 import { useCart } from "../hooks/useCart";
 import { getImageUrl } from "../api/productsApi";
+import { memo } from "react";
 
-export default function ProductCard({ product }) {
+function ProductCard({ product }) {
   const { addToCart } = useCart();
 
   const imageSrc = getImageUrl(product.image);
@@ -25,12 +26,15 @@ export default function ProductCard({ product }) {
         }}
       >
         <img
-          src={imageSrc}
+          src={getImageUrl(product.image, { width: 500, height: 500 })}
           alt={product.name}
+          loading="lazy"
+          decoding="async"
           style={{
             width: "100%",
-            height: "200px",
+            height: "220px",
             objectFit: "cover",
+            display: "block",
           }}
         />
 
@@ -145,3 +149,5 @@ export default function ProductCard({ product }) {
     </div>
   );
 }
+
+export default memo(ProductCard);

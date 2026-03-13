@@ -36,8 +36,21 @@ export default function Home() {
   }
 
   const visibleProducts = useMemo(() => {
-    if (activeCategory === "all") return products;
-    return products.filter((product) => product.category === activeCategory);
+    let filtered = [...products];
+
+    if (activeCategory !== "all") {
+      filtered = filtered.filter(
+        (product) => product.category === activeCategory
+      );
+    }
+
+    filtered.sort((a, b) => {
+      const priorityA = Number(a.priority ?? 10);
+      const priorityB = Number(b.priority ?? 10);
+      return priorityA - priorityB;
+    });
+
+    return filtered;
   }, [products, activeCategory]);
 
   const upsellProducts = useMemo(() => {

@@ -136,6 +136,13 @@ export default function HeroSlider() {
           const image =
             isMobile && banner.mobileImage ? banner.mobileImage : banner.image;
 
+          const optimizedImage = getImageUrl(
+            image,
+            isMobile
+              ? { width: 900, height: 420, crop: "fill" }
+              : { width: 1600, height: 500, crop: "fill" }
+          );
+
           return (
             <SwiperSlide key={banner.id}>
               <a
@@ -144,7 +151,7 @@ export default function HeroSlider() {
               >
                 <div
                   className="heroSlide"
-                  style={{ backgroundImage: `url(${getImageUrl(image)})` }}
+                  style={{ backgroundImage: `url(${optimizedImage})` }}
                 >
                   {banner.endAt && (
                     <div className="heroTimer">

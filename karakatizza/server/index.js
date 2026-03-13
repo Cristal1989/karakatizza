@@ -7,7 +7,7 @@ import multer from "multer";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import { v4 as uuidv4 } from "uuid";
 import { fileURLToPath } from "url";
-
+import compression from "compression";
 import cloudinary from "./cloudinary.js";
 import { pool, initDb } from "./db.js";
 
@@ -19,6 +19,7 @@ const __dirname = path.dirname(__filename);
 const productsFilePath = path.join(__dirname, "data", "products.json");
 
 const app = express();
+app.use(compression());
 
 await initDb();
 
@@ -99,6 +100,8 @@ app.get("/products", async (req, res) => {
       promoType: p.promoType || "none",
     }));
 
+    res.set("Cache-Control", "public, max-age=120");
+
     return res.json(products);
   } catch (error) {
     return res.status(500).json({
@@ -132,6 +135,8 @@ app.get("/banners", async (req, res) => {
       clickCount: Number(banner.clickCount ?? 0),
       endAt: banner.endAt || null,
     }));
+
+    res.set("Cache-Control", "public, max-age=120");
 
     return res.json(banners);
   } catch (error) {
