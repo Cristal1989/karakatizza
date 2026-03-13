@@ -118,10 +118,14 @@ export default function Admin() {
 
     try {
       setMessage("");
+      console.log("DELETE ID:", id);
+
       await deleteProduct(id);
+
       setMessage("✅ Товар видалено");
       await loadProducts();
     } catch (error) {
+      console.error("DELETE ERROR:", error);
       setMessage(`❌ ${error.message}`);
     }
   };
@@ -503,6 +507,7 @@ export default function Admin() {
                     <div>
                       <div style={{ display: "grid", gap: "10px" }}>
                         <button
+                          type="button"
                           onClick={() => handleEdit(product)}
                           style={{
                             background: "#eef4ff",
@@ -518,6 +523,7 @@ export default function Admin() {
                         </button>
 
                         <button
+                          type="button"
                           onClick={() => handleDelete(product.id)}
                           style={{
                             background: "#fff1f1",

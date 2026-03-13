@@ -202,24 +202,22 @@ app.put("/products/:id", upload.single("image"), (req, res) => {
   }
 });
 
-app.delete("/products/:id", (req, res) => {
+app.delete("/products/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const products = readProducts();
 
-    const productToDelete = products.find(
-      (product) => String(product.id) === String(id)
+    const existing = await pool.query(
+      SELECT * FROM products WHERE id = $1,
+      [id]
     );
 
-    if (!productToDelete) {
+    if (existing.rows.length === 0) {
       return res.status(404).json({
         message: "Товар не знайдено",
       });
     }
 
-    const updatedProducts = products.filter(
-      (product) => String(product.id) !== String(id)
-    );
+    const productToDelete = existing.rows[0];
 
     if (
       productToDelete.image &&
@@ -237,7 +235,7 @@ app.delete("/products/:id", (req, res) => {
       }
     }
 
-    writeProducts(updatedProducts);
+    await pool.query(`DELETE FROM products WHERE id = $1`, [id]);
 
     return res.json({
       success: true,

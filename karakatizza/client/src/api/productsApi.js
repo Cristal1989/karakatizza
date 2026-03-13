@@ -38,25 +38,19 @@ export async function deleteProduct(id) {
     method: "DELETE",
   });
 
-  const data = await response.json();
+  const contentType = response.headers.get("content-type") || "";
+
+  let data = {};
+
+  if (contentType.includes("application/json")) {
+    data = await response.json();
+  } else {
+    const text = await response.text();
+    throw new Error(`Сервер повернув не JSON: ${text.slice(0, 200)}`);
+  }
 
   if (!response.ok) {
     throw new Error(data.message || "Не вдалося видалити товар");
-  }
-
-  return data;
-}
-
-export async function updateProduct(id, formData) {
-  const response = await fetch(`${API_BASE_URL}/products/${id}`, {
-    method: "PUT",
-    body: formData,
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || "Не вдалося оновити товар");
   }
 
   return data;
