@@ -161,7 +161,15 @@ app.post("/products", upload.single("image"), async (req, res) => {
 
     await pool.query(
       `INSERT INTO products (
-        id, name, price, category, description, image, popular, promo_type, priority
+        id,
+        name,
+        price,
+        category,
+        description,
+        image,
+        popular,
+        promo_type,
+        priority
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
       [
