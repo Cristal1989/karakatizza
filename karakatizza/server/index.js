@@ -1,12 +1,15 @@
-import { pool, initDb } from "./db.js";
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import multer from "multer";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
 import { v4 as uuidv4 } from "uuid";
 import { fileURLToPath } from "url";
+
+import cloudinary from "./cloudinary.js";
+import { pool, initDb } from "./db.js";
 
 dotenv.config();
 
@@ -14,7 +17,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const productsFilePath = path.join(__dirname, "data", "products.json");
-const uploadsDir = path.join(__dirname, "uploads");
 
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -22,13 +24,22 @@ if (!fs.existsSync(uploadsDir)) {
 
 const app = express();
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadsDir);
-  },
-  filename: function (req, file, cb) {
-    const ext = path.extname(file.originalname);
-    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
+await initDb();
+
+app.use(cors());
+app.use(express.json());
+
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: async (req, file) => {
+    const isBanner =
+      file.fieldname === "image" || file.fieldname === "mobileImage";
+
+    return {
+      folder: isBanner ? "karakatizza/banners" : "karakatizza/products",
+      allowed_formats: ["jpg", "jpeg", "png", "webp"],
+      public_id: `${Date.now()}-${Math.round(Math.random() * 1e9)}`,
+    };
   },
 });
 
@@ -50,10 +61,6 @@ function writeProducts(products) {
     "utf-8"
   );
 }
-
-app.use(cors());
-app.use(express.json());
-app.use("/uploads", express.static(uploadsDir));
 
 const PORT = process.env.PORT || 5000;
 const BOT_TOKEN = process.env.BOT_TOKEN;
@@ -142,10 +149,7 @@ app.post("/products", upload.single("image"), async (req, res) => {
       });
     }
 
-    let imageUrl = "";
-    if (req.file) {
-      imageUrl = `/uploads/${req.file.filename}`;
-    }
+    const imageUrl = req.file?.path || "";
 
     const newProduct = {
       id: uuidv4(),
@@ -211,8 +215,8 @@ app.post(
 
       const newBanner = {
         id: uuidv4(),
-        image: `/uploads/${desktopFile.filename}`,
-        mobileImage: mobileFile ? `/uploads/${mobileFile.filename}` : "",
+        image: desktopFile.path,
+        mobileImage: mobileFile ? mobileFile.path : "",
         link: link || "#menu",
         title: title || "",
         isActive: isActive === "true",
@@ -222,9 +226,9 @@ app.post(
 
       await pool.query(
         `INSERT INTO banners (
-        id, image, mobile_image, link, title, is_active, priority, end_at
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          id, image, mobile_image, link, title, is_active, priority, end_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
         [
           newBanner.id,
           newBanner.image,
@@ -276,18 +280,21 @@ app.put("/products/:id", upload.single("image"), async (req, res) => {
     let imageUrl = oldProduct.image || "";
 
     if (req.file) {
-      imageUrl = `/uploads/${req.file.filename}`;
+      imageUrl = req.file.path || "";
 
-      if (oldProduct.image && oldProduct.image.startsWith("/uploads/")) {
+      if (oldProduct.image && oldProduct.image.includes("res.cloudinary.com")) {
         try {
-          const oldFileName = oldProduct.image.replace("/uploads/", "");
-          const oldImagePath = path.join(uploadsDir, oldFileName);
+          const parts = oldProduct.image.split("/");
+          const uploadIndex = parts.findIndex((part) => part === "upload");
+          const publicIdWithExt = parts.slice(uploadIndex + 2).join("/");
+          const publicId = publicIdWithExt.replace(/\.[^/.]+$/, "");
 
-          if (fs.existsSync(oldImagePath)) {
-            fs.unlinkSync(oldImagePath);
-          }
-        } catch (fileError) {
-          console.error("Помилка видалення старого фото:", fileError.message);
+          await cloudinary.uploader.destroy(publicId);
+        } catch (deleteError) {
+          console.error(
+            "Помилка видалення старого фото з Cloudinary:",
+            deleteError.message
+          );
         }
       }
     }
@@ -371,15 +378,15 @@ app.put(
       let mobileImageUrl = oldBanner.mobile_image || "";
 
       if (desktopFile) {
-        imageUrl = `/uploads/${desktopFile.filename}`;
+        imageUrl = desktopFile.path;
 
-        if (oldBanner.image && oldBanner.image.startsWith("/uploads/")) {
+        if (oldBanner.image && oldBanner.image.includes("res.cloudinary.com")) {
           try {
-            const oldFileName = oldBanner.image.replace("/uploads/", "");
-            const oldImagePath = path.join(uploadsDir, oldFileName);
-            if (fs.existsSync(oldImagePath)) {
-              fs.unlinkSync(oldImagePath);
-            }
+            const parts = oldBanner.image.split("/");
+            const uploadIndex = parts.findIndex((part) => part === "upload");
+            const publicIdWithExt = parts.slice(uploadIndex + 2).join("/");
+            const publicId = publicIdWithExt.replace(/\.[^/.]+$/, "");
+            await cloudinary.uploader.destroy(publicId);
           } catch (fileError) {
             console.error(
               "Помилка видалення старого desktop-банера:",
@@ -390,18 +397,18 @@ app.put(
       }
 
       if (mobileFile) {
-        mobileImageUrl = `/uploads/${mobileFile.filename}`;
+        mobileImageUrl = mobileFile.path;
 
         if (
           oldBanner.mobile_image &&
-          oldBanner.mobile_image.startsWith("/uploads/")
+          oldBanner.mobile_image.includes("res.cloudinary.com")
         ) {
           try {
-            const oldFileName = oldBanner.mobile_image.replace("/uploads/", "");
-            const oldImagePath = path.join(uploadsDir, oldFileName);
-            if (fs.existsSync(oldImagePath)) {
-              fs.unlinkSync(oldImagePath);
-            }
+            const parts = oldBanner.mobile_image.split("/");
+            const uploadIndex = parts.findIndex((part) => part === "upload");
+            const publicIdWithExt = parts.slice(uploadIndex + 2).join("/");
+            const publicId = publicIdWithExt.replace(/\.[^/.]+$/, "");
+            await cloudinary.uploader.destroy(publicId);
           } catch (fileError) {
             console.error(
               "Помилка видалення старого mobile-банера:",
@@ -424,14 +431,14 @@ app.put(
 
       await pool.query(
         `UPDATE banners
-       SET image = $1,
-           mobile_image = $2,
-           link = $3,
-           title = $4,
-           is_active = $5,
-           priority = $6,
-           end_at = $7
-       WHERE id = $8`,
+         SET image = $1,
+             mobile_image = $2,
+             link = $3,
+             title = $4,
+             is_active = $5,
+             priority = $6,
+             end_at = $7
+         WHERE id = $8`,
         [
           updatedBanner.image,
           updatedBanner.mobileImage,
@@ -477,17 +484,20 @@ app.delete("/products/:id", async (req, res) => {
 
     if (
       productToDelete.image &&
-      productToDelete.image.startsWith("/uploads/")
+      productToDelete.image.includes("res.cloudinary.com")
     ) {
       try {
-        const fileName = productToDelete.image.replace("/uploads/", "");
-        const imagePath = path.join(uploadsDir, fileName);
+        const parts = productToDelete.image.split("/");
+        const uploadIndex = parts.findIndex((part) => part === "upload");
+        const publicIdWithExt = parts.slice(uploadIndex + 2).join("/");
+        const publicId = publicIdWithExt.replace(/\.[^/.]+$/, "");
 
-        if (fs.existsSync(imagePath)) {
-          fs.unlinkSync(imagePath);
-        }
-      } catch (fileError) {
-        console.error("Помилка видалення файлу:", fileError.message);
+        await cloudinary.uploader.destroy(publicId);
+      } catch (deleteError) {
+        console.error(
+          "Помилка видалення фото з Cloudinary:",
+          deleteError.message
+        );
       }
     }
 
@@ -522,16 +532,23 @@ app.delete("/banners/:id", async (req, res) => {
 
     const bannerToDelete = existing.rows[0];
 
-    if (bannerToDelete.image && bannerToDelete.image.startsWith("/uploads/")) {
-      try {
-        const fileName = bannerToDelete.image.replace("/uploads/", "");
-        const imagePath = path.join(uploadsDir, fileName);
-
-        if (fs.existsSync(imagePath)) {
-          fs.unlinkSync(imagePath);
+    for (const imageUrl of [
+      bannerToDelete.image,
+      bannerToDelete.mobile_image,
+    ]) {
+      if (imageUrl && imageUrl.includes("res.cloudinary.com")) {
+        try {
+          const parts = imageUrl.split("/");
+          const uploadIndex = parts.findIndex((part) => part === "upload");
+          const publicIdWithExt = parts.slice(uploadIndex + 2).join("/");
+          const publicId = publicIdWithExt.replace(/\.[^/.]+$/, "");
+          await cloudinary.uploader.destroy(publicId);
+        } catch (fileError) {
+          console.error(
+            "Помилка видалення банера з Cloudinary:",
+            fileError.message
+          );
         }
-      } catch (fileError) {
-        console.error("Помилка видалення файлу банера:", fileError.message);
       }
     }
 
