@@ -301,12 +301,13 @@ app.put("/products/:id", upload.single("image"), async (req, res) => {
           const publicIdWithExt = parts.slice(uploadIndex + 2).join("/");
           const publicId = publicIdWithExt.replace(/\.[^/.]+$/, "");
 
-          await cloudinary.uploader.destroy(publicId);
+          try {
+            await cloudinary.uploader.destroy(publicId);
+          } catch (err) {
+            console.log("Cloudinary delete error:", err.message);
+          }
         } catch (deleteError) {
-          console.error(
-            "Помилка видалення старого фото з Cloudinary:",
-            deleteError.message
-          );
+          console.error("Помилка видалення старого фото:", deleteError.message);
         }
       }
     }
