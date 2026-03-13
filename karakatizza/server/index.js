@@ -97,6 +97,35 @@ app.get("/products", async (req, res) => {
   }
 });
 
+app.get("/banners", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        id,
+        image,
+        link,
+        title,
+        is_active AS "isActive",
+        priority
+      FROM banners
+      ORDER BY priority ASC, created_at ASC
+    `);
+
+    const banners = result.rows.map((banner) => ({
+      ...banner,
+      isActive: !!banner.isActive,
+      priority: Number(banner.priority ?? 10),
+    }));
+
+    return res.json(banners);
+  } catch (error) {
+    return res.status(500).json({
+      message: "Не вдалося отримати банери",
+      error: error.message,
+    });
+  }
+});
+
 app.post("/products", upload.single("image"), async (req, res) => {
   try {
     const { name, price, category, description, popular, promoType, priority } =
@@ -151,6 +180,52 @@ app.post("/products", upload.single("image"), async (req, res) => {
     console.error("POST PRODUCT ERROR:", error);
     return res.status(500).json({
       message: "Помилка створення товару",
+      error: error.message,
+    });
+  }
+});
+
+app.post("/banners", upload.single("image"), async (req, res) => {
+  try {
+    const { link, title, isActive, priority } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({
+        message: "Потрібно завантажити зображення банера",
+      });
+    }
+
+    const newBanner = {
+      id: uuidv4(),
+      image: `/uploads/${req.file.filename}`,
+      link: link || "#menu",
+      title: title || "",
+      isActive: isActive === "true",
+      priority: Number(priority) || 10,
+    };
+
+    await pool.query(
+      `INSERT INTO banners (id, image, link, title, is_active, priority)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [
+        newBanner.id,
+        newBanner.image,
+        newBanner.link,
+        newBanner.title,
+        newBanner.isActive,
+        newBanner.priority,
+      ]
+    );
+
+    return res.status(201).json({
+      success: true,
+      banner: newBanner,
+    });
+  } catch (error) {
+    console.error("POST BANNER ERROR:", error);
+
+    return res.status(500).json({
+      message: "Помилка створення банера",
       error: error.message,
     });
   }
@@ -245,6 +320,82 @@ app.put("/products/:id", upload.single("image"), async (req, res) => {
   }
 });
 
+app.put("/banners/:id", upload.single("image"), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { link, title, isActive, priority } = req.body;
+
+    const existing = await pool.query(`SELECT * FROM banners WHERE id = $1`, [
+      id,
+    ]);
+
+    if (existing.rows.length === 0) {
+      return res.status(404).json({
+        message: "Банер не знайдено",
+      });
+    }
+
+    const oldBanner = existing.rows[0];
+    let imageUrl = oldBanner.image || "";
+
+    if (req.file) {
+      imageUrl = `/uploads/${req.file.filename}`;
+
+      if (oldBanner.image && oldBanner.image.startsWith("/uploads/")) {
+        try {
+          const oldFileName = oldBanner.image.replace("/uploads/", "");
+          const oldImagePath = path.join(uploadsDir, oldFileName);
+
+          if (fs.existsSync(oldImagePath)) {
+            fs.unlinkSync(oldImagePath);
+          }
+        } catch (fileError) {
+          console.error("Помилка видалення старого банера:", fileError.message);
+        }
+      }
+    }
+
+    const updatedBanner = {
+      id,
+      image: imageUrl,
+      link: link || "#menu",
+      title: title || "",
+      isActive: isActive === "true",
+      priority: Number(priority) || 10,
+    };
+
+    await pool.query(
+      `UPDATE banners
+       SET image = $1,
+           link = $2,
+           title = $3,
+           is_active = $4,
+           priority = $5
+       WHERE id = $6`,
+      [
+        updatedBanner.image,
+        updatedBanner.link,
+        updatedBanner.title,
+        updatedBanner.isActive,
+        updatedBanner.priority,
+        updatedBanner.id,
+      ]
+    );
+
+    return res.json({
+      success: true,
+      banner: updatedBanner,
+    });
+  } catch (error) {
+    console.error("PUT BANNER ERROR:", error);
+
+    return res.status(500).json({
+      message: "Помилка оновлення банера",
+      error: error.message,
+    });
+  }
+});
+
 app.delete("/products/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -287,6 +438,51 @@ app.delete("/products/:id", async (req, res) => {
     console.error("DELETE PRODUCT ERROR:", error);
     return res.status(500).json({
       message: "Не вдалося видалити товар",
+      error: error.message,
+    });
+  }
+});
+
+app.delete("/banners/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const existing = await pool.query(`SELECT * FROM banners WHERE id = $1`, [
+      id,
+    ]);
+
+    if (existing.rows.length === 0) {
+      return res.status(404).json({
+        message: "Банер не знайдено",
+      });
+    }
+
+    const bannerToDelete = existing.rows[0];
+
+    if (bannerToDelete.image && bannerToDelete.image.startsWith("/uploads/")) {
+      try {
+        const fileName = bannerToDelete.image.replace("/uploads/", "");
+        const imagePath = path.join(uploadsDir, fileName);
+
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+        }
+      } catch (fileError) {
+        console.error("Помилка видалення файлу банера:", fileError.message);
+      }
+    }
+
+    await pool.query(`DELETE FROM banners WHERE id = $1`, [id]);
+
+    return res.json({
+      success: true,
+      message: "Банер видалено",
+    });
+  } catch (error) {
+    console.error("DELETE BANNER ERROR:", error);
+
+    return res.status(500).json({
+      message: "Не вдалося видалити банер",
       error: error.message,
     });
   }

@@ -46,4 +46,36 @@ export async function initDb() {
     ALTER TABLE products
     ADD COLUMN IF NOT EXISTS promo_type TEXT DEFAULT 'none';
   `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS banners (
+      id TEXT PRIMARY KEY,
+      image TEXT NOT NULL,
+      link TEXT DEFAULT '#menu',
+      title TEXT DEFAULT '',
+      is_active BOOLEAN DEFAULT TRUE,
+      priority INTEGER DEFAULT 10,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+  `);
+
+  await pool.query(`
+    ALTER TABLE banners
+    ADD COLUMN IF NOT EXISTS link TEXT DEFAULT '#menu';
+  `);
+
+  await pool.query(`
+    ALTER TABLE banners
+    ADD COLUMN IF NOT EXISTS title TEXT DEFAULT '';
+  `);
+
+  await pool.query(`
+    ALTER TABLE banners
+    ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
+  `);
+
+  await pool.query(`
+    ALTER TABLE banners
+    ADD COLUMN IF NOT EXISTS priority INTEGER DEFAULT 10;
+  `);
 }

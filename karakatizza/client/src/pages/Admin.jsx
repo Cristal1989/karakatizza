@@ -6,6 +6,12 @@ import {
   updateProduct,
   getImageUrl,
 } from "../api/productsApi";
+import {
+  getBanners,
+  createBanner,
+  updateBanner,
+  deleteBanner,
+} from "../api/bannersApi";
 
 const sidebarItems = [
   { key: "products", label: "Товари", icon: "🍣" },
@@ -51,8 +57,21 @@ export default function Admin() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
 
+  const [banners, setBanners] = useState([]);
+  const [bannersLoading, setBannersLoading] = useState(true);
+  const [bannerEditingId, setBannerEditingId] = useState(null);
+  const [bannerImage, setBannerImage] = useState(null);
+  const [bannerPreview, setBannerPreview] = useState("");
+  const [bannerForm, setBannerForm] = useState({
+    title: "",
+    link: "#menu",
+    priority: 10,
+    isActive: true,
+  });
+
   useEffect(() => {
     loadProducts();
+    loadBanners();
   }, []);
 
   async function loadProducts() {
@@ -65,6 +84,19 @@ export default function Admin() {
       setMessage(`❌ ${error.message}`);
     } finally {
       setProductsLoading(false);
+    }
+  }
+
+  async function loadBanners() {
+    try {
+      setBannersLoading(true);
+      const data = await getBanners();
+      setBanners(data);
+    } catch (error) {
+      console.error(error);
+      setMessage(`❌ ${error.message}`);
+    } finally {
+      setBannersLoading(false);
     }
   }
 
@@ -262,6 +294,107 @@ export default function Admin() {
 
     const fileInput = document.getElementById("image-input");
     if (fileInput) fileInput.value = "";
+  };
+
+  const handleBannerChange = (e) => {
+    const { name, value, type, checked } = e.target;
+
+    setBannerForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleBannerFileChange = (e) => {
+    const file = e.target.files[0] || null;
+    setBannerImage(file);
+
+    if (file) {
+      const previewUrl = URL.createObjectURL(file);
+      setBannerPreview(previewUrl);
+    } else {
+      setBannerPreview("");
+    }
+  };
+
+  const handleBannerSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      setLoading(true);
+      setMessage("");
+
+      const formData = new FormData();
+      formData.append("title", bannerForm.title);
+      formData.append("link", bannerForm.link);
+      formData.append("priority", bannerForm.priority);
+      formData.append("isActive", bannerForm.isActive);
+
+      if (bannerImage) {
+        formData.append("image", bannerImage);
+      }
+
+      if (bannerEditingId) {
+        await updateBanner(bannerEditingId, formData);
+        setMessage("✅ Банер оновлено");
+      } else {
+        await createBanner(formData);
+        setMessage("✅ Банер додано");
+      }
+
+      setBannerForm({
+        title: "",
+        link: "#menu",
+        priority: 10,
+        isActive: true,
+      });
+
+      setBannerImage(null);
+      setBannerPreview("");
+      setBannerEditingId(null);
+
+      const fileInput = document.getElementById("banner-image-input");
+      if (fileInput) fileInput.value = "";
+
+      await loadBanners();
+    } catch (error) {
+      console.error(error);
+      setMessage(`❌ ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBannerEdit = (banner) => {
+    setActiveSection("hero");
+    setBannerEditingId(banner.id);
+
+    setBannerForm({
+      title: banner.title || "",
+      link: banner.link || "#menu",
+      priority: Number(banner.priority ?? 10),
+      isActive: !!banner.isActive,
+    });
+
+    setBannerImage(null);
+    setBannerPreview(getImageUrl(banner.image));
+    setMessage("");
+  };
+
+  const handleBannerDelete = async (id) => {
+    const confirmed = window.confirm("Видалити цей банер?");
+
+    if (!confirmed) return;
+
+    try {
+      setMessage("");
+      await deleteBanner(id);
+      setMessage("✅ Банер видалено");
+      await loadBanners();
+    } catch (error) {
+      console.error(error);
+      setMessage(`❌ ${error.message}`);
+    }
   };
 
   return (
@@ -837,10 +970,316 @@ export default function Admin() {
           )}
 
           {activeSection === "hero" && (
-            <PlaceholderCard
-              title="Банер на головній"
-              text="Тут пізніше зробимо керування головним банером, заголовком, кнопками та фото."
-            />
+            <>
+              <section
+                style={{
+                  background: "#fff",
+                  borderRadius: "24px",
+                  padding: "24px",
+                  boxShadow: "0 12px 30px rgba(0,0,0,0.06)",
+                }}
+              >
+                <h2
+                  style={{
+                    fontSize: "30px",
+                    fontWeight: 800,
+                    marginBottom: "12px",
+                  }}
+                >
+                  Банери на головній
+                </h2>
+
+                <p
+                  style={{
+                    color: "#667085",
+                    marginBottom: "24px",
+                  }}
+                >
+                  Додавай дизайнерські банери для головного слайдера
+                </p>
+
+                <form
+                  onSubmit={handleBannerSubmit}
+                  style={{ display: "grid", gap: "16px" }}
+                >
+                  <input
+                    type="text"
+                    name="title"
+                    placeholder="Назва банера (для себе)"
+                    value={bannerForm.title}
+                    onChange={handleBannerChange}
+                    style={inputStyle}
+                  />
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 180px",
+                      gap: "16px",
+                    }}
+                  >
+                    <input
+                      type="text"
+                      name="link"
+                      placeholder="Посилання, наприклад #menu"
+                      value={bannerForm.link}
+                      onChange={handleBannerChange}
+                      style={inputStyle}
+                    />
+
+                    <input
+                      type="number"
+                      name="priority"
+                      min="1"
+                      max="10"
+                      value={bannerForm.priority}
+                      onChange={handleBannerChange}
+                      style={inputStyle}
+                    />
+                  </div>
+
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      padding: "14px 16px",
+                      border: "1px solid #ddd",
+                      borderRadius: "12px",
+                      background: "#fff",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      name="isActive"
+                      checked={bannerForm.isActive}
+                      onChange={handleBannerChange}
+                    />
+                    <span style={{ fontWeight: 700 }}>Показувати банер</span>
+                  </label>
+
+                  <input
+                    id="banner-image-input"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleBannerFileChange}
+                    style={inputStyle}
+                  />
+
+                  {bannerPreview && (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "16px",
+                        padding: "16px",
+                        borderRadius: "18px",
+                        border: "1px solid #eee",
+                        background: "#fafafa",
+                      }}
+                    >
+                      <img
+                        src={bannerPreview}
+                        alt="banner preview"
+                        style={{
+                          width: "220px",
+                          height: "110px",
+                          objectFit: "cover",
+                          borderRadius: "16px",
+                        }}
+                      />
+
+                      <div>
+                        <div style={{ fontWeight: 800, marginBottom: "6px" }}>
+                          Попередній перегляд банера
+                        </div>
+                        <div style={{ color: "#667085", fontSize: "14px" }}>
+                          {bannerImage
+                            ? "Нове зображення вибрано, ще не збережено"
+                            : "Поточне зображення банера"}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div
+                    style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}
+                  >
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      style={primaryButtonStyle}
+                    >
+                      {loading
+                        ? "Збереження..."
+                        : bannerEditingId
+                        ? "Зберегти банер"
+                        : "Додати банер"}
+                    </button>
+
+                    {bannerEditingId && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBannerEditingId(null);
+                          setBannerImage(null);
+                          setBannerPreview("");
+                          setBannerForm({
+                            title: "",
+                            link: "#menu",
+                            priority: 10,
+                            isActive: true,
+                          });
+
+                          const fileInput =
+                            document.getElementById("banner-image-input");
+                          if (fileInput) fileInput.value = "";
+                        }}
+                        style={secondaryButtonStyle}
+                      >
+                        Скасувати редагування
+                      </button>
+                    )}
+                  </div>
+                </form>
+              </section>
+
+              <section
+                style={{
+                  background: "#fff",
+                  borderRadius: "24px",
+                  padding: "24px",
+                  boxShadow: "0 12px 30px rgba(0,0,0,0.06)",
+                }}
+              >
+                <h3
+                  style={{
+                    fontSize: "26px",
+                    fontWeight: 800,
+                    marginBottom: "18px",
+                  }}
+                >
+                  Список банерів
+                </h3>
+
+                {bannersLoading ? (
+                  <div style={{ color: "#667085", fontWeight: 600 }}>
+                    Завантаження...
+                  </div>
+                ) : banners.length === 0 ? (
+                  <div style={{ color: "#667085", fontWeight: 600 }}>
+                    Банерів поки немає
+                  </div>
+                ) : (
+                  <div style={{ display: "grid", gap: "14px" }}>
+                    {[...banners]
+                      .sort(
+                        (a, b) =>
+                          Number(a.priority ?? 10) - Number(b.priority ?? 10)
+                      )
+                      .map((banner) => (
+                        <div
+                          key={banner.id}
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "220px 1fr auto",
+                            gap: "16px",
+                            alignItems: "center",
+                            border: "1px solid #eee",
+                            borderRadius: "18px",
+                            padding: "14px",
+                          }}
+                        >
+                          <img
+                            src={getImageUrl(banner.image)}
+                            alt={banner.title || "banner"}
+                            style={{
+                              width: "220px",
+                              height: "110px",
+                              objectFit: "cover",
+                              borderRadius: "14px",
+                            }}
+                          />
+
+                          <div>
+                            <div
+                              style={{
+                                fontWeight: 800,
+                                fontSize: "18px",
+                                marginBottom: "6px",
+                              }}
+                            >
+                              {banner.title || "Без назви"}
+                            </div>
+
+                            <div
+                              style={{ color: "#667085", marginBottom: "6px" }}
+                            >
+                              Посилання: {banner.link || "#menu"}
+                            </div>
+
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: "8px",
+                                flexWrap: "wrap",
+                              }}
+                            >
+                              <span style={badgeStyle("#f3f4f6", "#111827")}>
+                                Пріоритет: {Number(banner.priority ?? 10)}
+                              </span>
+
+                              <span
+                                style={badgeStyle(
+                                  banner.isActive ? "#ecfdf3" : "#fef2f2",
+                                  banner.isActive ? "#027a48" : "#b42318"
+                                )}
+                              >
+                                {banner.isActive ? "Активний" : "Вимкнений"}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div style={{ display: "grid", gap: "10px" }}>
+                            <button
+                              type="button"
+                              onClick={() => handleBannerEdit(banner)}
+                              style={{
+                                background: "#eef4ff",
+                                color: "#1d4ed8",
+                                border: "1px solid #c7d7fe",
+                                borderRadius: "12px",
+                                padding: "10px 14px",
+                                fontWeight: 700,
+                                cursor: "pointer",
+                              }}
+                            >
+                              Редагувати
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleBannerDelete(banner.id)}
+                              style={{
+                                background: "#fff1f1",
+                                color: "#c62828",
+                                border: "1px solid #f3c0c0",
+                                borderRadius: "12px",
+                                padding: "10px 14px",
+                                fontWeight: 700,
+                                cursor: "pointer",
+                              }}
+                            >
+                              Видалити
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </section>
+            </>
           )}
 
           {activeSection === "promos" && (

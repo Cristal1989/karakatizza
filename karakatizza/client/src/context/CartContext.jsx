@@ -2,22 +2,24 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 const CartContext = createContext();
 
-function calculatePromo(quantity, promoType) {
-  const safeQuantity = Number(quantity) || 0;
+function calculatePromo(paidQuantity, promoType) {
+  const safePaidQuantity = Number(paidQuantity) || 0;
 
   if (promoType === "2plus1") {
-    const freeQuantity = Math.floor(safeQuantity / 3);
-    const paidQuantity = safeQuantity - freeQuantity;
+    const freeQuantity = Math.floor(safePaidQuantity / 2);
+    const totalQuantity = safePaidQuantity + freeQuantity;
 
     return {
-      paidQuantity,
+      paidQuantity: safePaidQuantity,
       freeQuantity,
+      totalQuantity,
     };
   }
 
   return {
-    paidQuantity: safeQuantity,
+    paidQuantity: safePaidQuantity,
     freeQuantity: 0,
+    totalQuantity: safePaidQuantity,
   };
 }
 
@@ -34,20 +36,22 @@ export function CartProvider({ children }) {
   }, [cartItems]);
 
   const addToCart = (product, quantity = 1) => {
-    const safeQuantity = Number(quantity) || 1;
+    const safePaidQuantity = Number(quantity) || 1;
 
     setCartItems((prev) => {
       const existingItem = prev.find((item) => item.id === product.id);
 
       if (existingItem) {
-        const newQuantity = existingItem.quantity + safeQuantity;
-        const promo = calculatePromo(newQuantity, existingItem.promoType);
+        const newPaidQuantity =
+          (existingItem.paidQuantity ?? existingItem.quantity ?? 0) +
+          safePaidQuantity;
+        const promo = calculatePromo(newPaidQuantity, existingItem.promoType);
 
         return prev.map((item) =>
           item.id === product.id
             ? {
                 ...item,
-                quantity: newQuantity,
+                quantity: promo.totalQuantity,
                 paidQuantity: promo.paidQuantity,
                 freeQuantity: promo.freeQuantity,
               }
@@ -55,13 +59,13 @@ export function CartProvider({ children }) {
         );
       }
 
-      const promo = calculatePromo(safeQuantity, product.promoType);
+      const promo = calculatePromo(safePaidQuantity, product.promoType);
 
       return [
         ...prev,
         {
           ...product,
-          quantity: safeQuantity,
+          quantity: promo.totalQuantity,
           paidQuantity: promo.paidQuantity,
           freeQuantity: promo.freeQuantity,
         },
@@ -84,12 +88,12 @@ export function CartProvider({ children }) {
       prev.map((item) => {
         if (item.id !== productId) return item;
 
-        const newQuantity = item.quantity + 1;
-        const promo = calculatePromo(newQuantity, item.promoType);
+        const newPaidQuantity = (item.paidQuantity ?? item.quantity ?? 0) + 1;
+        const promo = calculatePromo(newPaidQuantity, item.promoType);
 
         return {
           ...item,
-          quantity: newQuantity,
+          quantity: promo.totalQuantity,
           paidQuantity: promo.paidQuantity,
           freeQuantity: promo.freeQuantity,
         };
@@ -103,17 +107,18 @@ export function CartProvider({ children }) {
         .map((item) => {
           if (item.id !== productId) return item;
 
-          const newQuantity = item.quantity - 1;
+          const currentPaidQuantity = item.paidQuantity ?? item.quantity ?? 0;
+          const newPaidQuantity = currentPaidQuantity - 1;
 
-          if (newQuantity <= 0) {
+          if (newPaidQuantity <= 0) {
             return null;
           }
 
-          const promo = calculatePromo(newQuantity, item.promoType);
+          const promo = calculatePromo(newPaidQuantity, item.promoType);
 
           return {
             ...item,
-            quantity: newQuantity,
+            quantity: promo.totalQuantity,
             paidQuantity: promo.paidQuantity,
             freeQuantity: promo.freeQuantity,
           };
@@ -123,12 +128,12 @@ export function CartProvider({ children }) {
   };
 
   const totalItems = useMemo(() => {
-    return cartItems.reduce((sum, item) => sum + item.quantity, 0);
+    return cartItems.reduce((sum, item) => sum + (item.quantity ?? 0), 0);
   }, [cartItems]);
 
   const totalPrice = useMemo(() => {
     return cartItems.reduce((sum, item) => {
-      const paidQuantity = item.paidQuantity ?? item.quantity;
+      const paidQuantity = item.paidQuantity ?? item.quantity ?? 0;
       return sum + item.price * paidQuantity;
     }, 0);
   }, [cartItems]);

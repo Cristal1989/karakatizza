@@ -1,3 +1,5 @@
+import HeroSlider from "../components/HeroSlider";
+
 const scrollToMenu = () => {
   const menu = document.getElementById("menu");
   if (menu) {
@@ -85,16 +87,7 @@ export default function Hero() {
             background: "#f5f5f5",
           }}
         >
-          <img
-            src="/images/fola.jpeg"
-            alt="ролл"
-            style={{
-              width: "100%",
-              height: "340px",
-              objectFit: "cover",
-              display: "block",
-            }}
-          />
+          <HeroSlider />
         </div>
       </div>
     </section>

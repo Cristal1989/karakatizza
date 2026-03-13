@@ -1,0 +1,25 @@
+.heroSlider {
+  margin-bottom: 40px;
+}
+
+.heroSlide {
+  height: 340px;
+  border-radius: 18px;
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  transition: transform 0.25s ease;
+}
+
+.heroSlide:hover {
+  transform: scale(1.02);
+}
+
+.swiper-pagination-bullet {
+  background: white;
+  opacity: 0.7;
+}
+
+.swiper-pagination-bullet-active {
+  opacity: 1;
+}
