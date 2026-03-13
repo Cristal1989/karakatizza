@@ -66,16 +66,24 @@ app.get("/", (req, res) => {
 app.get("/products", async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT id, name, price, category, description, image,
-      popular,
-      promo_type AS "promoType"
+      SELECT 
+        id,
+        name,
+        price,
+        category,
+        description,
+        image,
+        popular,
+        promo_type AS "promoType",
+        priority
       FROM products
-      ORDER BY created_at ASC
+      ORDER BY priority ASC, created_at ASC
     `);
 
     const products = result.rows.map((p) => ({
       ...p,
       price: Number(p.price),
+      priority: Number(p.priority ?? 10),
       popular: !!p.popular,
       promoType: p.promoType || "none",
     }));
@@ -91,8 +99,8 @@ app.get("/products", async (req, res) => {
 
 app.post("/products", upload.single("image"), async (req, res) => {
   try {
-    const products = readProducts();
-    const { name, price, category, description, popular, promoType } = req.body;
+    const { name, price, category, description, popular, promoType, priority } =
+      req.body;
 
     if (!name || !price || !category) {
       return res.status(400).json({
@@ -101,7 +109,6 @@ app.post("/products", upload.single("image"), async (req, res) => {
     }
 
     let imageUrl = "";
-
     if (req.file) {
       imageUrl = `/uploads/${req.file.filename}`;
     }
@@ -115,10 +122,26 @@ app.post("/products", upload.single("image"), async (req, res) => {
       image: imageUrl,
       popular: popular === "true",
       promoType: promoType || "none",
+      priority: Number(priority) || 10,
     };
 
-    products.push(newProduct);
-    writeProducts(products);
+    await pool.query(
+      `INSERT INTO products (
+        id, name, price, category, description, image, popular, promo_type, priority
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [
+        newProduct.id,
+        newProduct.name,
+        newProduct.price,
+        newProduct.category,
+        newProduct.description,
+        newProduct.image,
+        newProduct.popular,
+        newProduct.promoType,
+        newProduct.priority,
+      ]
+    );
 
     return res.status(201).json({
       success: true,
@@ -126,7 +149,6 @@ app.post("/products", upload.single("image"), async (req, res) => {
     });
   } catch (error) {
     console.error("POST PRODUCT ERROR:", error);
-
     return res.status(500).json({
       message: "Помилка створення товару",
       error: error.message,
@@ -134,10 +156,11 @@ app.post("/products", upload.single("image"), async (req, res) => {
   }
 });
 
-app.put("/products/:id", upload.single("image"), (req, res) => {
+app.put("/products/:id", upload.single("image"), async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, price, category, description, popular, promoType } = req.body;
+    const { name, price, category, description, popular, promoType, priority } =
+      req.body;
 
     if (!name || !price || !category) {
       return res.status(400).json({
@@ -145,16 +168,15 @@ app.put("/products/:id", upload.single("image"), (req, res) => {
       });
     }
 
-    const products = readProducts();
-    const productIndex = products.findIndex(
-      (product) => String(product.id) === String(id)
-    );
+    const existing = await pool.query(`SELECT * FROM products WHERE id = $1`, [
+      id,
+    ]);
 
-    if (productIndex === -1) {
+    if (existing.rows.length === 0) {
       return res.status(404).json({ message: "Товар не знайдено" });
     }
 
-    const oldProduct = products[productIndex];
+    const oldProduct = existing.rows[0];
     let imageUrl = oldProduct.image || "";
 
     if (req.file) {
@@ -175,7 +197,7 @@ app.put("/products/:id", upload.single("image"), (req, res) => {
     }
 
     const updatedProduct = {
-      ...oldProduct,
+      id,
       name,
       price: Number(price),
       category,
@@ -183,10 +205,32 @@ app.put("/products/:id", upload.single("image"), (req, res) => {
       image: imageUrl,
       popular: popular === "true",
       promoType: promoType || "none",
+      priority: Number(priority) || 10,
     };
 
-    products[productIndex] = updatedProduct;
-    writeProducts(products);
+    await pool.query(
+      `UPDATE products
+       SET name = $1,
+           price = $2,
+           category = $3,
+           description = $4,
+           image = $5,
+           popular = $6,
+           promo_type = $7,
+           priority = $8
+       WHERE id = $9`,
+      [
+        updatedProduct.name,
+        updatedProduct.price,
+        updatedProduct.category,
+        updatedProduct.description,
+        updatedProduct.image,
+        updatedProduct.popular,
+        updatedProduct.promoType,
+        updatedProduct.priority,
+        updatedProduct.id,
+      ]
+    );
 
     return res.json({
       success: true,
@@ -194,7 +238,6 @@ app.put("/products/:id", upload.single("image"), (req, res) => {
     });
   } catch (error) {
     console.error("PUT PRODUCT ERROR:", error);
-
     return res.status(500).json({
       message: "Помилка оновлення товару",
       error: error.message,

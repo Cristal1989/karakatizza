@@ -17,17 +17,18 @@ async function migrate() {
   for (const product of products) {
     await pool.query(
       `INSERT INTO products (
-        id, name, price, category, description, image, popular, promo_type
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      ON CONFLICT (id) DO UPDATE SET
-        name = EXCLUDED.name,
-        price = EXCLUDED.price,
-        category = EXCLUDED.category,
-        description = EXCLUDED.description,
-        image = EXCLUDED.image,
-        popular = EXCLUDED.popular,
-        promo_type = EXCLUDED.promo_type`,
+    id, name, price, category, description, image, popular, promo_type, priority
+  )
+  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+  ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name,
+    price = EXCLUDED.price,
+    category = EXCLUDED.category,
+    description = EXCLUDED.description,
+    image = EXCLUDED.image,
+    popular = EXCLUDED.popular,
+    promo_type = EXCLUDED.promo_type,
+    priority = EXCLUDED.priority`,
       [
         product.id,
         product.name,
@@ -37,6 +38,7 @@ async function migrate() {
         product.image || "",
         !!product.popular,
         product.promoType || "none",
+        Number(product.priority) || 10,
       ]
     );
   }
