@@ -304,7 +304,7 @@ app.put("/products/:id", (req, res) => {
         `SELECT * FROM products WHERE id = $1`,
         [id]
       );
-
+      req.file;
       if (existing.rows.length === 0) {
         return res.status(404).json({ message: "Товар не знайдено" });
       }
@@ -313,7 +313,9 @@ app.put("/products/:id", (req, res) => {
       let imageUrl = oldProduct.image || "";
 
       if (req.file) {
-        imageUrl = req.file.path || "";
+        console.log("UPLOAD FILE:", req.file);
+
+        imageUrl = req.file.path || req.file.secure_url || oldProduct.image;
 
         if (
           oldProduct.image &&
