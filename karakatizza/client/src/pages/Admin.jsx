@@ -81,18 +81,19 @@ export default function Admin() {
     loadBanners();
   }, []);
 
-  async function loadProducts() {
+  const loadProducts = async () => {
     try {
       setProductsLoading(true);
       const data = await getProducts();
+      console.log("LOADED PRODUCTS:", data);
       setProducts(data);
-    } catch (error) {
-      console.error(error);
-      setMessage(`❌ ${error.message}`);
+    } catch (err) {
+      console.error("LOAD PRODUCTS ERROR:", err);
+      setError(err.message || "Не вдалося завантажити товари");
     } finally {
       setProductsLoading(false);
     }
-  }
+  };
 
   async function loadBanners() {
     try {
@@ -178,11 +179,25 @@ export default function Admin() {
       }
 
       if (editingId) {
-        await updateProduct(editingId, formData);
-        setMessage("Товар оновлено");
+        const result = await updateProduct(editingId, formData);
+        console.log("UPDATE RESULT:", result);
+
+        if (result?.product) {
+          setProducts((prev) =>
+            prev.map((p) => (p.id === editingId ? result.product : p))
+          );
+        }
+
+        setMessage("✅ Товар оновлено");
       } else {
-        await createProduct(formData);
-        setMessage("Товар додано");
+        const result = await createProduct(formData);
+        console.log("CREATE RESULT:", result);
+
+        if (result?.product) {
+          setProducts((prev) => [result.product, ...prev]);
+        }
+
+        setMessage("✅ Товар додано");
       }
 
       setForm({
