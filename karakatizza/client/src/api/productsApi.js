@@ -1,5 +1,6 @@
 export const API_BASE_URL =
-  import.meta.env.VITE_API_URL || `"https://karakatizza-production.up.railway.app"`;
+  import.meta.env.VITE_API_URL ||
+  "https://karakatizza-production.up.railway.app";
 
 const PRODUCTS_CACHE_KEY = "products_cache_v1";
 const PRODUCTS_CACHE_TTL = 1000 * 60 * 5;
@@ -11,11 +12,7 @@ function clearProductsCache() {
 export function getImageUrl(image, options = {}) {
   if (!image) return "";
 
-  const {
-    width = 600,
-    height = 600,
-    crop = "fill",
-  } = options;
+  const { width = 600, height = 600, crop = "fill" } = options;
 
   if (image.startsWith("http")) {
     if (image.includes("/image/upload/")) {
@@ -47,7 +44,14 @@ export async function getProducts() {
   }
 
   const res = await fetch(`${API_BASE_URL}/products`);
-  const data = await res.json();
+  const text = await res.text();
+
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error(`Сервер повернув не JSON: ${text.slice(0, 120)}`);
+  }
 
   if (!res.ok) {
     throw new Error(data.message || "Не вдалося отримати товари");
@@ -65,12 +69,21 @@ export async function getProducts() {
 }
 
 export async function createProduct(formData) {
+  console.log("CREATE PRODUCT URL:", `${API_BASE_URL}/products`);
+
   const res = await fetch(`${API_BASE_URL}/products`, {
     method: "POST",
     body: formData,
   });
 
-  const data = await res.json();
+  const text = await res.text();
+
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error(`Сервер повернув не JSON: ${text.slice(0, 120)}`);
+  }
 
   if (!res.ok) {
     throw new Error(data.message || "Не вдалося створити товар");
@@ -81,12 +94,21 @@ export async function createProduct(formData) {
 }
 
 export async function updateProduct(id, formData) {
+  console.log("UPDATE PRODUCT URL:", `${API_BASE_URL}/products/${id}`);
+
   const res = await fetch(`${API_BASE_URL}/products/${id}`, {
     method: "PUT",
     body: formData,
   });
 
-  const data = await res.json();
+  const text = await res.text();
+
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error(`Сервер повернув не JSON: ${text.slice(0, 120)}`);
+  }
 
   if (!res.ok) {
     throw new Error(data.message || "Не вдалося оновити товар");
@@ -101,7 +123,14 @@ export async function deleteProduct(id) {
     method: "DELETE",
   });
 
-  const data = await res.json();
+  const text = await res.text();
+
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error(`Сервер повернув не JSON: ${text.slice(0, 120)}`);
+  }
 
   if (!res.ok) {
     throw new Error(data.message || "Не вдалося видалити товар");

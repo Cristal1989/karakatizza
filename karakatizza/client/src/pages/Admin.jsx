@@ -48,6 +48,7 @@ export default function Admin() {
 
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
@@ -138,7 +139,7 @@ export default function Admin() {
     }));
   };
 
-  const handleFileChange = (e) => {
+  const handleImageChange = (e) => {
     const file = e.target.files[0] || null;
     setImage(file);
 
@@ -155,27 +156,33 @@ export default function Admin() {
 
     try {
       setLoading(true);
+      setError("");
       setMessage("");
 
       const formData = new FormData();
-      formData.append("name", form.name);
-      formData.append("price", form.price);
-      formData.append("category", form.category);
-      formData.append("description", form.description);
-      formData.append("popular", popular);
-      formData.append("promoType", form.promoType);
-      formData.append("priority", form.priority);
+
+      formData.append("name", form.name?.trim() || "");
+      formData.append("price", String(form.price || ""));
+      formData.append("category", form.category || "");
+      formData.append("description", form.description || "");
+      formData.append("popular", String(!!popular));
+      formData.append("promoType", form.promoType || "none");
+      formData.append("priority", String(form.priority || 10));
 
       if (image) {
         formData.append("image", image);
       }
 
+      for (const pair of formData.entries()) {
+        console.log("FORMDATA:", pair[0], pair[1]);
+      }
+
       if (editingId) {
         await updateProduct(editingId, formData);
-        setMessage("✅ Товар успішно оновлено");
+        setMessage("Товар оновлено");
       } else {
         await createProduct(formData);
-        setMessage("✅ Товар успішно додано");
+        setMessage("Товар додано");
       }
 
       setForm({
@@ -192,13 +199,15 @@ export default function Admin() {
       setImagePreview("");
       setEditingId(null);
 
-      const fileInput = document.getElementById("image-input");
-      if (fileInput) fileInput.value = "";
+      const input = document.getElementById("product-image-input");
+      if (input) {
+        input.value = "";
+      }
 
       await loadProducts();
-    } catch (error) {
-      console.error(error);
-      setMessage(`❌ ${error.message}`);
+    } catch (err) {
+      console.error("HANDLE SUBMIT ERROR:", err);
+      setError(err.message || "Помилка збереження товару");
     } finally {
       setLoading(false);
     }
@@ -714,49 +723,47 @@ export default function Admin() {
                     <span style={{ fontWeight: 700 }}>Хіт продажу</span>
                   </label>
 
-                  <input
-                    id="image-input"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    style={inputStyle}
-                  />
+                  <div style={{ marginBottom: "16px" }}>
+                    <input
+                      id="product-image-input"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                    />
+                  </div>
 
-                  {imagePreview && (
+                  {imagePreview ? (
                     <div
                       style={{
                         display: "flex",
                         alignItems: "center",
                         gap: "16px",
-                        padding: "16px",
-                        borderRadius: "18px",
-                        border: "1px solid #eee",
-                        background: "#fafafa",
+                        marginTop: "12px",
+                        marginBottom: "20px",
                       }}
                     >
                       <img
                         src={imagePreview}
-                        alt="preview"
+                        alt="Фото товару"
                         style={{
-                          width: "120px",
-                          height: "120px",
+                          width: "96px",
+                          height: "96px",
                           objectFit: "cover",
-                          borderRadius: "16px",
+                          borderRadius: "12px",
+                          border: "1px solid #eee",
                         }}
                       />
 
                       <div>
-                        <div style={{ fontWeight: 800, marginBottom: "6px" }}>
+                        <div style={{ fontWeight: 700, marginBottom: "4px" }}>
                           Фото товару
                         </div>
-                        <div style={{ color: "#667085", fontSize: "14px" }}>
-                          {image
-                            ? "Нове фото вибрано, ще не збережено"
-                            : "Поточне фото товару"}
+                        <div style={{ color: "#666", fontSize: "14px" }}>
+                          Нове фото вибрано, ще не збережено
                         </div>
                       </div>
                     </div>
-                  )}
+                  ) : null}
 
                   <div
                     style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}
