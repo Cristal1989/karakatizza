@@ -29,7 +29,7 @@ export default function Hero({ banners = [] }) {
         <div style={{ maxWidth: "520px" }}>
           <h1
             style={{
-              fontSize: "clamp(32px, 9vw, 56px)",
+              fontSize: "clamp(34px, 8vw, 56px)",
               lineHeight: 1.05,
               fontWeight: 900,
               margin: "0 0 16px",

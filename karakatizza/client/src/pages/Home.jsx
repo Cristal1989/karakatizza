@@ -133,7 +133,7 @@ export default function Home() {
         style={{
           maxWidth: "1280px",
           margin: "0 auto",
-          padding: "32px 20px 100px",
+          padding: "clamp(16px, 4vw, 32px) 16px 100px",
         }}
       >
         <section id="menu" style={{ marginBottom: "20px" }}>

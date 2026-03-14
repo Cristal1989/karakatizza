@@ -47,11 +47,11 @@
   .heroSlider {
     width: 100%;
     min-width: 0;
-    margin-bottom: 12px;
+    overflow: hidden;
   }
 
   .heroSlide {
-    height: 180px;
+    height: 170px;
     border-radius: 14px;
   }
 
