@@ -30,10 +30,16 @@ export function CartProvider({ children }) {
   });
 
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
 
   useEffect(() => {
     localStorage.setItem("cartItems", JSON.stringify(cartItems));
   }, [cartItems]);
+
+  const getItemQuantity = (productId) => {
+    const item = cartItems.find((item) => item.id === productId);
+    return item ? Number(item.paidQuantity ?? item.quantity ?? 0) : 0;
+  };
 
   const addToCart = (product, quantity = 1) => {
     const safePaidQuantity = Number(quantity) || 1;
@@ -45,7 +51,11 @@ export function CartProvider({ children }) {
         const newPaidQuantity =
           (existingItem.paidQuantity ?? existingItem.quantity ?? 0) +
           safePaidQuantity;
-        const promo = calculatePromo(newPaidQuantity, existingItem.promoType);
+
+        const promo = calculatePromo(
+          newPaidQuantity,
+          existingItem.promoType ?? product.promoType
+        );
 
         return prev.map((item) =>
           item.id === product.id
@@ -72,7 +82,42 @@ export function CartProvider({ children }) {
       ];
     });
 
-    setIsCartOpen(true);
+    window.dispatchEvent(
+      new CustomEvent("cart:toast", {
+        detail: `Додано: ${product.name}`,
+      })
+    );
+  };
+
+  const decreaseCartItem = (productId) => {
+    setCartItems((prev) => {
+      const existingItem = prev.find((item) => item.id === productId);
+
+      if (!existingItem) return prev;
+
+      const currentPaidQuantity = Number(
+        existingItem.paidQuantity ?? existingItem.quantity ?? 0
+      );
+
+      const newPaidQuantity = currentPaidQuantity - 1;
+
+      if (newPaidQuantity <= 0) {
+        return prev.filter((item) => item.id !== productId);
+      }
+
+      const promo = calculatePromo(newPaidQuantity, existingItem.promoType);
+
+      return prev.map((item) =>
+        item.id === productId
+          ? {
+              ...item,
+              quantity: promo.totalQuantity,
+              paidQuantity: promo.paidQuantity,
+              freeQuantity: promo.freeQuantity,
+            }
+          : item
+      );
+    });
   };
 
   const removeFromCart = (productId) => {
@@ -154,8 +199,12 @@ export function CartProvider({ children }) {
         clearCart,
         increaseQuantity,
         decreaseQuantity,
+        decreaseCartItem,
+        getItemQuantity,
         totalItems,
         totalPrice,
+        toastMessage,
+        setToastMessage,
       }}
     >
       {children}

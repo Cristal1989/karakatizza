@@ -1,27 +1,51 @@
-import { useCart } from "../hooks/useCart";
+import { useEffect, useState } from "react";
 
 export default function CartToast() {
-  const { toastMessage } = useCart();
+  const [message, setMessage] = useState("");
 
-  if (!toastMessage) return null;
+  useEffect(() => {
+    const handleCartToast = (event) => {
+      setMessage(event.detail || "Товар додано");
+    };
+
+    window.addEventListener("cart:toast", handleCartToast);
+
+    return () => {
+      window.removeEventListener("cart:toast", handleCartToast);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!message) return;
+
+    const timeout = setTimeout(() => {
+      setMessage("");
+    }, 2200);
+
+    return () => clearTimeout(timeout);
+  }, [message]);
+
+  if (!message) return null;
 
   return (
     <div
       style={{
         position: "fixed",
-        top: "90px",
-        right: "20px",
-        background: "#111",
+        left: "50%",
+        bottom: "88px",
+        transform: "translateX(-50%)",
+        background: "#1f2937",
         color: "#fff",
         padding: "12px 16px",
-        borderRadius: "12px",
-        boxShadow: "0 10px 24px rgba(0,0,0,0.18)",
-        zIndex: 200,
-        fontWeight: "600",
-        animation: "toastFadeIn 0.25s ease-out",
+        borderRadius: "14px",
+        fontWeight: 700,
+        fontSize: "14px",
+        zIndex: 9999,
+        boxShadow: "0 10px 30px rgba(0,0,0,0.22)",
+        whiteSpace: "nowrap",
       }}
     >
-      {toastMessage}
+      ✅ {message}
     </div>
   );
 }

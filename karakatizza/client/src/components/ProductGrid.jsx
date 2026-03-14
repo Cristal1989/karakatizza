@@ -29,6 +29,7 @@ function ProductGrid({ products }) {
           : "repeat(auto-fill, minmax(260px, 1fr))",
         gap: isMobile ? "16px" : "20px",
         alignItems: "stretch",
+        paddingTop: "20px",
       }}
     >
       {products.map((product) => (

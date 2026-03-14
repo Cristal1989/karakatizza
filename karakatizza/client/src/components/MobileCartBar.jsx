@@ -3,7 +3,9 @@ import { useCart } from "../hooks/useCart";
 export default function MobileCartBar() {
   const { totalItems, totalPrice, openCart, isCartOpen } = useCart();
 
-  if (!totalItems || isCartOpen) return null;
+  const isMobile = window.matchMedia("(max-width: 768px)").matches;
+
+  if (!isMobile || !totalItems || isCartOpen) return null;
 
   return (
     <div

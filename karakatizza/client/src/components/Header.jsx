@@ -1,66 +1,122 @@
-import { useCart } from "../hooks/useCart";
+import React from "react";
 
 export default function Header() {
-  const { totalItems, openCart } = useCart();
   const isMobile = window.matchMedia("(max-width: 768px)").matches;
 
   return (
     <header
       style={{
-        background: "#111827",
+        background: "#2f3136",
         color: "#fff",
-        padding: isMobile ? "12px 16px" : "18px 20px",
-        position: "static",
-        boxShadow: "0 2px 10px rgba(0,0,0,0.12)",
+        borderBottom: "1px solid rgba(255,255,255,0.08)",
+        boxShadow: "0 4px 18px rgba(0,0,0,0.10)",
       }}
     >
       <div
         style={{
           maxWidth: "1280px",
           margin: "0 auto",
+          padding: isMobile ? "14px 16px" : "16px 24px",
           display: "flex",
-          justifyContent: "space-between",
           alignItems: "center",
-          gap: "12px",
+          justifyContent: "space-between",
+          gap: isMobile ? "12px" : "24px",
+          flexWrap: isMobile ? "wrap" : "nowrap",
         }}
       >
-        <div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: isMobile ? "12px" : "16px",
+            minWidth: 0,
+            flex: "1 1 auto",
+          }}
+        >
           <div
             style={{
-              fontSize: isMobile ? "18px" : "28px",
-              lineHeight: 1.1,
+              width: isMobile ? "56px" : "72px",
+              height: isMobile ? "56px" : "72px",
+              borderRadius: "16px",
+              background: "rgba(255,255,255,0.06)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              overflow: "hidden",
+              flex: "0 0 auto",
             }}
           >
-            🍣 Karakatizza
+            <img
+              src="/images/logo-min.png"
+              alt="Karakatizza"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                display: "block",
+              }}
+            />
           </div>
 
-          <div
-            style={{
-              fontSize: isMobile ? "11px" : "14px",
-              lineHeight: 1.3,
-            }}
-          >
-            Доставка ролів, сетів, закусок і напоїв
+          <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                fontSize: isMobile ? "32px" : "40px",
+                fontWeight: 900,
+                lineHeight: 1,
+                letterSpacing: "-0.02em",
+              }}
+            >
+              Karakatizza
+            </div>
+
+            <div
+              style={{
+                marginTop: isMobile ? "6px" : "8px",
+                fontSize: isMobile ? "15px" : "17px",
+                lineHeight: 1.35,
+                color: "rgba(255,255,255,0.78)",
+                maxWidth: isMobile ? "100%" : "420px",
+              }}
+            >
+              Доставка ролів, сетів, закусок і напоїв
+            </div>
           </div>
         </div>
 
-        <button
-          id="cart-button"
-          onClick={openCart}
+        <div
           style={{
-            backgroundColor: "#e53935",
-            color: "#ffffff",
-            border: "none",
-            borderRadius: "12px",
-            padding: isMobile ? "10px 14px" : "12px 18px",
-            marginRight: isMobile ? 0 : "20px",
-            fontSize: isMobile ? "14px" : "15px",
-            fontWeight: "700",
-            cursor: "pointer",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: isMobile ? "flex-start" : "flex-end",
+            gap: "6px",
+            flex: isMobile ? "1 1 100%" : "0 0 auto",
+            paddingLeft: isMobile ? 0 : "12px",
           }}
         >
-          🛒 Кошик ({totalItems})
-        </button>
+          <a
+            href="tel:0965881010"
+            style={{
+              color: "#ffd54a",
+              textDecoration: "none",
+              fontSize: isMobile ? "24px" : "28px",
+              fontWeight: 800,
+              lineHeight: 1,
+            }}
+          >
+            096 588 10 10
+          </a>
+
+          <div
+            style={{
+              fontSize: isMobile ? "14px" : "15px",
+              color: "rgba(255,255,255,0.82)",
+              fontWeight: 600,
+            }}
+          >
+            Щодня з 10:00 до 22:00
+          </div>
+        </div>
       </div>
     </header>
   );

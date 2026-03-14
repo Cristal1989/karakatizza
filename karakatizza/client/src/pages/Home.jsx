@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import Header from "../components/Header";
 import Hero from "../components/Hero";
 import ProductGrid from "../components/ProductGrid";
@@ -8,6 +8,7 @@ import CartDrawer from "../components/CartDrawer";
 import MobileCartBar from "../components/MobileCartBar";
 import CartToast from "../components/CartToast";
 import UpsellSection from "../components/UpsellSection";
+import DesktopCartBar from "../components/DesktopCartBar";
 import { getProducts } from "../api/productsApi";
 import { getBanners } from "../api/bannersApi";
 
@@ -17,6 +18,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [banners, setBanners] = useState([]);
+  const sectionsRef = useRef({});
 
   useEffect(() => {
     loadProducts();
@@ -187,7 +189,7 @@ export default function Home() {
             zIndex: 40,
             background: "#fafafa",
             padding: isMobile ? "6px 0 8px" : "8px 0 10px",
-            marginBottom: "20px",
+            marginBottom: "0",
             borderBottom: "1px solid #f0f0f0",
           }}
         >
@@ -239,6 +241,7 @@ export default function Home() {
 
       <CartDrawer />
       <MobileCartBar />
+      <DesktopCartBar />
     </div>
   );
 }

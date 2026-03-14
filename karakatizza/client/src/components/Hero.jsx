@@ -12,7 +12,7 @@ export default function Hero({ banners = [] }) {
   return (
     <section
       style={{
-        padding: isMobile ? "16px 16px 0" : "32px 20px 0",
+        padding: isMobile ? "16px 16px 0 0" : "32px 20px 0 0",
         background: "#fff",
       }}
     >
