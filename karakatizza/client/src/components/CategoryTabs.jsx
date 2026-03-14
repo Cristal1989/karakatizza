@@ -14,16 +14,16 @@ const categories = [
 export default function CategoryTabs({ activeCategory, onChange }) {
   return (
     <div
+      className="categoryTabs"
       style={{
         display: "flex",
         gap: "10px",
         overflowX: "auto",
+        overflowY: "hidden",
         paddingBottom: "8px",
         scrollbarWidth: "none",
-        msOverflowStyle: "none",
         WebkitOverflowScrolling: "touch",
       }}
-      className="category-tabs-scroll"
     >
       {categories.map((category) => {
         const isActive = activeCategory === category.id;

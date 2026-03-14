@@ -11,23 +11,22 @@ export default function MobileCartBar() {
       onClick={openCart}
       style={{
         position: "fixed",
-        bottom: "14px",
-        left: "50%",
-        transform: "translateX(-50%)",
-        width: "min(420px, calc(100% - 20px))",
-        background: "#e85d3f",
+        bottom: "12px",
+        left: "12px",
+        right: "12px",
+        width: "auto",
+        transform: "none",
+        background: "#e56a45",
         color: "#fff",
         borderRadius: "16px",
-        padding: "10px 14px",
-        display: "grid",
-        gridTemplateColumns: "1fr auto auto",
+        padding: "12px 14px",
+        display: "flex",
         alignItems: "center",
-        gap: "14px",
-        boxShadow: "0 12px 30px rgba(232, 93, 63, 0.28)",
+        justifyContent: "space-between",
+        gap: "12px",
+        boxShadow: "0 12px 30px rgba(0,0,0,0.22)",
         zIndex: 100,
         cursor: "pointer",
-        animation:
-          "mobileCartSlideUp 0.35s ease-out, mobileCartPulse 0.45s ease-out 0.2s",
       }}
     >
       <div

@@ -6,45 +6,46 @@ const scrollToMenu = () => {
     menu.scrollIntoView({ behavior: "smooth" });
   }
 };
+const isMobile = window.matchMedia("(max-width: 768px)").matches;
 
 export default function Hero({ banners = [] }) {
   return (
     <section
       style={{
-        padding: "16px 20px 0px",
-        background: "#ffffff",
+        padding: isMobile ? "16px 16px 0" : "32px 20px 0",
+        background: "#fff",
       }}
     >
       <div
         style={{
-          maxWidth: "1280px",
+          maxWidth: "1200px",
           margin: "0 auto",
           display: "grid",
-          gridTemplateColumns: "minmax(320px, 520px) minmax(320px, 620px)",
-          justifyContent: "space-between",
-          gap: "28px",
+          gridTemplateColumns: isMobile ? "1fr" : "1.05fr 1fr",
+          gap: isMobile ? "16px" : "32px",
           alignItems: "center",
         }}
       >
-        <div style={{ maxWidth: "520px" }}>
+        <div style={{ maxWidth: isMobile ? "100%" : "520px" }}>
           <h1
             style={{
-              fontSize: "clamp(34px, 8vw, 56px)",
-              lineHeight: 1.05,
+              fontSize: isMobile ? "56px" : "56px",
+              lineHeight: isMobile ? "0.95" : "1.02",
               fontWeight: 900,
               margin: "0 0 16px",
               color: "#1b1b1b",
             }}
+            className="heroTitle"
           >
             Свіжі роли з доставкою
           </h1>
 
           <p
             style={{
-              fontSize: "clamp(16px, 4.2vw, 18px)",
-              lineHeight: 1.55,
+              fontSize: isMobile ? "16px" : "18px",
+              lineHeight: 1.5,
               color: "#666",
-              margin: "0 0 24px",
+              margin: "0 0 20px",
             }}
           >
             Готуємо тільки після замовлення. Швидка доставка по місту.
@@ -55,6 +56,7 @@ export default function Hero({ banners = [] }) {
               display: "flex",
               gap: "12px",
               flexWrap: "wrap",
+              marginBottom: isMobile ? "0" : "0",
             }}
           >
             <button
@@ -94,10 +96,10 @@ export default function Hero({ banners = [] }) {
         <div
           style={{
             width: "100%",
-            maxWidth: "680px",
-            marginLeft: "auto",
+            minWidth: 0,
             display: "flex",
             alignItems: "center",
+            marginTop: isMobile ? "0" : "0",
           }}
         >
           <HeroSlider banners={banners} />

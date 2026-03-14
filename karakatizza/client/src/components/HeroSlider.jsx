@@ -71,12 +71,12 @@ export default function HeroSlider({ banners = [] }) {
         style={{
           position: "relative",
           width: "100%",
-          maxWidth: "1100px",
+          maxWidth: isMobile ? "100%" : "1100px",
           margin: "0 auto",
-          borderRadius: "24px",
+          borderRadius: isMobile ? "18px" : "24px",
           overflow: "hidden",
           background: "#111",
-          minHeight: isMobile ? "220px" : "320px",
+          minHeight: isMobile ? "180px" : "320px",
           boxShadow: "0 16px 40px rgba(0,0,0,0.08)",
         }}
       >
@@ -87,7 +87,7 @@ export default function HeroSlider({ banners = [] }) {
           decoding="async"
           style={{
             width: "100%",
-            height: isMobile ? "220px" : "320px",
+            height: isMobile ? "180px" : "320px",
             objectFit: "cover",
             display: "block",
           }}
@@ -103,14 +103,14 @@ export default function HeroSlider({ banners = [] }) {
                 top: "50%",
                 left: "12px",
                 transform: "translateY(-50%)",
-                width: "40px",
-                height: "40px",
+                width: isMobile ? "34px" : "40px",
+                height: isMobile ? "34px" : "40px",
+                fontSize: isMobile ? "14px" : "18px",
                 borderRadius: "999px",
                 border: "none",
                 background: "rgba(0,0,0,0.45)",
                 color: "#fff",
                 cursor: "pointer",
-                fontSize: "18px",
               }}
             >
               ‹
@@ -124,14 +124,14 @@ export default function HeroSlider({ banners = [] }) {
                 top: "50%",
                 right: "12px",
                 transform: "translateY(-50%)",
-                width: "40px",
-                height: "40px",
+                width: isMobile ? "34px" : "40px",
+                height: isMobile ? "34px" : "40px",
+                fontSize: isMobile ? "14px" : "18px",
                 borderRadius: "999px",
                 border: "none",
                 background: "rgba(0,0,0,0.45)",
                 color: "#fff",
                 cursor: "pointer",
-                fontSize: "18px",
               }}
             >
               ›

@@ -17,12 +17,17 @@ function ProductGrid({ products }) {
     );
   }
 
+  const isMobile = window.matchMedia("(max-width: 768px)").matches;
+
   return (
     <div
+      className="productGrid"
       style={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-        gap: "20px",
+        gridTemplateColumns: isMobile
+          ? "1fr"
+          : "repeat(auto-fill, minmax(260px, 1fr))",
+        gap: isMobile ? "16px" : "20px",
         alignItems: "stretch",
       }}
     >

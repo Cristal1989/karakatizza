@@ -4,6 +4,7 @@ import { getImageUrl } from "../api/productsApi";
 
 function ProductCard({ product }) {
   const { addToCart } = useCart();
+  const isMobile = window.matchMedia("(max-width: 768px)").matches;
 
   const shouldContainImage =
     product.category === "drinks" ||
@@ -21,7 +22,7 @@ function ProductCard({ product }) {
     <div
       data-product-id={product.id}
       style={{
-        background: "#ffffff",
+        background: "#fff",
         borderRadius: "18px",
         overflow: "hidden",
         border: "1px solid #eee",
@@ -29,17 +30,13 @@ function ProductCard({ product }) {
         flexDirection: "column",
       }}
     >
-      {/* IMAGE */}
       <div
         style={{
           position: "relative",
           width: "100%",
-          height: "clamp(170px, 28vw, 220px)",
+          height: isMobile ? "180px" : "220px",
           overflow: "hidden",
           background: "#fff",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
         }}
       >
         <img
@@ -48,117 +45,65 @@ function ProductCard({ product }) {
           loading="lazy"
           decoding="async"
           style={{
-            width: shouldContainImage ? "88%" : "100%",
-            height: shouldContainImage ? "88%" : "100%",
+            width: "100%",
+            height: "100%",
             objectFit: shouldContainImage ? "contain" : "cover",
-            objectPosition: "center",
             display: "block",
-            padding: "10px",
           }}
         />
-
-        {/* BADGES */}
-        <div
-          style={{
-            position: "absolute",
-            top: "10px",
-            left: "10px",
-            display: "flex",
-            gap: "6px",
-            flexWrap: "wrap",
-          }}
-        >
-          {product.popular && (
-            <span
-              style={{
-                background: "#fff7ed",
-                color: "#ea580c",
-                padding: "4px 8px",
-                borderRadius: "999px",
-                fontSize: "11px",
-                fontWeight: 800,
-              }}
-            >
-              ХІТ
-            </span>
-          )}
-
-          {product.promoType === "2plus1" && (
-            <span
-              style={{
-                background: "#eff6ff",
-                color: "#2563eb",
-                padding: "4px 8px",
-                borderRadius: "999px",
-                fontSize: "11px",
-                fontWeight: 800,
-              }}
-            >
-              1+1=3
-            </span>
-          )}
-        </div>
       </div>
 
-      {/* CONTENT */}
-      <div
-        style={{
-          padding: "16px",
-          display: "flex",
-          flexDirection: "column",
-          flexGrow: 1,
-        }}
-      >
-        {/* NAME */}
+      <div style={{ padding: "16px" }}>
         <div
           style={{
+            fontSize: isMobile ? "18px" : "20px",
             fontWeight: 800,
-            fontSize: "18px",
-            marginBottom: "6px",
+            marginBottom: "8px",
+            color: "#111",
           }}
         >
           {product.name}
         </div>
 
-        {/* DESCRIPTION */}
         <div
           style={{
-            fontSize: "14px",
+            fontSize: "15px",
             color: "#666",
-            marginBottom: "14px",
-            flexGrow: 1,
+            marginBottom: "16px",
           }}
         >
-          {product.description || "Без опису"}
+          {product.description}
         </div>
 
-        {/* FOOTER */}
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            gap: "12px",
           }}
         >
           <div
             style={{
+              fontSize: isMobile ? "18px" : "20px",
               fontWeight: 800,
-              fontSize: "18px",
+              color: "#111",
             }}
           >
             {product.price} грн
           </div>
 
           <button
-            onClick={() => addToCart(product, 1)}
+            onClick={() => addToCart(product)}
             style={{
-              background: "#e53935",
-              color: "#fff",
               border: "none",
-              borderRadius: "10px",
-              padding: "10px 14px",
+              background: "#e85d3f",
+              color: "#fff",
+              padding: "12px 16px",
+              borderRadius: "12px",
               fontWeight: 700,
               cursor: "pointer",
+              whiteSpace: "nowrap",
             }}
           >
             В кошик

@@ -6,11 +6,13 @@ import Admin from "./pages/Admin";
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/checkout" element={<Checkout />} />
-      <Route path="/success" element={<Success />} />
-      <Route path="/admin" element={<Admin />} />
-    </Routes>
+    <div className="container">
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/success" element={<Success />} />
+        <Route path="/admin" element={<Admin />} />
+      </Routes>
+    </div>
   );
 }

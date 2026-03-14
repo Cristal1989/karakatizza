@@ -26,6 +26,20 @@ button {
   font-weight: 600;
 }
 
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+@media (max-width: 768px) {
+  .container {
+    max-width: 100%;
+    padding: 0 12px;
+  }
+}
+
 @keyframes mobileCartSlideUp {
   from {
     opacity: 0;
@@ -92,6 +106,56 @@ button {
 }
 
 
-.category-tabs-scroll::-webkit-scrollbar {
-  display: none;
+
+
+/* ===================== */
+/* MOBILE ADAPTIVE */
+/* ===================== */
+
+@media (max-width: 768px) {
+
+  /* HERO */
+  .heroGrid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .heroTitle {
+    font-size: 34px !important;
+  }
+
+  .heroSlide {
+    height: 180px !important;
+  }
+
+  /* PRODUCT GRID */
+
+  .productGrid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  /* PRODUCT IMAGE */
+
+  .productImage {
+    height: 180px !important;
+  }
+
+  /* CATEGORY TABS */
+
+  .categoryTabs {
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+  }
+
+  .categoryTabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .categoryTab {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
 }

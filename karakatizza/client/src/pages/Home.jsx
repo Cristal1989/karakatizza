@@ -75,97 +75,120 @@ export default function Home() {
       .slice(0, 4);
   }, [products]);
 
+  const isMobile = window.matchMedia("(max-width: 768px)").matches;
+
   return (
-    <div style={{ minHeight: "100vh", background: "#fafafa" }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#fafafa",
+      }}
+    >
       <Header />
       <CartToast />
-      <Hero banners={banners} />
-      <section
-        style={{
-          maxWidth: "1280px",
-          margin: "0 auto",
-          padding: "4px 20px 0",
-        }}
-      >
-        <div style={{ marginBottom: "20px" }}>
-          <h2
-            style={{
-              fontSize: "30px",
-              fontWeight: "800",
-              marginBottom: "8px",
-            }}
-          >
-            🔥 Хіти продажу
-          </h2>
-
-          <p
-            style={{
-              color: "#666",
-              margin: 0,
-            }}
-          >
-            Найпопулярніші позиції, які замовляють найчастіше
-          </p>
-        </div>
-
-        {products.filter((product) => product.popular).length > 0 ? (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-              gap: "24px",
-            }}
-          >
-            {products
-              .filter((product) => product.popular)
-              .slice(0, 4)
-              .map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-          </div>
-        ) : null}
-      </section>
-
-      <CartDrawer />
-      <MobileCartBar />
 
       <main
         style={{
+          width: "100%",
           maxWidth: "1280px",
           margin: "0 auto",
-          padding: "clamp(16px, 4vw, 32px) 16px 100px",
+          padding: isMobile ? "0 16px 100px" : "0 20px 100px",
+          boxSizing: "border-box",
         }}
       >
-        <section id="menu" style={{ marginBottom: "20px" }}>
-          <h2
-            style={{
-              fontSize: "34px",
-              fontWeight: "800",
-              marginBottom: "8px",
-            }}
-          >
-            Меню
-          </h2>
+        <Hero banners={banners} />
 
-          <p
+        {products.filter((product) => product.popular).length > 0 && (
+          <section
             style={{
-              color: "#666",
-              marginBottom: "0",
+              marginBottom: "40px",
             }}
           >
-            Обирайте роли, сети, закуски та напої
-          </p>
+            <div
+              style={{
+                marginBottom: "20px",
+              }}
+            >
+              <h2
+                style={{
+                  fontSize: "30px",
+                  fontWeight: "800",
+                  margin: "0 0 8px 0",
+                }}
+              >
+                🔥 Хіти продажу
+              </h2>
+
+              <p
+                style={{
+                  color: "#666",
+                  margin: 0,
+                }}
+              >
+                Найпопулярніші позиції, які замовляють найчастіше
+              </p>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isMobile
+                  ? "1fr"
+                  : "repeat(auto-fill, minmax(260px, 1fr))",
+                gap: isMobile ? "16px" : "24px",
+              }}
+            >
+              {products
+                .filter((product) => product.popular)
+                .slice(0, 4)
+                .map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+            </div>
+          </section>
+        )}
+
+        <section
+          id="menu"
+          style={{
+            marginBottom: "20px",
+          }}
+        >
+          <div
+            style={{
+              marginBottom: "16px",
+            }}
+          >
+            <h2
+              style={{
+                fontSize: "34px",
+                fontWeight: "800",
+                margin: "0 0 8px 0",
+              }}
+            >
+              Меню
+            </h2>
+
+            <p
+              style={{
+                color: "#666",
+                margin: 0,
+              }}
+            >
+              Обирайте роли, сети, закуски та напої
+            </p>
+          </div>
         </section>
 
         <div
           style={{
             position: "sticky",
-            top: "90px",
-            zIndex: 30,
+            top: 0,
+            zIndex: 40,
             background: "#fafafa",
-            paddingTop: "10px",
-            paddingBottom: "0px",
-            marginBottom: "24px",
+            padding: isMobile ? "6px 0 8px" : "8px 0 10px",
+            marginBottom: "20px",
+            borderBottom: "1px solid #f0f0f0",
           }}
         >
           <CategoryTabs
@@ -213,6 +236,9 @@ export default function Home() {
           </>
         )}
       </main>
+
+      <CartDrawer />
+      <MobileCartBar />
     </div>
   );
 }
