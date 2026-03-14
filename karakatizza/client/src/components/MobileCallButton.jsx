@@ -19,6 +19,7 @@ export default function MobileCallButton() {
         justifyContent: "center",
         boxShadow: "0 10px 28px rgba(0,0,0,0.25)",
         zIndex: 120,
+        overflow: "hidden",
         transition: "transform 0.2s ease",
         animation: "phonePulse 2.5s infinite",
       }}
@@ -33,9 +34,9 @@ export default function MobileCallButton() {
         src="/images/tel.png"
         alt="call"
         style={{
-          width: "30px",
-          height: "30px",
-          objectFit: "contain",
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
         }}
       />
     </a>

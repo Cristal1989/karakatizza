@@ -43,7 +43,7 @@ function ProductCard({ product }) {
         style={{
           position: "relative",
           width: "100%",
-          height: isMobile ? "180px" : "220px",
+          height: isMobile ? "170px" : "220px",
           overflow: "hidden",
           background: "#fff",
         }}
@@ -57,7 +57,7 @@ function ProductCard({ product }) {
           style={{
             width: "100%",
             height: "100%",
-            objectFit: shouldContainImage ? "contain" : "cover",
+            objectFit: "contain",
             display: "block",
           }}
         />
