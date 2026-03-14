@@ -9,6 +9,7 @@ import MobileCartBar from "../components/MobileCartBar";
 import CartToast from "../components/CartToast";
 import UpsellSection from "../components/UpsellSection";
 import DesktopCartBar from "../components/DesktopCartBar";
+import MobileCallButton from "../components/MobileCallButton";
 import { getProducts } from "../api/productsApi";
 import { getBanners } from "../api/bannersApi";
 
@@ -242,6 +243,7 @@ export default function Home() {
       <CartDrawer />
       <MobileCartBar />
       <DesktopCartBar />
+      <MobileCallButton />
     </div>
   );
 }

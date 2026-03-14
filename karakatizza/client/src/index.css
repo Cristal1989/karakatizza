@@ -105,6 +105,20 @@ button {
   }
 }
 
+@keyframes phonePulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(79, 163, 227, 0.6);
+  }
+
+  70% {
+    box-shadow: 0 0 0 14px rgba(79, 163, 227, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(79, 163, 227, 0);
+  }
+}
+
 
 
 /* Category buttons*/
