@@ -19,6 +19,8 @@ export default function CartDrawer() {
 
   const [upsellProducts, setUpsellProducts] = useState([]);
 
+  const isMobile = window.matchMedia("(max-width: 768px)").matches;
+
   useEffect(() => {
     loadUpsell();
   }, []);
