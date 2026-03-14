@@ -23,6 +23,17 @@ export default function CartDrawer() {
     loadUpsell();
   }, []);
 
+  useEffect(() => {
+    if (!isCartOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isCartOpen]);
+
   async function loadUpsell() {
     try {
       const products = await getProducts();
@@ -64,6 +75,8 @@ export default function CartDrawer() {
           inset: 0,
           backgroundColor: "rgba(0,0,0,0.45)",
           zIndex: 99,
+          display: "flex",
+          justifyContent: "flex-end",
         }}
       />
 
@@ -72,7 +85,7 @@ export default function CartDrawer() {
           position: "fixed",
           top: 0,
           right: 0,
-          width: "420px",
+          width: isMobile ? "100vw" : "420px",
           maxWidth: "100%",
           height: "100vh",
           backgroundColor: "#ffffff",
@@ -80,6 +93,7 @@ export default function CartDrawer() {
           boxShadow: "-8px 0 30px rgba(0,0,0,0.15)",
           display: "flex",
           flexDirection: "column",
+          overflow: "hidden",
         }}
       >
         <div
@@ -90,6 +104,7 @@ export default function CartDrawer() {
             justifyContent: "space-between",
             alignItems: "center",
             flexShrink: 0,
+            background: "#fff",
           }}
         >
           <div>
@@ -131,6 +146,7 @@ export default function CartDrawer() {
           style={{
             padding: "16px 20px 0",
             flexShrink: 0,
+            background: "#fff",
           }}
         >
           <div
@@ -192,11 +208,13 @@ export default function CartDrawer() {
         <div
           style={{
             flex: 1,
+            minHeight: 0,
             overflowY: "auto",
             padding: "20px",
             display: "flex",
             flexDirection: "column",
             gap: "20px",
+            WebkitOverflowScrolling: "touch",
           }}
         >
           {cartItems.length === 0 ? (
