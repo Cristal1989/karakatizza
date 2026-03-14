@@ -1,6 +1,7 @@
-import { memo } from "react";
+import { memo, useRef } from "react";
 import { useCart } from "../hooks/useCart";
 import { getImageUrl } from "../api/productsApi";
+import { flyToCart } from "../utils/flyToCart";
 
 function ProductCard({ product }) {
   const { addToCart, decreaseCartItem, getItemQuantity } = useCart();
@@ -18,6 +19,13 @@ function ProductCard({ product }) {
       ? { width: 900, height: 540, crop: "fit" }
       : { width: 900, height: 540, crop: "fill" }
   );
+
+  const imageRef = useRef(null);
+
+  function handleAddToCart() {
+    addToCart(product);
+    flyToCart(imageRef.current);
+  }
 
   return (
     <div
@@ -41,6 +49,7 @@ function ProductCard({ product }) {
         }}
       >
         <img
+          ref={imageRef}
           src={imageSrc}
           alt={product.name}
           loading="lazy"
@@ -131,7 +140,7 @@ function ProductCard({ product }) {
               </div>
 
               <button
-                onClick={() => addToCart(product)}
+                onClick={handleAddToCart}
                 style={{
                   width: "40px",
                   height: "40px",
@@ -148,7 +157,7 @@ function ProductCard({ product }) {
             </div>
           ) : (
             <button
-              onClick={() => addToCart(product)}
+              onClick={handleAddToCart}
               style={{
                 border: "none",
                 background: "#e85d3f",

@@ -99,59 +99,9 @@ export default function Home() {
           boxSizing: "border-box",
         }}
       >
-        <Hero banners={banners} />
+        <Hero banners={banners} products={products} />
 
-        {products.filter((product) => product.popular).length > 0 && (
-          <section
-            style={{
-              marginBottom: "40px",
-            }}
-          >
-            <div
-              style={{
-                marginBottom: "20px",
-              }}
-            >
-              <h2
-                style={{
-                  fontSize: "30px",
-                  fontWeight: "800",
-                  margin: "0 0 8px 0",
-                }}
-              >
-                🔥 Хіти продажу
-              </h2>
-
-              <p
-                style={{
-                  color: "#666",
-                  margin: 0,
-                }}
-              >
-                Найпопулярніші позиції, які замовляють найчастіше
-              </p>
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isMobile
-                  ? "1fr"
-                  : "repeat(auto-fill, minmax(260px, 1fr))",
-                gap: isMobile ? "16px" : "24px",
-              }}
-            >
-              {products
-                .filter((product) => product.popular)
-                .slice(0, 4)
-                .map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-            </div>
-          </section>
-        )}
-
-        <section
+        {/* <section
           id="menu"
           style={{
             marginBottom: "20px",
@@ -181,7 +131,7 @@ export default function Home() {
               Обирайте роли, сети, закуски та напої
             </p>
           </div>
-        </section>
+        </section> */}
 
         <div
           style={{

@@ -8,6 +8,7 @@ export default function DesktopCartBar() {
 
   return (
     <div
+      id="desktop-cart-bar"
       onClick={openCart}
       style={{
         position: "fixed",

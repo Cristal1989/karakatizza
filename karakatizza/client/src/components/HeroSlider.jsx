@@ -71,13 +71,12 @@ export default function HeroSlider({ banners = [] }) {
         style={{
           position: "relative",
           width: "100%",
-          maxWidth: isMobile ? "100%" : "1100px",
-          margin: "0 auto",
-          borderRadius: isMobile ? "18px" : "24px",
+          height: isMobile ? "220px" : "420px",
+          borderRadius: "24px",
           overflow: "hidden",
           background: "#111",
-          minHeight: isMobile ? "180px" : "320px",
-          boxShadow: "0 16px 40px rgba(0,0,0,0.08)",
+          boxShadow: "0 16px 40px rgba(0,0,0,0.12)",
+          flexShrink: 0,
         }}
       >
         <img
@@ -87,7 +86,7 @@ export default function HeroSlider({ banners = [] }) {
           decoding="async"
           style={{
             width: "100%",
-            height: isMobile ? "180px" : "320px",
+            height: "100%",
             objectFit: "cover",
             display: "block",
           }}

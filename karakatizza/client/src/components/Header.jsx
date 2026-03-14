@@ -10,6 +10,7 @@ export default function Header() {
         color: "#fff",
         borderBottom: "1px solid rgba(255,255,255,0.08)",
         boxShadow: "0 4px 18px rgba(0,0,0,0.10)",
+        padding: "12px 24px",
       }}
     >
       <div
@@ -37,23 +38,20 @@ export default function Header() {
             style={{
               width: isMobile ? "56px" : "72px",
               height: isMobile ? "56px" : "72px",
-              borderRadius: "16px",
-              background: "rgba(255,255,255,0.06)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              overflow: "hidden",
+              overflow: "visible",
               flex: "0 0 auto",
             }}
           >
             <img
               src="/images/logo-min.png"
-              alt="Karakatizza"
+              alt="logo"
               style={{
-                width: "100%",
-                height: "100%",
+                height: "130px",
+                transform: "translateY(28px)",
                 objectFit: "contain",
-                display: "block",
               }}
             />
           </div>
