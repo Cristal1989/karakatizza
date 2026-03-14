@@ -10,28 +10,26 @@ export default function Header() {
         color: "#fff",
         borderBottom: "1px solid rgba(255,255,255,0.08)",
         boxShadow: "0 4px 18px rgba(0,0,0,0.10)",
-        padding: "12px 24px",
+        padding: isMobile ? "12px 16px" : "18px 32px",
       }}
     >
       <div
         style={{
           maxWidth: "1280px",
           margin: "0 auto",
-          padding: isMobile ? "14px 16px" : "16px 24px",
           display: "flex",
-          alignItems: "center",
+          flexDirection: isMobile ? "column" : "row",
+          alignItems: isMobile ? "flex-start" : "center",
           justifyContent: "space-between",
           gap: isMobile ? "12px" : "24px",
-          flexWrap: isMobile ? "wrap" : "nowrap",
+          overflow: "visible",
         }}
       >
         <div
           style={{
             display: "flex",
-            alignItems: "center",
+            alignItems: isMobile ? "flex-start" : "center",
             gap: isMobile ? "12px" : "16px",
-            minWidth: 0,
-            flex: "1 1 auto",
           }}
         >
           <div
@@ -47,11 +45,13 @@ export default function Header() {
           >
             <img
               src="/images/logo-min.png"
-              alt="logo"
+              alt="Karakatizza"
               style={{
-                height: "130px",
-                transform: "translateY(28px)",
+                width: isMobile ? "72px" : "130px",
+                height: "auto",
                 objectFit: "contain",
+                transform: isMobile ? "translateY(6px)" : "translateY(24px)",
+                flexShrink: 0,
               }}
             />
           </div>
@@ -59,10 +59,11 @@ export default function Header() {
           <div style={{ minWidth: 0 }}>
             <div
               style={{
-                fontSize: isMobile ? "32px" : "40px",
-                fontWeight: 900,
+                fontSize: isMobile ? "28px" : "40px",
+                fontWeight: 800,
+                color: "#fff",
                 lineHeight: 1,
-                letterSpacing: "-0.02em",
+                marginBottom: isMobile ? "6px" : "8px",
               }}
             >
               Karakatizza
@@ -70,11 +71,11 @@ export default function Header() {
 
             <div
               style={{
-                marginTop: isMobile ? "6px" : "8px",
+                marginTop: isMobile ? "none" : "8px",
                 fontSize: isMobile ? "15px" : "17px",
                 lineHeight: 1.35,
                 color: "rgba(255,255,255,0.78)",
-                maxWidth: isMobile ? "100%" : "420px",
+                maxWidth: isMobile ? "220px" : "none",
               }}
             >
               Доставка ролів, сетів, закусок і напоїв
@@ -86,10 +87,13 @@ export default function Header() {
           style={{
             display: "flex",
             flexDirection: "column",
-            alignItems: isMobile ? "flex-start" : "flex-end",
+            alignItems: isMobile ? "none" : "flex-end",
             gap: "6px",
-            flex: isMobile ? "1 1 100%" : "0 0 auto",
+            flex: isMobile ? "none" : "0 0 auto",
             paddingLeft: isMobile ? 0 : "12px",
+            alignSelf: isMobile ? "stretch" : "none",
+            textAlign: isMobile ? "left" : "none",
+            marginLeft: isMobile ? "84px" : "none",
           }}
         >
           <a
@@ -97,7 +101,7 @@ export default function Header() {
             style={{
               color: "#ffd54a",
               textDecoration: "none",
-              fontSize: isMobile ? "24px" : "28px",
+              fontSize: isMobile ? "22px" : "28px",
               fontWeight: 800,
               lineHeight: 1,
             }}
@@ -107,7 +111,7 @@ export default function Header() {
 
           <div
             style={{
-              fontSize: isMobile ? "14px" : "15px",
+              fontSize: isMobile ? "13px" : "15px",
               color: "rgba(255,255,255,0.82)",
               fontWeight: 600,
             }}
