@@ -34,7 +34,7 @@ function ProductCard({ product }) {
         style={{
           position: "relative",
           width: "100%",
-          height: "220px",
+          height: "clamp(170px, 28vw, 220px)",
           overflow: "hidden",
           background: "#fff",
           display: "flex",

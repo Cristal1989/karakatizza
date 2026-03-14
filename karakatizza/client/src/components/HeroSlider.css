@@ -43,16 +43,16 @@
   opacity: 1;
 }
 
-@media (max-width: 992px) {
-  .heroSlide {
-    height: 280px;
-  }
-}
-
 @media (max-width: 768px) {
+  .heroSlider {
+    width: 100%;
+    min-width: 0;
+    margin-bottom: 12px;
+  }
+
   .heroSlide {
-    height: 220px;
-    border-radius: 16px;
+    height: 180px;
+    border-radius: 14px;
   }
 
   .heroTimer {
@@ -60,5 +60,12 @@
     bottom: 10px;
     font-size: 12px;
     padding: 7px 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .heroSlide {
+    height: 160px;
+    border-radius: 12px;
   }
 }

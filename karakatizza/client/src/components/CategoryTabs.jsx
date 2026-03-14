@@ -18,9 +18,10 @@ export default function CategoryTabs({ activeCategory, onChange }) {
         display: "flex",
         gap: "10px",
         overflowX: "auto",
-        paddingBottom: "4px",
+        paddingBottom: "8px",
         scrollbarWidth: "none",
         msOverflowStyle: "none",
+        WebkitOverflowScrolling: "touch",
       }}
       className="category-tabs-scroll"
     >
@@ -37,6 +38,7 @@ export default function CategoryTabs({ activeCategory, onChange }) {
               borderRadius: "999px",
               padding: "12px 18px",
               cursor: "pointer",
+              flex: "0 0 auto",
               whiteSpace: "nowrap",
               fontWeight: 700,
               fontSize: "15px",
