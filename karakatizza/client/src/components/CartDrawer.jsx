@@ -489,7 +489,7 @@ export default function CartDrawer() {
         <div
           style={{
             borderTop: "1px solid #eeeeee",
-            padding: "20px",
+            padding: "18px 20px calc(28px + env(safe-area-inset-bottom))",
             flexShrink: 0,
             background: "#fff",
           }}
