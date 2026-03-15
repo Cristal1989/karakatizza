@@ -14,10 +14,10 @@ export default function Checkout() {
     checkoutMode,
     setCheckoutMode,
     confirmedAddress,
-    sticksType,
-    setSticksType,
-    sticksCount,
-    setSticksCount,
+    regularSticksCount,
+    setRegularSticksCount,
+    trainingSticksCount,
+    setTrainingSticksCount,
     sticksExtraPrice,
     checkoutTotalPrice,
   } = useCart();
@@ -34,8 +34,19 @@ export default function Checkout() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (checkoutMode === "delivery" && confirmedAddress) {
-      setAddress(confirmedAddress);
+    if (confirmedAddress && checkoutMode === "delivery") {
+      setForm((prev) => ({
+        ...prev,
+        address: confirmedAddress,
+      }));
+    }
+
+    if (checkoutMode === "pickup") {
+      setForm((prev) => ({
+        ...prev,
+        address: "",
+      }));
+      setError("");
     }
   }, [confirmedAddress, checkoutMode]);
 
@@ -121,11 +132,11 @@ export default function Checkout() {
       return "Номер телефону має бути у форматі +380XXXXXXXXX";
     }
 
-    if (!trimmedAddress) {
+    if (checkoutMode === "delivery" && !form.address.trim()) {
       return "Вкажіть адресу доставки";
     }
 
-    if (!addressRegex.test(trimmedAddress)) {
+    if (checkoutMode === "delivery" && !addressRegex.test(trimmedAddress)) {
       return "Адреса може містити лише літери, цифри, пробіли, крапку, кому, дефіс і слеш";
     }
 
@@ -153,9 +164,16 @@ export default function Checkout() {
       const orderData = {
         name: form.name.trim(),
         phone: form.phone.trim(),
-        address: form.address.trim(),
+        mode: checkoutMode,
+        address:
+          checkoutMode === "pickup"
+            ? "Самовивіз: Миколаїв, вул. Мала Морська 108 ТЦ Портал"
+            : form.address.trim(),
         comment: form.comment.trim(),
-        totalPrice,
+        totalPrice: checkoutTotalPrice,
+        regularSticksCount,
+        trainingSticksCount,
+        sticksExtraPrice,
         items: cartItems.map((item) => ({
           name: item.name,
           quantity: item.quantity,
@@ -392,110 +410,151 @@ export default function Checkout() {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "10px",
-                  marginBottom: "12px",
+                  gap: "12px",
                 }}
               >
-                <button
-                  type="button"
-                  onClick={() => setSticksType("regular")}
-                  style={{
-                    border: "none",
-                    borderRadius: "12px",
-                    padding: "12px",
-                    fontWeight: "700",
-                    cursor: "pointer",
-                    background:
-                      sticksType === "regular" ? "#e56a45" : "#f2f2f2",
-                    color: sticksType === "regular" ? "#fff" : "#222",
-                  }}
-                >
-                  Звичайні
-                </button>
+                <div>
+                  <div
+                    style={{
+                      marginBottom: "8px",
+                      fontWeight: "600",
+                      color: "#333",
+                    }}
+                  >
+                    Звичайні
+                  </div>
 
-                <button
-                  type="button"
-                  onClick={() => setSticksType("training")}
-                  style={{
-                    border: "none",
-                    borderRadius: "12px",
-                    padding: "12px",
-                    fontWeight: "700",
-                    cursor: "pointer",
-                    background:
-                      sticksType === "training" ? "#e56a45" : "#f2f2f2",
-                    color: sticksType === "training" ? "#fff" : "#222",
-                  }}
-                >
-                  Навчальні (+2 грн)
-                </button>
-              </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setRegularSticksCount((prev) => Math.max(0, prev - 1))
+                      }
+                      style={{
+                        width: "38px",
+                        height: "38px",
+                        border: "none",
+                        borderRadius: "10px",
+                        background: "#f0f0f0",
+                        cursor: "pointer",
+                        fontSize: "20px",
+                      }}
+                    >
+                      -
+                    </button>
 
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={() =>
-                    setSticksCount((prev) => Math.max(0, prev - 1))
-                  }
-                  style={{
-                    width: "38px",
-                    height: "38px",
-                    border: "none",
-                    borderRadius: "10px",
-                    background: "#f0f0f0",
-                    cursor: "pointer",
-                    fontSize: "20px",
-                  }}
-                >
-                  -
-                </button>
+                    <div
+                      style={{
+                        minWidth: "30px",
+                        textAlign: "center",
+                        fontWeight: "700",
+                        fontSize: "16px",
+                      }}
+                    >
+                      {regularSticksCount}
+                    </div>
 
-                <div
-                  style={{
-                    minWidth: "30px",
-                    textAlign: "center",
-                    fontWeight: "700",
-                    fontSize: "16px",
-                  }}
-                >
-                  {sticksCount}
+                    <button
+                      type="button"
+                      onClick={() => setRegularSticksCount((prev) => prev + 1)}
+                      style={{
+                        width: "38px",
+                        height: "38px",
+                        border: "none",
+                        borderRadius: "10px",
+                        background: "#f0f0f0",
+                        cursor: "pointer",
+                        fontSize: "20px",
+                      }}
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setSticksCount((prev) => prev + 1)}
-                  style={{
-                    width: "38px",
-                    height: "38px",
-                    border: "none",
-                    borderRadius: "10px",
-                    background: "#f0f0f0",
-                    cursor: "pointer",
-                    fontSize: "20px",
-                  }}
-                >
-                  +
-                </button>
+                <div>
+                  <div
+                    style={{
+                      marginBottom: "8px",
+                      fontWeight: "600",
+                      color: "#333",
+                    }}
+                  >
+                    Навчальні (+2 грн)
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setTrainingSticksCount((prev) => Math.max(0, prev - 1))
+                      }
+                      style={{
+                        width: "38px",
+                        height: "38px",
+                        border: "none",
+                        borderRadius: "10px",
+                        background: "#f0f0f0",
+                        cursor: "pointer",
+                        fontSize: "20px",
+                      }}
+                    >
+                      -
+                    </button>
+
+                    <div
+                      style={{
+                        minWidth: "30px",
+                        textAlign: "center",
+                        fontWeight: "700",
+                        fontSize: "16px",
+                      }}
+                    >
+                      {trainingSticksCount}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setTrainingSticksCount((prev) => prev + 1)}
+                      style={{
+                        width: "38px",
+                        height: "38px",
+                        border: "none",
+                        borderRadius: "10px",
+                        background: "#f0f0f0",
+                        cursor: "pointer",
+                        fontSize: "20px",
+                      }}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              {sticksType === "training" && sticksCount > 0 ? (
+              {sticksExtraPrice > 0 && (
                 <div
                   style={{
-                    marginTop: "10px",
+                    marginTop: "12px",
                     fontSize: "14px",
                     color: "#666",
                   }}
                 >
                   Додатково за навчальні палички: {sticksExtraPrice} грн
                 </div>
-              ) : null}
+              )}
             </div>
 
             <textarea

@@ -37,10 +37,10 @@ export function CartProvider({ children }) {
   const [deliveryDistanceKm, setDeliveryDistanceKm] = useState(null);
   const [deliverySummary, setDeliverySummary] = useState(null);
 
-  const [sticksType, setSticksType] = useState("regular"); // regular | training
-  const [sticksCount, setSticksCount] = useState(0);
+  const [regularSticksCount, setRegularSticksCount] = useState(0);
+  const [trainingSticksCount, setTrainingSticksCount] = useState(0);
 
-  const sticksExtraPrice = sticksType === "training" ? sticksCount * 2 : 0;
+  const sticksExtraPrice = trainingSticksCount * 2;
 
   useEffect(() => {
     localStorage.setItem("cartItems", JSON.stringify(cartItems));
@@ -226,10 +226,10 @@ export function CartProvider({ children }) {
         deliverySummary,
         setDeliverySummary,
 
-        sticksType,
-        setSticksType,
-        sticksCount,
-        setSticksCount,
+        regularSticksCount,
+        setRegularSticksCount,
+        trainingSticksCount,
+        setTrainingSticksCount,
         sticksExtraPrice,
         checkoutTotalPrice,
       }}

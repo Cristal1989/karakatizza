@@ -33,7 +33,7 @@ export default function Success() {
             color: "#222",
           }}
         >
-          Заказ принят
+          Змовлення прийнято
         </h1>
 
         <p
@@ -44,7 +44,8 @@ export default function Success() {
             lineHeight: 1.6,
           }}
         >
-          Спасибо за заказ. Мы уже получили его и скоро начнём готовить.
+          Дякую за замовлення. Ми вже отримали його і незабаром почнемо
+          готувати.
         </p>
 
         <Link
@@ -59,7 +60,7 @@ export default function Success() {
             fontWeight: "700",
           }}
         >
-          Вернуться в меню
+          Повернутися в меню
         </Link>
       </div>
     </div>

@@ -1,7 +1,15 @@
 import React from "react";
+import { SHOP_LOCATION } from "../config/deliveryConfig";
 
 export default function Header() {
   const isMobile = window.matchMedia("(max-width: 768px)").matches;
+
+  const openMap = () => {
+    window.open(
+      `https://www.google.com/maps?q=${SHOP_LOCATION.lat},${SHOP_LOCATION.lng}`,
+      "_blank"
+    );
+  };
 
   return (
     <header
@@ -99,6 +107,12 @@ export default function Header() {
             marginLeft: isMobile ? "94px" : "none",
           }}
         >
+          <div className="header-right">
+            <button className="mobile-map-btn" onClick={openMap}>
+              <img src="/images/geo.png" alt="Карта" />
+            </button>
+          </div>
+
           <a
             href="tel:0965881010"
             style={{

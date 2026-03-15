@@ -62,16 +62,30 @@ export default function CartDrawer() {
       const query = encodeURIComponent(q);
 
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ua&q=${query}`
+        `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ua&addressdetails=1&q=${query}`
       );
 
       const data = await response.json();
 
       if (Array.isArray(data) && data.length > 0) {
+        const item = data[0];
+
+        const road =
+          item.address?.road ||
+          item.address?.pedestrian ||
+          item.address?.residential ||
+          item.address?.street ||
+          "";
+
+        const houseNumber = item.address?.house_number || "";
+
+        const shortLabel = [road, houseNumber].filter(Boolean).join(" ");
+
         return {
-          lat: Number(data[0].lat),
-          lng: Number(data[0].lon),
-          label: data[0].display_name,
+          lat: Number(item.lat),
+          lng: Number(item.lon),
+          label: item.display_name,
+          shortLabel: shortLabel || item.display_name,
         };
       }
     }
@@ -91,15 +105,15 @@ export default function CartDrawer() {
 
       setDeliveryInfo({
         distanceKm,
-        resolvedAddress: location.label,
+        resolvedAddress: location.shortLabel || location.label,
         addressFound: true,
       });
 
-      setConfirmedAddress(location.label);
+      setConfirmedAddress(location.shortLabel || location.label);
       setDeliveryDistanceKm(distanceKm);
       setDeliverySummary({
         distanceKm,
-        resolvedAddress: location.label,
+        resolvedAddress: location.shortLabel || location.label,
         addressFound: true,
       });
     } catch (error) {
@@ -125,7 +139,7 @@ export default function CartDrawer() {
     const query = encodeURIComponent(`Миколаїв, ${addressText}`);
 
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ua&q=${query}`
+      `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ua&addressdetails=1&q=${query}`
     );
 
     const data = await response.json();
