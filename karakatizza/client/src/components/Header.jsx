@@ -15,6 +15,7 @@ export default function Header() {
     <header
       style={{
         background: "#2f3136",
+        position: "relative",
         color: "#fff",
         borderBottom: "1px solid rgba(255,255,255,0.08)",
         boxShadow: "0 4px 18px rgba(0,0,0,0.10)",
@@ -94,12 +95,6 @@ export default function Header() {
           </div>
         </div>
 
-        <div className="header-right">
-          <button className="mobile-map-btn" onClick={openMap}>
-            <img src="/images/geo.png" alt="Карта" />
-          </button>
-        </div>
-
         <div
           style={{
             display: isMobile ? "none" : "flex",
@@ -137,6 +132,30 @@ export default function Header() {
             Щодня з 10:00 до 22:00
           </div>
         </div>
+        {isMobile && (
+          <button
+            onClick={openMap}
+            style={{
+              position: "absolute",
+              top: "28px",
+              right: "8px",
+              border: "none",
+              background: "transparent",
+              padding: 0,
+              cursor: "pointer",
+            }}
+          >
+            <img
+              src="/images/geo1.png"
+              alt="Карта"
+              style={{
+                width: "44px",
+                height: "44px",
+                objectFit: "contain",
+              }}
+            />
+          </button>
+        )}
       </div>
     </header>
   );
