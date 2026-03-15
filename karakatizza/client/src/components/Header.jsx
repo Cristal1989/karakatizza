@@ -62,7 +62,7 @@ export default function Header() {
                 width: isMobile ? "72px" : "130px",
                 height: "auto",
                 objectFit: "contain",
-                transform: isMobile ? "translateY(0)" : "translateY(24px)",
+                transform: isMobile ? "translateY(18px)" : "translateY(24px)",
                 flexShrink: 0,
               }}
             />
