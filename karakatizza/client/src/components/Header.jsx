@@ -10,7 +10,8 @@ export default function Header() {
         color: "#fff",
         borderBottom: "1px solid rgba(255,255,255,0.08)",
         boxShadow: "0 4px 18px rgba(0,0,0,0.10)",
-        padding: isMobile ? "12px 16px" : "18px 32px",
+        padding: isMobile ? "14px 16px 18px" : "18px 32px",
+        overflow: "visible",
       }}
     >
       <div
@@ -21,7 +22,7 @@ export default function Header() {
           flexDirection: isMobile ? "column" : "row",
           alignItems: isMobile ? "flex-start" : "center",
           justifyContent: "space-between",
-          gap: isMobile ? "12px" : "24px",
+          gap: isMobile ? "10px" : "24px",
           overflow: "visible",
         }}
       >
@@ -61,7 +62,7 @@ export default function Header() {
           <div style={{ minWidth: 0 }}>
             <div
               style={{
-                fontSize: isMobile ? "28px" : "40px",
+                fontSize: isMobile ? "34px" : "40px",
                 fontWeight: 800,
                 color: "#fff",
                 lineHeight: 1,
@@ -75,9 +76,9 @@ export default function Header() {
               style={{
                 marginTop: isMobile ? "none" : "8px",
                 fontSize: isMobile ? "15px" : "17px",
-                lineHeight: 1.35,
+                lineHeight: 1.3,
                 color: "rgba(255,255,255,0.78)",
-                maxWidth: isMobile ? "220px" : "none",
+                maxWidth: isMobile ? "230px" : "none",
               }}
             >
               Доставка ролів, сетів, закусок і напоїв
@@ -95,7 +96,7 @@ export default function Header() {
             paddingLeft: isMobile ? 0 : "12px",
             alignSelf: isMobile ? "stretch" : "none",
             textAlign: isMobile ? "left" : "none",
-            marginLeft: isMobile ? "84px" : "none",
+            marginLeft: isMobile ? "94px" : "none",
           }}
         >
           <a
@@ -103,7 +104,8 @@ export default function Header() {
             style={{
               color: "#ffd54a",
               textDecoration: "none",
-              fontSize: isMobile ? "22px" : "28px",
+              fontSize: isMobile ? "24px" : "28px",
+              marginTop: isMobile ? "4px" : "none",
               fontWeight: 800,
               lineHeight: 1,
             }}
