@@ -88,7 +88,7 @@ export default function Header() {
 
         <div
           style={{
-            display: "flex",
+            display: isMobile ? "none" : "flex",
             flexDirection: "column",
             alignItems: isMobile ? "none" : "flex-end",
             gap: "6px",
