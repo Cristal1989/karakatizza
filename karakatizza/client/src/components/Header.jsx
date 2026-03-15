@@ -32,11 +32,13 @@ export default function Header() {
             gap: isMobile ? "12px" : "16px",
           }}
         >
-          <div
+          <a
+            href="#menu"
             style={{
               width: isMobile ? "56px" : "72px",
               height: isMobile ? "56px" : "72px",
-              display: "flex",
+              display: "inline-flex",
+              textDecoration: "none",
               alignItems: "center",
               justifyContent: "center",
               overflow: "visible",
@@ -54,7 +56,7 @@ export default function Header() {
                 flexShrink: 0,
               }}
             />
-          </div>
+          </a>
 
           <div style={{ minWidth: 0 }}>
             <div

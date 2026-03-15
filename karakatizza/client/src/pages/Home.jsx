@@ -10,6 +10,7 @@ import CartToast from "../components/CartToast";
 import UpsellSection from "../components/UpsellSection";
 import DesktopCartBar from "../components/DesktopCartBar";
 import MobileCallButton from "../components/MobileCallButton";
+import { useCart } from "../context/CartContext";
 import { getProducts } from "../api/productsApi";
 import { getBanners } from "../api/bannersApi";
 
@@ -20,6 +21,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [banners, setBanners] = useState([]);
   const sectionsRef = useRef({});
+  const { isCartOpen } = useCart();
 
   useEffect(() => {
     loadProducts();
@@ -134,6 +136,7 @@ export default function Home() {
         </section> */}
 
         <div
+          id="menu"
           style={{
             position: "sticky",
             top: 0,
