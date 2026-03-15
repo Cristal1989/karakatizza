@@ -94,6 +94,12 @@ export default function Header() {
           </div>
         </div>
 
+        <div className="header-right">
+          <button className="mobile-map-btn" onClick={openMap}>
+            <img src="/images/geo.png" alt="Карта" />
+          </button>
+        </div>
+
         <div
           style={{
             display: isMobile ? "none" : "flex",
@@ -107,12 +113,6 @@ export default function Header() {
             marginLeft: isMobile ? "94px" : "none",
           }}
         >
-          <div className="header-right">
-            <button className="mobile-map-btn" onClick={openMap}>
-              <img src="/images/geo.png" alt="Карта" />
-            </button>
-          </div>
-
           <a
             href="tel:0965881010"
             style={{
