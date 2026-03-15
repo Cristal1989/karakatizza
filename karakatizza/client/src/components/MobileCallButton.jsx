@@ -1,7 +1,7 @@
-export default function MobileCallButton() {
+export default function MobileCallButton({ isCartOpen }) {
   const isMobile = window.matchMedia("(max-width: 768px)").matches;
 
-  if (!isMobile) return null;
+  if (!isMobile || isCartOpen) return null;
 
   return (
     <a
