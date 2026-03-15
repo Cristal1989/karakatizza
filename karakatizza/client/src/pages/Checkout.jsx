@@ -1,12 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { createOrder } from "../api/ordersApi";
+import {
+  getRouteDistanceKm,
+  getDeliveryInfo,
+} from "../services/deliveryService";
 
 export default function Checkout() {
   const navigate = useNavigate();
   const { cartItems, clearCart, totalPrice } = useCart();
+  const {
+    checkoutMode,
+    setCheckoutMode,
+    confirmedAddress,
+    sticksType,
+    setSticksType,
+    sticksCount,
+    setSticksCount,
+    sticksExtraPrice,
+    checkoutTotalPrice,
+  } = useCart();
 
+  const [address, setAddress] = useState("");
   const [form, setForm] = useState({
     name: "",
     phone: "+380",
@@ -16,6 +32,12 @@ export default function Checkout() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (checkoutMode === "delivery" && confirmedAddress) {
+      setAddress(confirmedAddress);
+    }
+  }, [confirmedAddress, checkoutMode]);
 
   const inputStyle = {
     width: "100%",
@@ -156,6 +178,53 @@ export default function Checkout() {
     }
   };
 
+  async function geocodeAddress(addressText) {
+    const query = encodeURIComponent(`Миколаїв, ${addressText}`);
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ua&q=${query}`
+    );
+
+    const data = await response.json();
+
+    if (!Array.isArray(data) || data.length === 0) {
+      throw new Error("Адресу не знайдено");
+    }
+
+    return {
+      lat: Number(data[0].lat),
+      lng: Number(data[0].lon),
+      displayName: data[0].display_name,
+    };
+  }
+
+  async function handleCheckDelivery() {
+    if (!address.trim()) {
+      setDeliveryError("Введіть адресу доставки");
+      setDeliveryInfo(null);
+      return;
+    }
+
+    try {
+      setDeliveryLoading(true);
+      setDeliveryError("");
+      setDeliveryInfo(null);
+
+      const location = await geocodeAddress(address);
+      const distanceKm = await getRouteDistanceKm(location.lat, location.lng);
+      const info = getDeliveryInfo(distanceKm, totalPrice);
+
+      setDeliveryInfo({
+        ...info,
+        resolvedAddress: location.displayName,
+      });
+    } catch (error) {
+      setDeliveryError(error.message || "Не вдалося перевірити доставку");
+      setDeliveryInfo(null);
+    } finally {
+      setDeliveryLoading(false);
+    }
+  }
+
   return (
     <div
       style={{
@@ -166,7 +235,7 @@ export default function Checkout() {
     >
       <div
         style={{
-          maxWidth: "1200px",
+          maxWidth: "1280px",
           margin: "0 auto",
           display: "grid",
           gridTemplateColumns: "1.2fr 0.8fr",
@@ -205,14 +274,67 @@ export default function Checkout() {
             Оформлення замовлення
           </h1>
 
-          <p
+          <div
             style={{
-              color: "#666",
-              marginBottom: "24px",
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "10px",
+              marginBottom: "16px",
             }}
           >
-            Заповніть дані для доставки
+            <button
+              type="button"
+              onClick={() => setCheckoutMode("delivery")}
+              style={{
+                border: "none",
+                borderRadius: "12px",
+                padding: "12px",
+                fontWeight: "700",
+                cursor: "pointer",
+                background: checkoutMode === "delivery" ? "#e56a45" : "#f2f2f2",
+                color: checkoutMode === "delivery" ? "#fff" : "#222",
+              }}
+            >
+              Доставка
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setCheckoutMode("pickup")}
+              style={{
+                border: "none",
+                borderRadius: "12px",
+                padding: "12px",
+                fontWeight: "700",
+                cursor: "pointer",
+                background: checkoutMode === "pickup" ? "#e56a45" : "#f2f2f2",
+                color: checkoutMode === "pickup" ? "#fff" : "#222",
+              }}
+            >
+              Самовивіз
+            </button>
+          </div>
+
+          <p style={{ color: "#666", marginBottom: "24px" }}>
+            {checkoutMode === "delivery"
+              ? "Заповніть дані для доставки"
+              : "Заповніть дані для самовивозу"}
           </p>
+
+          {checkoutMode === "pickup" && (
+            <div
+              style={{
+                padding: "12px",
+                background: "#f7f7f7",
+                borderRadius: "12px",
+                marginBottom: "16px",
+                color: "#333",
+                fontWeight: "600",
+              }}
+            >
+              Самовивіз: Миколаїв, вул. Мала Морська 108 ТЦ Портал
+            </div>
+          )}
 
           <form
             onSubmit={handleSubmit}
@@ -237,14 +359,144 @@ export default function Checkout() {
               style={inputStyle}
             />
 
-            <input
-              type="text"
-              placeholder="Адреса доставки"
-              value={form.address}
-              onChange={handleAddressChange}
-              required
-              style={inputStyle}
-            />
+            {checkoutMode === "delivery" && (
+              <input
+                type="text"
+                placeholder="Адреса доставки"
+                value={form.address}
+                onChange={handleAddressChange}
+                required
+                style={inputStyle}
+              />
+            )}
+
+            <div
+              style={{
+                marginBottom: "16px",
+                padding: "14px",
+                borderRadius: "12px",
+                border: "1px solid #e8e8e8",
+                background: "#fff",
+              }}
+            >
+              <div
+                style={{
+                  fontWeight: "700",
+                  color: "#222",
+                  marginBottom: "12px",
+                }}
+              >
+                Палички
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "10px",
+                  marginBottom: "12px",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setSticksType("regular")}
+                  style={{
+                    border: "none",
+                    borderRadius: "12px",
+                    padding: "12px",
+                    fontWeight: "700",
+                    cursor: "pointer",
+                    background:
+                      sticksType === "regular" ? "#e56a45" : "#f2f2f2",
+                    color: sticksType === "regular" ? "#fff" : "#222",
+                  }}
+                >
+                  Звичайні
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSticksType("training")}
+                  style={{
+                    border: "none",
+                    borderRadius: "12px",
+                    padding: "12px",
+                    fontWeight: "700",
+                    cursor: "pointer",
+                    background:
+                      sticksType === "training" ? "#e56a45" : "#f2f2f2",
+                    color: sticksType === "training" ? "#fff" : "#222",
+                  }}
+                >
+                  Навчальні (+2 грн)
+                </button>
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSticksCount((prev) => Math.max(0, prev - 1))
+                  }
+                  style={{
+                    width: "38px",
+                    height: "38px",
+                    border: "none",
+                    borderRadius: "10px",
+                    background: "#f0f0f0",
+                    cursor: "pointer",
+                    fontSize: "20px",
+                  }}
+                >
+                  -
+                </button>
+
+                <div
+                  style={{
+                    minWidth: "30px",
+                    textAlign: "center",
+                    fontWeight: "700",
+                    fontSize: "16px",
+                  }}
+                >
+                  {sticksCount}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setSticksCount((prev) => prev + 1)}
+                  style={{
+                    width: "38px",
+                    height: "38px",
+                    border: "none",
+                    borderRadius: "10px",
+                    background: "#f0f0f0",
+                    cursor: "pointer",
+                    fontSize: "20px",
+                  }}
+                >
+                  +
+                </button>
+              </div>
+
+              {sticksType === "training" && sticksCount > 0 ? (
+                <div
+                  style={{
+                    marginTop: "10px",
+                    fontSize: "14px",
+                    color: "#666",
+                  }}
+                >
+                  Додатково за навчальні палички: {sticksExtraPrice} грн
+                </div>
+              ) : null}
+            </div>
 
             <textarea
               placeholder="Коментар до замовлення"
@@ -370,7 +622,7 @@ export default function Checkout() {
             }}
           >
             <span>Разом</span>
-            <span>{totalPrice} грн</span>
+            <span>{checkoutTotalPrice} грн</span>
           </div>
         </div>
       </div>

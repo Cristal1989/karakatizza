@@ -13,6 +13,7 @@ import MobileCallButton from "../components/MobileCallButton";
 import { useCart } from "../context/CartContext";
 import { getProducts } from "../api/productsApi";
 import { getBanners } from "../api/bannersApi";
+import { getRouteDistanceKm } from "../services/deliveryService";
 
 export default function Home() {
   const [products, setProducts] = useState([]);
@@ -26,6 +27,19 @@ export default function Home() {
   useEffect(() => {
     loadProducts();
     loadBanners();
+  }, []);
+
+  useEffect(() => {
+    async function testRoute() {
+      try {
+        const km = await getRouteDistanceKm(46.975, 31.994);
+        console.log("TEST DISTANCE KM:", km);
+      } catch (error) {
+        console.error("TEST ROUTE ERROR:", error);
+      }
+    }
+
+    testRoute();
   }, []);
 
   async function loadProducts() {

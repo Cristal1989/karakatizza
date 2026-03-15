@@ -10,6 +10,7 @@ import { fileURLToPath } from "url";
 import compression from "compression";
 import cloudinary from "./cloudinary.js";
 import { pool, initDb } from "./db.js";
+import deliveryRoutes from "./routes/delivery.js";
 
 dotenv.config();
 
@@ -33,6 +34,7 @@ app.use(
 
 app.options("*", cors());
 app.use(express.json());
+app.use("/api/delivery", deliveryRoutes);
 
 const storage = new CloudinaryStorage({
   cloudinary,

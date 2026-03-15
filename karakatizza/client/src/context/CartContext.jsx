@@ -32,6 +32,16 @@ export function CartProvider({ children }) {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
 
+  const [checkoutMode, setCheckoutMode] = useState("delivery");
+  const [confirmedAddress, setConfirmedAddress] = useState("");
+  const [deliveryDistanceKm, setDeliveryDistanceKm] = useState(null);
+  const [deliverySummary, setDeliverySummary] = useState(null);
+
+  const [sticksType, setSticksType] = useState("regular"); // regular | training
+  const [sticksCount, setSticksCount] = useState(0);
+
+  const sticksExtraPrice = sticksType === "training" ? sticksCount * 2 : 0;
+
   useEffect(() => {
     localStorage.setItem("cartItems", JSON.stringify(cartItems));
   }, [cartItems]);
@@ -182,6 +192,7 @@ export function CartProvider({ children }) {
       return sum + item.price * paidQuantity;
     }, 0);
   }, [cartItems]);
+  const checkoutTotalPrice = totalPrice + sticksExtraPrice;
 
   const openCart = () => setIsCartOpen(true);
   const closeCart = () => setIsCartOpen(false);
@@ -205,6 +216,22 @@ export function CartProvider({ children }) {
         totalPrice,
         toastMessage,
         setToastMessage,
+
+        checkoutMode,
+        setCheckoutMode,
+        confirmedAddress,
+        setConfirmedAddress,
+        deliveryDistanceKm,
+        setDeliveryDistanceKm,
+        deliverySummary,
+        setDeliverySummary,
+
+        sticksType,
+        setSticksType,
+        sticksCount,
+        setSticksCount,
+        sticksExtraPrice,
+        checkoutTotalPrice,
       }}
     >
       {children}

@@ -3,6 +3,10 @@ import { useEffect, useState } from "react";
 import { useCart } from "../hooks/useCart";
 import { FREE_DELIVERY_THRESHOLD } from "../data/products";
 import { getProducts, getImageUrl } from "../api/productsApi";
+import {
+  getRouteDistanceKm,
+  getDeliveryInfo,
+} from "../services/deliveryService";
 
 export default function CartDrawer() {
   const {
@@ -15,9 +19,22 @@ export default function CartDrawer() {
     increaseQuantity,
     decreaseQuantity,
     addToCart,
+    checkoutMode,
+    setCheckoutMode,
+    confirmedAddress,
+    setConfirmedAddress,
+    deliveryDistanceKm,
+    setDeliveryDistanceKm,
+    deliverySummary,
+    setDeliverySummary,
   } = useCart();
 
   const [upsellProducts, setUpsellProducts] = useState([]);
+
+  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [deliveryError, setDeliveryError] = useState("");
+  const [deliveryLoading, setDeliveryLoading] = useState(false);
+  const [deliveryInfo, setDeliveryInfo] = useState(null);
 
   const isMobile = window.matchMedia("(max-width: 768px)").matches;
 
@@ -36,6 +53,94 @@ export default function CartDrawer() {
     };
   }, [isCartOpen]);
 
+  async function geocodeAddress(addressText) {
+    const normalized = normalizeAddress(addressText);
+
+    const queries = [Миколаїв`${normalized}`, Николаев`${normalized}`];
+
+    for (const q of queries) {
+      const query = encodeURIComponent(q);
+
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ua&q=${query}`
+      );
+
+      const data = await response.json();
+
+      if (Array.isArray(data) && data.length > 0) {
+        return {
+          lat: Number(data[0].lat),
+          lng: Number(data[0].lon),
+          label: data[0].display_name,
+        };
+      }
+    }
+
+    throw new Error("ADDRESS_NOT_FOUND");
+  }
+
+  async function handleApplyAddress() {
+    if (!deliveryAddress.trim()) return;
+
+    try {
+      setDeliveryLoading(true);
+
+      const location = await geocodeAddress(deliveryAddress);
+
+      const distanceKm = await getRouteDistanceKm(location.lat, location.lng);
+
+      setDeliveryInfo({
+        distanceKm,
+        resolvedAddress: location.label,
+        addressFound: true,
+      });
+
+      setConfirmedAddress(location.label);
+      setDeliveryDistanceKm(distanceKm);
+      setDeliverySummary({
+        distanceKm,
+        resolvedAddress: location.label,
+        addressFound: true,
+      });
+    } catch (error) {
+      setDeliveryInfo({
+        type: "operator",
+        minOrder: null,
+        remaining: 0,
+        freeDelivery: false,
+        addressFound: false,
+      });
+
+      setConfirmedAddress("");
+      setDeliveryDistanceKm(null);
+      setDeliverySummary({
+        addressFound: false,
+      });
+    } finally {
+      setDeliveryLoading(false);
+    }
+  }
+
+  async function geocodeAddress(addressText) {
+    const query = encodeURIComponent(`Миколаїв, ${addressText}`);
+
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ua&q=${query}`
+    );
+
+    const data = await response.json();
+
+    if (!Array.isArray(data) || data.length === 0) {
+      throw new Error("ADDRESS_NOT_FOUND");
+    }
+
+    return {
+      lat: Number(data[0].lat),
+      lng: Number(data[0].lon),
+      label: data[0].display_name,
+    };
+  }
+
   async function loadUpsell() {
     try {
       const products = await getProducts();
@@ -53,12 +158,61 @@ export default function CartDrawer() {
     }
   }
 
-  const remainingForFreeDelivery = Math.max(
-    FREE_DELIVERY_THRESHOLD - totalPrice,
-    0
-  );
+  const defaultMinOrder = 400;
 
-  const hasFreeDelivery = totalPrice >= FREE_DELIVERY_THRESHOLD;
+  const calculatedDeliveryInfo =
+    deliveryInfo?.distanceKm != null
+      ? getDeliveryInfo(deliveryInfo.distanceKm, totalPrice)
+      : null;
+
+  const currentMinOrder = calculatedDeliveryInfo?.minOrder ?? defaultMinOrder;
+  const progressPercent = Math.min((totalPrice / currentMinOrder) * 100, 100);
+  const isFreeReached = progressPercent >= 100;
+
+  let deliveryTitle = `До безкоштовної доставки залишилось ${Math.max(
+    0,
+    currentMinOrder - totalPrice
+  )} грн`;
+
+  let deliveryHint = "Введіть адресу для уточнення безкоштовної доставки";
+
+  if (isFreeReached) {
+    deliveryTitle = "У вас безкоштовна доставка";
+    deliveryHint = deliveryInfo
+      ? ""
+      : "Введіть адресу для уточнення безкоштовної доставки";
+  }
+
+  if (deliveryInfo && deliveryInfo.addressFound === false) {
+    deliveryTitle = "Не можу знайти адресу";
+    deliveryHint = "Уточніть адресу у оператора";
+  }
+
+  if (
+    calculatedDeliveryInfo?.type === "operator" &&
+    deliveryInfo?.addressFound !== false
+  ) {
+    deliveryTitle = "Доставка платна, уточнюйте у оператора";
+    deliveryHint = "";
+  }
+
+  function normalizeAddress(input) {
+    let value = input.toLowerCase().trim();
+
+    const replacements = {
+      ё: "е",
+      й: "и",
+      ъ: "",
+      ы: "и",
+      э: "е",
+    };
+
+    Object.entries(replacements).forEach(([from, to]) => {
+      value = value.replaceAll(from, to);
+    });
+
+    return value;
+  }
 
   const cartItemIds = cartItems.map((item) => item.id);
 
@@ -153,10 +307,12 @@ export default function CartDrawer() {
         >
           <div
             style={{
-              backgroundColor: hasFreeDelivery ? "#e8f7ed" : "#fff3e0",
-              border: `1px solid ${hasFreeDelivery ? "#b7e4c7" : "#ffd59e"}`,
+              backgroundColor: isFreeReached ? "#e8f7ed" : "#f7f3eb",
+              border: `1px solid ${isFreeReached ? "#b7e4c7" : "#eed7b0"}`,
               borderRadius: "14px",
               padding: "14px",
+              display: "grid",
+              gap: "10px",
             }}
           >
             <div
@@ -164,12 +320,10 @@ export default function CartDrawer() {
                 fontSize: "14px",
                 fontWeight: "700",
                 color: "#222",
-                marginBottom: "10px",
+                lineHeight: 1.35,
               }}
             >
-              {hasFreeDelivery
-                ? "🎉 У вас безкоштовна доставка"
-                : `До безкоштовної доставки залишилось ${remainingForFreeDelivery} грн`}
+              {deliveryTitle}
             </div>
 
             <div
@@ -183,12 +337,9 @@ export default function CartDrawer() {
             >
               <div
                 style={{
-                  width: `${Math.min(
-                    (totalPrice / FREE_DELIVERY_THRESHOLD) * 100,
-                    100
-                  )}%`,
+                  width: `${progressPercent}%`,
                   height: "100%",
-                  backgroundColor: hasFreeDelivery ? "#2e7d32" : "#f57c00",
+                  backgroundColor: isFreeReached ? "#2e7d32" : "#f57c00",
                   borderRadius: "999px",
                   transition: "0.3s",
                 }}
@@ -197,13 +348,87 @@ export default function CartDrawer() {
 
             <div
               style={{
-                marginTop: "8px",
-                fontSize: "12px",
+                fontSize: "13px",
                 color: "#666",
               }}
             >
-              Поріг безкоштовної доставки: {FREE_DELIVERY_THRESHOLD} грн
+              Поріг безкоштовної доставки: {currentMinOrder} грн
             </div>
+
+            {deliveryHint ? (
+              <div
+                style={{
+                  fontSize: "13px",
+                  color: isFreeReached ? "#9a6700" : "#666",
+                  fontWeight: isFreeReached ? "700" : "400",
+                  lineHeight: 1.35,
+                }}
+              >
+                {deliveryHint}
+              </div>
+            ) : null}
+
+            <div style={{ position: "relative" }}>
+              <input
+                type="text"
+                value={deliveryAddress}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  const formatted = value
+                    ? value.charAt(0).toUpperCase() + value.slice(1)
+                    : "";
+
+                  setDeliveryAddress(formatted);
+                  setDeliveryInfo(null);
+                }}
+                onKeyDown={(e) => {
+                  if (
+                    e.key === "Enter" &&
+                    deliveryAddress.trim() &&
+                    !deliveryLoading
+                  ) {
+                    e.preventDefault();
+                    handleApplyAddress();
+                  }
+                }}
+                enterKeyHint="send"
+                placeholder="Вулиця та номер будинку (наприклад: Озерна 11)"
+                style={{
+                  width: "100%",
+                  boxSizing: "border-box",
+                  padding: "13px 14px",
+                  borderRadius: "12px",
+                  border: "1px solid #ddd",
+                  fontSize: "15px",
+                  outline: "none",
+                  background: "#fff",
+                }}
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleApplyAddress}
+              disabled={!deliveryAddress.trim() || deliveryLoading}
+              style={{
+                border: "none",
+                borderRadius: "12px",
+                padding: "13px 14px",
+                background:
+                  !deliveryAddress.trim() || deliveryLoading
+                    ? "#cccccc"
+                    : "#e56a45",
+                color: "#fff",
+                fontSize: "15px",
+                fontWeight: "700",
+                cursor:
+                  !deliveryAddress.trim() || deliveryLoading
+                    ? "default"
+                    : "pointer",
+              }}
+            >
+              {deliveryLoading ? "Завантаження..." : "Ввести"}
+            </button>
           </div>
         </div>
 

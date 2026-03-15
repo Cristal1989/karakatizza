@@ -56,7 +56,7 @@ export default function CategoryTabs({ activeCategory, onChange }) {
                 height: isMobile ? "56px" : "72px",
                 borderRadius: "999px",
                 background:
-                  activeCategory === category.id ? "#fff3c4" : "#f5f5f5",
+                  activeCategory === category.id ? "#fff3c4" : "#d9d7d7",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
