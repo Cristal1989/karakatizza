@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useCart } from "../hooks/useCart";
-import { FREE_DELIVERY_THRESHOLD } from "../data/products";
 import { getProducts, getImageUrl } from "../api/productsApi";
 import {
   getRouteDistanceKm,
