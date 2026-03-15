@@ -61,7 +61,7 @@ export default function Header() {
                 width: isMobile ? "72px" : "130px",
                 height: "auto",
                 objectFit: "contain",
-                transform: isMobile ? "translateY(6px)" : "translateY(24px)",
+                transform: isMobile ? "translateY(0)" : "translateY(24px)",
                 flexShrink: 0,
               }}
             />
@@ -110,7 +110,7 @@ export default function Header() {
             paddingLeft: isMobile ? 0 : "12px",
             alignSelf: isMobile ? "stretch" : "none",
             textAlign: isMobile ? "left" : "none",
-            marginLeft: isMobile ? "94px" : "none",
+            marginLeft: isMobile ? "0" : "none",
           }}
         >
           <a

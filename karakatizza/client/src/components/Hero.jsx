@@ -12,7 +12,7 @@ export default function Hero({ banners = [], products = [] }) {
     >
       <div
         style={{
-          maxWidth: "1280px",
+          maxWidth: isMobile ? "100%" : "1280px",
           margin: "0 auto",
           display: "grid",
           gridTemplateColumns: isMobile ? "1fr" : "1.55fr 1fr",
