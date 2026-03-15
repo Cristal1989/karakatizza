@@ -4,8 +4,6 @@ const router = express.Router();
 
 router.post("/route-distance", async (req, res) => {
   try {
-    console.log("REQ BODY:", req.body);
-
     const { customerLat, customerLng, shopLat, shopLng } = req.body || {};
 
     if (
@@ -27,9 +25,6 @@ router.post("/route-distance", async (req, res) => {
         error: "ORS_API_KEY не знайдено в server/.env",
       });
     }
-
-    console.log("Start ORS req");
-    console.log("ORS KEY loaded:", !!ORS_API_KEY);
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
@@ -58,10 +53,7 @@ router.post("/route-distance", async (req, res) => {
       clearTimeout(timeout);
     }
 
-    console.log("ORS STATUS:", response.status, response.statusText);
-
     const rawText = await response.text();
-    console.log("ORS RAW:", rawText);
 
     let data = {};
     try {
