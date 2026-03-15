@@ -193,7 +193,7 @@ export default function Home() {
       <CartDrawer />
       <MobileCartBar />
       <DesktopCartBar />
-      <MobileCallButton />
+      <MobileCallButton isCartOpen={isCartOpen} />
     </div>
   );
 }
