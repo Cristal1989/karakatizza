@@ -33,7 +33,7 @@ router.post("/route-distance", async (req, res) => {
 
     try {
       response = await fetch(
-        "https://api.openrouteservice.org/v2/directions/driving-car/json",
+        "https://api.openrouteservice.org/v2/directions/driving-car/geojson",
         {
           method: "POST",
           headers: {
