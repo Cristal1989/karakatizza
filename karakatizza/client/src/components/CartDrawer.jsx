@@ -46,7 +46,10 @@ export default function CartDrawer() {
     const isDiscountOfferItem = item.isDiscountOffer === true;
     const isGiftItem = (item.freeQuantity ?? 0) > 0;
 
-    return isRoll && !isDiscountOfferItem && !isGiftItem;
+    const isEligible = item.discountOfferEligible === true;
+
+    return isRoll && isEligible && !isDiscountOfferItem && !isGiftItem;
+    w;
   });
 
   const rollsSum = rollItemsForDiscountOffer.reduce((sum, item) => {
@@ -54,9 +57,17 @@ export default function CartDrawer() {
     return sum + item.price * paidQty;
   }, 0);
 
-  const hasDiscountOfferItemInCart = cartItems.some(
-    (item) => item.isDiscountOffer === true
-  );
+  const hasDiscountOfferItemInCart = cartItems.some((item) => {
+    const freeQty = Number(item.freeQuantity ?? 0);
+    const isDiscountOffer = item.isDiscountOffer === true;
+    return freeQty > 0 || isDiscountOffer;
+  });
+
+  useEffect(() => {
+    if (!hasDiscountOfferItemInCart) {
+      setDiscountOfferAccepted(false);
+    }
+  }, [hasDiscountOfferItemInCart]);
 
   const shouldTriggerDiscountOffer =
     rollsSum >= 600 &&

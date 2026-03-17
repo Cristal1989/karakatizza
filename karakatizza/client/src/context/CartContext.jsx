@@ -39,6 +39,7 @@ export function CartProvider({ children }) {
 
   const [regularSticksCount, setRegularSticksCount] = useState(0);
   const [trainingSticksCount, setTrainingSticksCount] = useState(0);
+  const [activePromoType, setActivePromoType] = useState(null);
 
   const sticksExtraPrice = trainingSticksCount * 2;
 
@@ -51,6 +52,11 @@ export function CartProvider({ children }) {
     return item ? Number(item.paidQuantity ?? item.quantity ?? 0) : 0;
   };
 
+  const getNextPromoType = (items) => {
+    const promoItem = items.find((item) => item.promoType);
+    return promoItem ? promoItem.promoType : null;
+  };
+
   const addToCart = (product, quantity = 1) => {
     const safePaidQuantity = Number(quantity) || 1;
 
@@ -58,9 +64,11 @@ export function CartProvider({ children }) {
       const existingItem = prev.find((item) => item.id === product.id);
 
       if (existingItem) {
-        const newPaidQuantity =
-          (existingItem.paidQuantity ?? existingItem.quantity ?? 0) +
-          safePaidQuantity;
+        const currentPaidQuantity = Number(
+          existingItem.paidQuantity ?? existingItem.quantity ?? 0
+        );
+
+        const newPaidQuantity = currentPaidQuantity + safePaidQuantity;
 
         const promo = calculatePromo(
           newPaidQuantity,
@@ -74,6 +82,10 @@ export function CartProvider({ children }) {
                 quantity: promo.totalQuantity,
                 paidQuantity: promo.paidQuantity,
                 freeQuantity: promo.freeQuantity,
+                isDiscountOffer:
+                  item.isDiscountOffer ?? product.isDiscountOffer ?? false,
+                discountLabel:
+                  item.discountLabel ?? product.discountLabel ?? "",
               }
             : item
         );
@@ -88,6 +100,8 @@ export function CartProvider({ children }) {
           quantity: promo.totalQuantity,
           paidQuantity: promo.paidQuantity,
           freeQuantity: promo.freeQuantity,
+          isDiscountOffer: product.isDiscountOffer ?? false,
+          discountLabel: product.discountLabel ?? "",
         },
       ];
     });
@@ -124,6 +138,8 @@ export function CartProvider({ children }) {
               quantity: promo.totalQuantity,
               paidQuantity: promo.paidQuantity,
               freeQuantity: promo.freeQuantity,
+              isDiscountOffer: product.isDiscountOffer ?? false,
+              discountLabel: product.discountLabel ?? "",
             }
           : item
       );

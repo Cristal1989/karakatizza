@@ -132,11 +132,11 @@ export default function Admin() {
   }, [products, categoryFilter, search]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
 
     setForm((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: type === "checkbox" ? checked : value,
     }));
   };
 
@@ -169,6 +169,10 @@ export default function Admin() {
       formData.append("popular", String(!!popular));
       formData.append("promoType", form.promoType || "none");
       formData.append("priority", String(form.priority || 10));
+      formData.append(
+        "discountOfferEligible",
+        String(!!form.discountOfferEligible)
+      );
 
       if (image) {
         formData.append("image", image);
@@ -207,6 +211,7 @@ export default function Admin() {
         description: "",
         promoType: "none",
         priority: 10,
+        discountOfferEligible: false,
       });
 
       setPopular(false);
@@ -270,6 +275,10 @@ export default function Admin() {
       formData.append("popular", !!product.popular);
       formData.append("promoType", product.promoType || "none");
       formData.append("priority", nextPriority);
+      formData.append(
+        "discountOfferEligible",
+        String(!!form.discountOfferEligible)
+      );
 
       await updateProduct(product.id, formData);
 
@@ -292,6 +301,7 @@ export default function Admin() {
       description: product.description || "",
       promoType: product.promoType || "none",
       priority: Number(product.priority ?? 10),
+      discountOfferEligible: product.discountOfferEligible ?? false,
     });
 
     setPopular(!!product.popular);
@@ -315,6 +325,7 @@ export default function Admin() {
       description: "",
       promoType: "none",
       priority: 10,
+      discountOfferEligible: false,
     });
 
     setPopular(false);
@@ -736,6 +747,26 @@ export default function Admin() {
                       onChange={(e) => setPopular(e.target.checked)}
                     />
                     <span style={{ fontWeight: 700 }}>Хіт продажу</span>
+                  </label>
+                  <label
+                    style={{
+                      display: "flex",
+                      gap: "8px",
+                      alignItems: "center",
+                      marginTop: "10px",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={form.discountOfferEligible || false}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          discountOfferEligible: e.target.checked,
+                        })
+                      }
+                    />
+                    Участвует в акции (скидка %)
                   </label>
 
                   <div style={{ marginBottom: "16px" }}>

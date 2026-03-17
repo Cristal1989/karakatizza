@@ -89,7 +89,8 @@ app.get("/products", async (req, res) => {
         image,
         popular,
         promo_type AS "promoType",
-        priority
+        priority,
+        discount_offer_eligible AS "discountOfferEligible"
       FROM products
       ORDER BY priority ASC, created_at ASC
     `);
@@ -100,6 +101,7 @@ app.get("/products", async (req, res) => {
       priority: Number(p.priority ?? 10),
       popular: !!p.popular,
       promoType: p.promoType || "none",
+      discountOfferEligible: !!p.discountOfferEligible,
     }));
 
     res.set("Cache-Control", "public, max-age=120");
@@ -151,8 +153,16 @@ app.get("/banners", async (req, res) => {
 
 app.post("/products", upload.single("image"), async (req, res) => {
   try {
-    const { name, price, category, description, popular, promoType, priority } =
-      req.body;
+    const {
+      name,
+      price,
+      category,
+      description,
+      popular,
+      promoType,
+      priority,
+      discountOfferEligible,
+    } = req.body;
 
     if (!name || !price || !category) {
       return res.status(400).json({
@@ -172,21 +182,23 @@ app.post("/products", upload.single("image"), async (req, res) => {
       popular: popular === "true",
       promoType: promoType || "none",
       priority: Number(priority) || 10,
+      discountOfferEligible: discountOfferEligible === "true",
     };
 
     await pool.query(
       `INSERT INTO products (
-        id,
-        name,
-        price,
-        category,
-        description,
-        image,
-        popular,
-        promo_type,
-        priority
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+  id,
+  name,
+  price,
+  category,
+  description,
+  image,
+  popular,
+  promo_type,
+  priority,
+  discount_offer_eligible
+)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
       [
         newProduct.id,
         newProduct.name,
@@ -197,6 +209,7 @@ app.post("/products", upload.single("image"), async (req, res) => {
         newProduct.popular,
         newProduct.promoType,
         newProduct.priority,
+        newProduct.discountOfferEligible,
       ]
     );
 
@@ -296,6 +309,7 @@ app.put("/products/:id", (req, res) => {
         popular,
         promoType,
         priority,
+        discountOfferEligible,
       } = req.body;
 
       console.log("PUT PRODUCT BODY:", req.body);
@@ -358,19 +372,23 @@ app.put("/products/:id", (req, res) => {
         popular: popular === "true",
         promoType: promoType || "none",
         priority: Number(priority) || 10,
+        discountOfferEligible: discountOfferEligible === "true",
       };
+
+      console.log("BODY:", req.body);
 
       await pool.query(
         `UPDATE products
-         SET name = $1,
-             price = $2,
-             category = $3,
-             description = $4,
-             image = $5,
-             popular = $6,
-             promo_type = $7,
-             priority = $8
-         WHERE id = $9`,
+   SET name = $1,
+       price = $2,
+       category = $3,
+       description = $4,
+       image = $5,
+       popular = $6,
+       promo_type = $7,
+       priority = $8,
+       discount_offer_eligible = $9
+   WHERE id = $10`,
         [
           updatedProduct.name,
           updatedProduct.price,
@@ -380,6 +398,7 @@ app.put("/products/:id", (req, res) => {
           updatedProduct.popular,
           updatedProduct.promoType,
           updatedProduct.priority,
+          updatedProduct.discountOfferEligible,
           updatedProduct.id,
         ]
       );
@@ -698,10 +717,9 @@ app.post("/order", async (req, res) => {
       }, 0) + (sticksExtraPrice ?? 0);
 
     if ((regularSticksCount ?? 0) > 0 || (trainingSticksCount ?? 0) > 0) {
-      sticksText = `🥢 Паличкu:
-- Звичайні: ${regularSticksCount ?? 0}
-- Навчальні: ${trainingSticksCount ?? 0}
-`;
+      sticksText = `🥢 Паличкu: звичайні: ${
+        regularSticksCount ?? 0
+      }, навчальні: ${trainingSticksCount ?? 0}`;
     }
 
     let message = `🆕 НОВЕ ЗАМОВЛЕННЯ\n\n`;
@@ -743,7 +761,7 @@ app.post("/order", async (req, res) => {
       message += `${sticksText}\n`;
     }
 
-    message += `\n💰 Разом: ${calculatedTotal} грн`;
+    message += `💰 Разом: ${calculatedTotal} грн`;
 
     const telegramUrl = `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`;
 

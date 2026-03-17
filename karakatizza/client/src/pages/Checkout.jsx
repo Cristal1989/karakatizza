@@ -186,6 +186,8 @@ export default function Checkout() {
         })),
       };
 
+      console.log("ORDER DATA", orderData);
+
       await createOrder(orderData);
 
       clearCart();
