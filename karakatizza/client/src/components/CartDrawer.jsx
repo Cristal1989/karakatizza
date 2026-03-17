@@ -22,24 +22,47 @@ export default function CartDrawer() {
     setCheckoutMode,
     confirmedAddress,
     setConfirmedAddress,
-    deliveryDistanceKm,
-    setDeliveryDistanceKm,
-    deliverySummary,
-    setDeliverySummary,
   } = useCart();
 
   const [upsellProducts, setUpsellProducts] = useState([]);
-
+  const [allProducts, setAllProducts] = useState([]);
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryError, setDeliveryError] = useState("");
   const [deliveryLoading, setDeliveryLoading] = useState(false);
   const [deliveryInfo, setDeliveryInfo] = useState(null);
+  const [discountOfferProduct, setDiscountOfferProduct] = useState(null);
+  const [discountOfferDismissed, setDiscountOfferDismissed] = useState(false);
+  const [discountOfferAccepted, setDiscountOfferAccepted] = useState(false);
 
   const isMobile = window.matchMedia("(max-width: 768px)").matches;
 
   useEffect(() => {
     loadUpsell();
   }, []);
+
+  const rollItemsForDiscountOffer = cartItems.filter((item) => {
+    const category = item.category?.toLowerCase?.() || "";
+    const isRoll = category === "rolls" || category === "роллы";
+    const isDiscountOfferItem = item.isDiscountOffer === true;
+    const isGiftItem = (item.freeQuantity ?? 0) > 0;
+
+    return isRoll && !isDiscountOfferItem && !isGiftItem;
+  });
+
+  const rollsSum = rollItemsForDiscountOffer.reduce((sum, item) => {
+    const paidQty = item.paidQuantity ?? item.quantity ?? 0;
+    return sum + item.price * paidQty;
+  }, 0);
+
+  const hasDiscountOfferItemInCart = cartItems.some(
+    (item) => item.isDiscountOffer === true
+  );
+
+  const shouldTriggerDiscountOffer =
+    rollsSum >= 600 &&
+    !discountOfferDismissed &&
+    !discountOfferAccepted &&
+    !hasDiscountOfferItemInCart;
 
   useEffect(() => {
     if (!isCartOpen) return;
@@ -51,6 +74,39 @@ export default function CartDrawer() {
       document.body.style.overflow = previousOverflow;
     };
   }, [isCartOpen]);
+
+  useEffect(() => {
+    if (shouldTriggerDiscountOffer) {
+      if (!discountOfferProduct) {
+        const randomRoll = getRandomRollOffer();
+        setDiscountOfferProduct(randomRoll);
+      }
+    } else {
+      setDiscountOfferProduct(null);
+    }
+  }, [shouldTriggerDiscountOffer, upsellProducts, cartItems]);
+
+  useEffect(() => {
+    if (cartItems.length === 0) {
+      setDiscountOfferProduct(null);
+      setDiscountOfferDismissed(false);
+      setDiscountOfferAccepted(false);
+    }
+  }, [cartItems.length]);
+
+  function getRandomRollOffer() {
+    const rollsInCartIds = cartItems.map((item) => item.id);
+
+    const availableRolls = allProducts.filter(
+      (product) =>
+        product.category === "rolls" && !rollsInCartIds.includes(product.id)
+    );
+
+    if (!availableRolls.length) return null;
+
+    const randomIndex = Math.floor(Math.random() * availableRolls.length);
+    return availableRolls[randomIndex];
+  }
 
   async function geocodeAddress(addressText) {
     const normalized = normalizeAddress(addressText);
@@ -109,12 +165,6 @@ export default function CartDrawer() {
       });
 
       setConfirmedAddress(location.shortLabel || location.label);
-      setDeliveryDistanceKm(distanceKm);
-      setDeliverySummary({
-        distanceKm,
-        resolvedAddress: location.shortLabel || location.label,
-        addressFound: true,
-      });
     } catch (error) {
       setDeliveryInfo({
         type: "operator",
@@ -125,10 +175,6 @@ export default function CartDrawer() {
       });
 
       setConfirmedAddress("");
-      setDeliveryDistanceKm(null);
-      setDeliverySummary({
-        addressFound: false,
-      });
     } finally {
       setDeliveryLoading(false);
     }
@@ -157,6 +203,8 @@ export default function CartDrawer() {
   async function loadUpsell() {
     try {
       const products = await getProducts();
+
+      setAllProducts(products);
 
       const filtered = products.filter(
         (p) =>
@@ -232,6 +280,37 @@ export default function CartDrawer() {
   const visibleUpsellProducts = upsellProducts
     .filter((product) => !cartItemIds.includes(product.id))
     .slice(0, 3);
+
+  const rollSubtotalForDiscountOffer = rollItemsForDiscountOffer.reduce(
+    (sum, item) => {
+      const paidQty = item.paidQuantity ?? item.quantity ?? 0;
+      return sum + item.price * paidQty;
+    },
+    0
+  );
+
+  const shouldShowDiscountOffer =
+    rollSubtotalForDiscountOffer >= 600 && !hasDiscountOfferItemInCart;
+
+  const shouldShowRegularUpsell =
+    !shouldShowDiscountOffer && !discountOfferProduct;
+
+  function handleAddDiscountOffer() {
+    if (!discountOfferProduct) return;
+
+    const discountedPrice = Math.round(discountOfferProduct.price * 0.75);
+
+    addToCart({
+      ...discountOfferProduct,
+      originalPrice: discountOfferProduct.price,
+      price: discountedPrice,
+      isDiscountOffer: true,
+      discountLabel: "-25%",
+    });
+
+    setDiscountOfferAccepted(true);
+    setDiscountOfferProduct(null);
+  }
 
   if (!isCartOpen) return null;
 
@@ -392,7 +471,6 @@ export default function CartDrawer() {
                     : "";
 
                   setDeliveryAddress(formatted);
-                  setDeliveryInfo(null);
                 }}
                 onKeyDown={(e) => {
                   if (
@@ -514,18 +592,29 @@ export default function CartDrawer() {
                         >
                           {item.price} грн за шт
                         </div>
-                        {item.freeQuantity > 0 && (
+                        {item.freeQuantity > 0 ? (
                           <div
                             style={{
-                              marginTop: "6px",
-                              color: "#2e7d32",
+                              marginTop: "4px",
                               fontSize: "13px",
-                              fontWeight: "700",
+                              color: "#4caf50",
+                              fontWeight: "600",
                             }}
                           >
                             Акція 2+1: {item.freeQuantity} шт у подарунок
                           </div>
-                        )}
+                        ) : item.isDiscountOffer ? (
+                          <div
+                            style={{
+                              marginTop: "4px",
+                              fontSize: "13px",
+                              color: "#4caf50",
+                              fontWeight: "600",
+                            }}
+                          >
+                            Знижка {item.discountLabel || "-25%"}
+                          </div>
+                        ) : null}
                         <div
                           style={{
                             marginTop: "12px",
@@ -590,7 +679,8 @@ export default function CartDrawer() {
                               color: "#111",
                             }}
                           >
-                            {item.price * item.quantity} грн
+                            {item.price * (item.paidQuantity ?? item.quantity)}{" "}
+                            грн
                           </div>
                         </div>
 
@@ -614,111 +704,273 @@ export default function CartDrawer() {
                 ))}
               </div>
 
-              {visibleUpsellProducts.length > 0 && (
+              {discountOfferProduct ? (
                 <div
                   style={{
-                    borderTop: "1px solid #eeeeee",
-                    paddingTop: "16px",
+                    marginTop: "20px",
+                    padding: "16px",
+                    borderRadius: "16px",
+                    background: "#fff7ef",
+                    border: "1px solid #f1d2a8",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "12px",
                   }}
                 >
                   <div
                     style={{
-                      fontSize: "24px",
-                      fontWeight: "800",
+                      fontSize: "16px",
+                      fontWeight: "700",
                       color: "#222",
-                      marginBottom: "6px",
                     }}
                   >
-                    Додайте до замовлення
+                    Додайте ще один рол зі знижкою 25%
                   </div>
 
                   <div
                     style={{
+                      fontSize: "13px",
                       color: "#666",
-                      fontSize: "14px",
-                      marginBottom: "14px",
+                      lineHeight: 1.4,
                     }}
                   >
-                    Те, що часто беруть разом із ролами та сетами
+                    У вас вже ролів на {rollsSum} грн. Даруємо вам знижку на
+                    наступний рол.
                   </div>
 
-                  <div style={{ display: "grid", gap: "12px" }}>
-                    {visibleUpsellProducts.map((product) => (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      padding: "12px",
+                      background: "#fff",
+                      borderRadius: "14px",
+                    }}
+                  >
+                    <img
+                      src={getImageUrl(discountOfferProduct.image)}
+                      alt={discountOfferProduct.name}
+                      style={{
+                        width: "64px",
+                        height: "64px",
+                        objectFit: "cover",
+                        borderRadius: "12px",
+                        flexShrink: 0,
+                      }}
+                    />
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
                       <div
-                        key={product.id}
                         style={{
-                          display: "grid",
-                          gridTemplateColumns: "72px 1fr auto",
-                          gap: "12px",
-                          alignItems: "center",
-                          border: "1px solid #ececec",
-                          borderRadius: "14px",
-                          padding: "10px",
-                          background: "#fafafa",
+                          fontSize: "15px",
+                          fontWeight: "700",
+                          color: "#222",
+                          marginBottom: "4px",
                         }}
                       >
-                        <img
-                          src={getImageUrl(product.image)}
-                          alt={product.name}
+                        {discountOfferProduct.name}
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <span
                           style={{
-                            width: "72px",
-                            height: "72px",
-                            objectFit: "cover",
-                            borderRadius: "12px",
-                          }}
-                        />
-
-                        <div>
-                          <div
-                            style={{
-                              fontWeight: "700",
-                              fontSize: "16px",
-                              color: "#222",
-                            }}
-                          >
-                            {product.name}
-                          </div>
-
-                          <div
-                            style={{
-                              color: "#666",
-                              fontSize: "13px",
-                              marginTop: "4px",
-                            }}
-                          >
-                            {product.description || "Без опису"}
-                          </div>
-
-                          <div
-                            style={{
-                              marginTop: "8px",
-                              fontWeight: "800",
-                              fontSize: "18px",
-                              color: "#111",
-                            }}
-                          >
-                            {product.price} грн
-                          </div>
-                        </div>
-
-                        <button
-                          onClick={() => addToCart(product, 1)}
-                          style={{
-                            border: "none",
-                            backgroundColor: "#e53935",
-                            color: "#fff",
-                            borderRadius: "10px",
-                            padding: "10px 12px",
-                            fontWeight: "700",
-                            cursor: "pointer",
+                            fontSize: "13px",
+                            color: "#999",
+                            textDecoration: "line-through",
                           }}
                         >
-                          +
-                        </button>
+                          {discountOfferProduct.price} грн
+                        </span>
+
+                        <span
+                          style={{
+                            fontSize: "16px",
+                            fontWeight: "700",
+                            color: "#e56a45",
+                          }}
+                        >
+                          {Math.round(discountOfferProduct.price * 0.75)} грн
+                        </span>
+
+                        <span
+                          style={{
+                            fontSize: "12px",
+                            fontWeight: "700",
+                            color: "#fff",
+                            background: "#e56a45",
+                            borderRadius: "999px",
+                            padding: "4px 8px",
+                          }}
+                        >
+                          -25%
+                        </span>
                       </div>
-                    ))}
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "10px",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDiscountOfferDismissed(true);
+                        setDiscountOfferProduct(null);
+                      }}
+                      style={{
+                        flex: 1,
+                        border: "1px solid #ddd",
+                        background: "#fff",
+                        borderRadius: "12px",
+                        padding: "12px",
+                        fontSize: "14px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Ні, дякую
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleAddDiscountOffer}
+                      style={{
+                        flex: 1,
+                        border: "none",
+                        background: "#e56a45",
+                        color: "#fff",
+                        borderRadius: "12px",
+                        padding: "12px",
+                        fontSize: "14px",
+                        fontWeight: "700",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Додати
+                    </button>
                   </div>
                 </div>
+              ) : (
+                shouldShowRegularUpsell &&
+                visibleUpsellProducts.length > 0 && (
+                  <div>
+                    <h3
+                      style={{
+                        margin: "0 0 6px 0",
+                        fontSize: "18px",
+                        color: "#222",
+                      }}
+                    >
+                      Додайте до замовлення
+                    </h3>
+
+                    <p
+                      style={{
+                        margin: "0 0 14px 0",
+                        fontSize: "14px",
+                        color: "#666",
+                      }}
+                    >
+                      Те, що часто беруть разом із ролами та сетами
+                    </p>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "12px",
+                      }}
+                    >
+                      {visibleUpsellProducts.map((product) => (
+                        <div
+                          key={product.id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "12px",
+                            padding: "12px",
+                            background: "#fff",
+                            borderRadius: "14px",
+                            border: "1px solid #eee",
+                          }}
+                        >
+                          <img
+                            src={getImageUrl(product.image)}
+                            alt={product.name}
+                            style={{
+                              width: "64px",
+                              height: "64px",
+                              objectFit: "cover",
+                              borderRadius: "12px",
+                              flexShrink: 0,
+                            }}
+                          />
+
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div
+                              style={{
+                                fontSize: "15px",
+                                fontWeight: "700",
+                                color: "#222",
+                              }}
+                            >
+                              {product.name}
+                            </div>
+
+                            <div
+                              style={{
+                                fontSize: "13px",
+                                color: "#666",
+                                marginTop: "4px",
+                              }}
+                            >
+                              {product.description}
+                            </div>
+
+                            <div
+                              style={{
+                                fontSize: "18px",
+                                fontWeight: "700",
+                                color: "#222",
+                                marginTop: "8px",
+                              }}
+                            >
+                              {product.price} грн
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => addToCart(product)}
+                            style={{
+                              width: "40px",
+                              height: "40px",
+                              borderRadius: "12px",
+                              border: "none",
+                              background: "#e56a45",
+                              color: "#fff",
+                              fontSize: "22px",
+                              cursor: "pointer",
+                              flexShrink: 0,
+                            }}
+                          >
+                            +
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
               )}
             </>
           )}

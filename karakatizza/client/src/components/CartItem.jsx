@@ -17,6 +17,18 @@ export default function CartItem({ item }) {
           <div className="truncate font-semibold text-neutral-900">
             {item.name}
           </div>
+          {item.isDiscountOffer && (
+            <div
+              style={{
+                fontSize: "12px",
+                fontWeight: "700",
+                color: "#e56a45",
+                marginTop: "4px",
+              }}
+            >
+              Акція -25%
+            </div>
+          )}
           <div className="mt-1 text-sm text-neutral-500">
             {formatPrice(item.price)}
           </div>

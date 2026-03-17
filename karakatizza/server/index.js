@@ -678,7 +678,31 @@ app.put("/banners/reorder", async (req, res) => {
 
 app.post("/order", async (req, res) => {
   try {
-    const { name, phone, address, comment, items, totalPrice } = req.body;
+    const {
+      name,
+      phone,
+      address,
+      comment,
+      items,
+      totalPrice,
+      regularSticksCount,
+      trainingSticksCount,
+      sticksExtraPrice,
+    } = req.body;
+
+    let sticksText = "";
+    const calculatedTotal =
+      items.reduce((sum, item) => {
+        const paidQuantity = item.paidQuantity ?? item.quantity ?? 0;
+        return sum + item.price * paidQuantity;
+      }, 0) + (sticksExtraPrice ?? 0);
+
+    if ((regularSticksCount ?? 0) > 0 || (trainingSticksCount ?? 0) > 0) {
+      sticksText = `🥢 Паличкu:
+- Звичайні: ${regularSticksCount ?? 0}
+- Навчальні: ${trainingSticksCount ?? 0}
+`;
+    }
 
     let message = `🆕 НОВЕ ЗАМОВЛЕННЯ\n\n`;
 
@@ -693,14 +717,33 @@ app.post("/order", async (req, res) => {
       const freeQuantity = item.freeQuantity ?? 0;
       const lineTotal = item.lineTotal ?? item.price * paidQuantity;
 
-      message += `• ${item.name} — ${item.quantity} шт`;
+      let itemLine = `• ${item.name}`;
 
-      if (freeQuantity > 0) {
-        message += `(${paidQuantity} платно + ${freeQuantity} у подарунок)`;
+      if (item.isDiscountOffer || item.discountLabel) {
+        const label =
+          item.discountLabel && item.discountLabel !== ""
+            ? item.discountLabel
+            : "-25%"; // временный дефолт
+
+        itemLine += `(знижка ${label})`;
       }
 
-      message += `— ${lineTotal} грн\n`;
+      itemLine += `— ${item.quantity} шт`;
+
+      if (freeQuantity > 0) {
+        itemLine += `(${paidQuantity} платно + ${freeQuantity} 🎁 подарок)`;
+      }
+
+      itemLine += `— ${lineTotal} грн\n`;
+
+      message += itemLine;
     });
+
+    if (sticksText) {
+      message += `${sticksText}\n`;
+    }
+
+    message += `\n💰 Разом: ${calculatedTotal} грн`;
 
     const telegramUrl = `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`;
 

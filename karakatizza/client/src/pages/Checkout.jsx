@@ -181,6 +181,8 @@ export default function Checkout() {
           freeQuantity: item.freeQuantity ?? 0,
           price: item.price,
           lineTotal: item.price * (item.paidQuantity ?? item.quantity),
+          isDiscountOffer: item.isDiscountOffer ?? false,
+          discountLabel: item.discountLabel,
         })),
       };
 
