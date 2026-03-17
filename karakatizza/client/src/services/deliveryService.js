@@ -6,7 +6,7 @@ export function getDeliveryZone(distanceKm) {
 }
 
 export async function getRouteDistanceKm(customerLat, customerLng) {
-  const API_URL = import.meta.env.VITE_API_URL;
+  const API_URL = "https://karakatizza-production.up.railway.app";
 
   const response = await fetch(`${API_URL}/api/delivery/route-distance`, {
     method: "POST",
