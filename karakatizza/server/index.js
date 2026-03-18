@@ -12,6 +12,7 @@ import cloudinary from "./cloudinary.js";
 import { pool, initDb } from "./db.js";
 import deliveryRoutes from "./routes/delivery.js";
 import promotionsRoutes from "./routes/promotions.js";
+import giftRollRoutes from "./routes/giftRoll.js";
 
 dotenv.config();
 
@@ -37,6 +38,7 @@ app.options("*", cors());
 app.use(express.json());
 app.use("/api/delivery", deliveryRoutes);
 app.use("/promotions", promotionsRoutes(pool));
+app.use("/gift-roll", giftRollRoutes(pool));
 
 const storage = new CloudinaryStorage({
   cloudinary,

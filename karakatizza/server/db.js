@@ -114,4 +114,23 @@ export async function initDb() {
     SELECT 1 FROM promotion_settings
   );
 `);
+
+  await pool.query(`
+  CREATE TABLE IF NOT EXISTS gift_roll_settings (
+    id SERIAL PRIMARY KEY,
+    trigger_sum INTEGER NOT NULL DEFAULT 1000,
+    gift_product_id TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    weekdays_only BOOLEAN NOT NULL DEFAULT true,
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+  );
+`);
+
+  await pool.query(`
+  INSERT INTO gift_roll_settings (trigger_sum, is_active, weekdays_only)
+  SELECT 1000, true, true
+  WHERE NOT EXISTS (
+    SELECT 1 FROM gift_roll_settings
+  );
+`);
 }
