@@ -6,6 +6,7 @@ import {
   getRouteDistanceKm,
   getDeliveryInfo,
 } from "../services/deliveryService";
+import { getPromotionSettings } from "../api/promotionsApi";
 
 export default function CartDrawer() {
   const {
@@ -35,10 +36,17 @@ export default function CartDrawer() {
   const [discountOfferAccepted, setDiscountOfferAccepted] = useState(false);
   const [promoSettings, setPromoSettings] = useState(null);
 
+  const [promotionSettings, setPromotionSettings] = useState({
+    discountPercent: 25,
+    triggerSum: 600,
+    isActive: true,
+  });
+
   const isMobile = window.matchMedia("(max-width: 768px)").matches;
 
   useEffect(() => {
     loadUpsell();
+    loadPromotionSettings();
   }, []);
 
   useEffect(() => {
@@ -85,7 +93,8 @@ export default function CartDrawer() {
   });
 
   const shouldTriggerDiscountOffer =
-    rollsSum >= (promoSettings?.triggerSum ?? 600) &&
+    promotionSettings.isActive &&
+    rollsSum >= promotionSettings.triggerSum &&
     hasAvailableDiscountRoll &&
     !discountOfferDismissed &&
     !discountOfferAccepted &&
@@ -246,6 +255,20 @@ export default function CartDrawer() {
     }
   }
 
+  async function loadPromotionSettings() {
+    try {
+      const settings = await getPromotionSettings();
+
+      setPromotionSettings({
+        discountPercent: Number(settings?.discountPercent) || 25,
+        triggerSum: Number(settings?.triggerSum) || 600,
+        isActive: settings?.isActive !== false,
+      });
+    } catch (error) {
+      console.error("Promotion settings load error:", error);
+    }
+  }
+
   const defaultMinOrder = 400;
 
   const calculatedDeliveryInfo =
@@ -325,15 +348,16 @@ export default function CartDrawer() {
   function handleAddDiscountOffer() {
     if (!discountOfferProduct) return;
 
-    const percent = promoSettings?.discountPercent ?? 25;
-    const discountedPrice = Math.round(price * (1 - percent / 100));
+    const discountedPrice = Math.round(
+      discountOfferProduct.price * (1 - promotionSettings.discountPercent / 100)
+    );
 
     addToCart({
       ...discountOfferProduct,
       originalPrice: discountOfferProduct.price,
       price: discountedPrice,
       isDiscountOffer: true,
-      discountLabel: `-${promoSettings?.discountPercent ?? 25}%`,
+      discountLabel: `-${promotionSettings.discountPercent}%`,
     });
 
     setDiscountOfferAccepted(true);
@@ -618,7 +642,24 @@ export default function CartDrawer() {
                             fontSize: "14px",
                           }}
                         >
-                          {item.price} грн за шт
+                          {item.isDiscountOffer && item.originalPrice ? (
+                            <div>
+                              <span
+                                style={{
+                                  textDecoration: "line-through",
+                                  color: "#999",
+                                  marginRight: 6,
+                                }}
+                              >
+                                {item.originalPrice} грн
+                              </span>
+                              <span style={{ fontWeight: 700 }}>
+                                {item.price} грн
+                              </span>
+                            </div>
+                          ) : (
+                            <div>{item.price} грн за шт</div>
+                          )}
                         </div>
                         {item.freeQuantity > 0 ? (
                           <div
@@ -752,7 +793,7 @@ export default function CartDrawer() {
                       color: "#222",
                     }}
                   >
-                    Додайте ще один рол зі знижкою 25%
+                    {`Додайте ще один рол зі знижкою ${promotionSettings.discountPercent}%`}
                   </div>
 
                   <div
@@ -762,8 +803,8 @@ export default function CartDrawer() {
                       lineHeight: 1.4,
                     }}
                   >
-                    У вас вже ролів на {rollsSum} грн. Даруємо вам знижку на
-                    наступний рол.
+                    У вас вже ролів на {promotionSettings.triggerSum} грн.
+                    Даруємо вам знижку на наступний рол.
                   </div>
 
                   <div
@@ -825,7 +866,11 @@ export default function CartDrawer() {
                             color: "#e56a45",
                           }}
                         >
-                          {Math.round(discountOfferProduct.price * 0.75)} грн
+                          {Math.round(
+                            discountOfferProduct.price *
+                              (1 - promotionSettings.discountPercent / 100)
+                          )}{" "}
+                          грн
                         </span>
 
                         <span
@@ -838,7 +883,7 @@ export default function CartDrawer() {
                             padding: "4px 8px",
                           }}
                         >
-                          -25%
+                          {`-${promotionSettings.discountPercent}%`}
                         </span>
                       </div>
                     </div>
