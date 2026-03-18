@@ -61,6 +61,10 @@ export function CartProvider({ children }) {
     const safePaidQuantity = Number(quantity) || 1;
 
     setCartItems((prev) => {
+      const hasDiscountOfferAlready = prev.some(
+        (item) => item.isDiscountOffer === true
+      );
+
       const existingItem = prev.find((item) => item.id === product.id);
 
       if (existingItem) {
@@ -70,10 +74,11 @@ export function CartProvider({ children }) {
 
         const newPaidQuantity = currentPaidQuantity + safePaidQuantity;
 
-        const promo = calculatePromo(
-          newPaidQuantity,
-          existingItem.promoType ?? product.promoType
-        );
+        const effectivePromoType = hasDiscountOfferAlready
+          ? "none"
+          : existingItem.promoType ?? product.promoType;
+
+        const promo = calculatePromo(newPaidQuantity, effectivePromoType);
 
         return prev.map((item) =>
           item.id === product.id
@@ -91,7 +96,11 @@ export function CartProvider({ children }) {
         );
       }
 
-      const promo = calculatePromo(safePaidQuantity, product.promoType);
+      const effectivePromoType = hasDiscountOfferAlready
+        ? "none"
+        : product.promoType;
+
+      const promo = calculatePromo(safePaidQuantity, effectivePromoType);
 
       return [
         ...prev,
@@ -138,8 +147,8 @@ export function CartProvider({ children }) {
               quantity: promo.totalQuantity,
               paidQuantity: promo.paidQuantity,
               freeQuantity: promo.freeQuantity,
-              isDiscountOffer: product.isDiscountOffer ?? false,
-              discountLabel: product.discountLabel ?? "",
+              isDiscountOffer: existingItem.isDiscountOffer ?? false,
+              discountLabel: existingItem.discountLabel ?? "",
             }
           : item
       );
@@ -155,26 +164,43 @@ export function CartProvider({ children }) {
   };
 
   const increaseQuantity = (productId) => {
-    setCartItems((prev) =>
-      prev.map((item) => {
+    setCartItems((prev) => {
+      const hasDiscountOfferAlready = prev.some(
+        (item) => item.isDiscountOffer === true
+      );
+
+      return prev.map((item) => {
         if (item.id !== productId) return item;
 
         const newPaidQuantity = (item.paidQuantity ?? item.quantity ?? 0) + 1;
-        const promo = calculatePromo(newPaidQuantity, item.promoType);
+
+        const effectivePromoType =
+          hasDiscountOfferAlready && !item.isDiscountOffer
+            ? "none"
+            : item.promoType;
+
+        const promo = calculatePromo(newPaidQuantity, effectivePromoType);
 
         return {
           ...item,
           quantity: promo.totalQuantity,
           paidQuantity: promo.paidQuantity,
           freeQuantity: promo.freeQuantity,
+          isDiscountOffer: item.isDiscountOffer ?? false,
+          discountLabel: item.discountLabel ?? "",
+          originalPrice: item.originalPrice ?? item.price,
         };
-      })
-    );
+      });
+    });
   };
 
   const decreaseQuantity = (productId) => {
-    setCartItems((prev) =>
-      prev
+    setCartItems((prev) => {
+      const hasDiscountOfferAlready = prev.some(
+        (item) => item.isDiscountOffer === true
+      );
+
+      return prev
         .map((item) => {
           if (item.id !== productId) return item;
 
@@ -185,17 +211,25 @@ export function CartProvider({ children }) {
             return null;
           }
 
-          const promo = calculatePromo(newPaidQuantity, item.promoType);
+          const effectivePromoType =
+            hasDiscountOfferAlready && !item.isDiscountOffer
+              ? "none"
+              : item.promoType;
+
+          const promo = calculatePromo(newPaidQuantity, effectivePromoType);
 
           return {
             ...item,
             quantity: promo.totalQuantity,
             paidQuantity: promo.paidQuantity,
             freeQuantity: promo.freeQuantity,
+            isDiscountOffer: item.isDiscountOffer ?? false,
+            discountLabel: item.discountLabel ?? "",
+            originalPrice: item.originalPrice ?? item.price,
           };
         })
-        .filter(Boolean)
-    );
+        .filter(Boolean);
+    });
   };
 
   const totalItems = useMemo(() => {

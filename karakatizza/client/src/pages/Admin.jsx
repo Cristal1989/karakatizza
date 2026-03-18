@@ -13,6 +13,10 @@ import {
   deleteBanner,
   reorderBanners,
 } from "../api/bannersApi";
+import {
+  getPromotionSettings,
+  updatePromotionSettings,
+} from "../api/promotionsApi";
 
 const sidebarItems = [
   { key: "products", label: "Товари", icon: "🍣" },
@@ -27,7 +31,7 @@ const categoryOptions = [
   { value: "maki", label: "Макі" },
   { value: "sets", label: "Сети" },
   { value: "sushi", label: "Суші" },
-  { value: "baked", label: "Запечені" },
+  { value: "sushi_burger", label: "Суші бургер" },
   { value: "snacks", label: "Салати і закуски" },
   { value: "bowls", label: "Суші боули" },
   { value: "drinks", label: "Напої" },
@@ -76,9 +80,19 @@ export default function Admin() {
     endAt: "",
   });
 
+  const [promotionSettings, setPromotionSettings] = useState({
+    discountPercent: 25,
+    triggerSum: 600,
+    isActive: true,
+  });
+
+  const [promotionLoading, setPromotionLoading] = useState(false);
+  const [promotionSaving, setPromotionSaving] = useState(false);
+
   useEffect(() => {
     loadProducts();
     loadBanners();
+    loadPromotionSettings();
   }, []);
 
   const loadProducts = async () => {
@@ -92,6 +106,24 @@ export default function Admin() {
       setError(err.message || "Не вдалося завантажити товари");
     } finally {
       setProductsLoading(false);
+    }
+  };
+
+  const loadPromotionSettings = async () => {
+    try {
+      setPromotionLoading(true);
+
+      const data = await getPromotionSettings();
+
+      setPromotionSettings({
+        discountPercent: Number(data.discountPercent ?? 25),
+        triggerSum: Number(data.triggerSum ?? 600),
+        isActive: data.isActive === true,
+      });
+    } catch (error) {
+      console.error("LOAD PROMOTION SETTINGS ERROR:", error);
+    } finally {
+      setPromotionLoading(false);
     }
   };
 
@@ -150,6 +182,15 @@ export default function Admin() {
     } else {
       setImagePreview("");
     }
+  };
+
+  const handlePromotionChange = (e) => {
+    const { name, value, type, checked } = e.target;
+
+    setPromotionSettings((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -230,6 +271,37 @@ export default function Admin() {
       setError(err.message || "Помилка збереження товару");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSavePromotionSettings = async (e) => {
+    e.preventDefault();
+
+    try {
+      setPromotionSaving(true);
+      setMessage("");
+      setError("");
+
+      const payload = {
+        discountPercent: Number(promotionSettings.discountPercent) || 25,
+        triggerSum: Number(promotionSettings.triggerSum) || 600,
+        isActive: promotionSettings.isActive === true,
+      };
+
+      const result = await updatePromotionSettings(payload);
+
+      setPromotionSettings({
+        discountPercent: Number(result.discountPercent ?? 25),
+        triggerSum: Number(result.triggerSum ?? 600),
+        isActive: result.isActive === true,
+      });
+
+      setMessage("✅ Налаштування акції оновлено");
+    } catch (error) {
+      console.error("SAVE PROMOTION SETTINGS ERROR:", error);
+      setError(error.message || "Помилка збереження налаштувань акції");
+    } finally {
+      setPromotionSaving(false);
     }
   };
 
@@ -702,7 +774,7 @@ export default function Admin() {
                       <option value="maki">Макі</option>
                       <option value="sets">Сети</option>
                       <option value="sushi">Суші</option>
-                      <option value="baked">Запечені</option>
+                      <option value="sushi_burger">Суші бургер</option>
                       <option value="snacks">Салати і закуски</option>
                       <option value="bowls">Суші боули</option>
                       <option value="drinks">Напої</option>
@@ -1543,10 +1615,104 @@ export default function Admin() {
           )}
 
           {activeSection === "promos" && (
-            <PlaceholderCard
-              title="Акції"
-              text="Тут можна буде керувати акціями, подарунками та маркетинговими блоками на головній."
-            />
+            <section
+              style={{
+                background: "#fff",
+                borderRadius: "24px",
+                padding: "24px",
+                boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
+              }}
+            >
+              <h2
+                style={{
+                  marginTop: 0,
+                  marginBottom: "8px",
+                  fontSize: "36px",
+                  fontWeight: 800,
+                }}
+              >
+                Налаштування акції
+              </h2>
+
+              <p
+                style={{
+                  marginTop: 0,
+                  marginBottom: "24px",
+                  color: "#666",
+                  fontSize: "16px",
+                }}
+              >
+                Окремо налаштовується акція “ролл зі знижкою” для кошика.
+              </p>
+
+              <form onSubmit={handleSavePromotionSettings}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "16px",
+                    marginBottom: "16px",
+                  }}
+                >
+                  <input
+                    type="number"
+                    name="triggerSum"
+                    min="1"
+                    placeholder="Сума спрацювання"
+                    value={promotionSettings.triggerSum}
+                    onChange={handlePromotionChange}
+                    style={inputStyle}
+                  />
+
+                  <input
+                    type="number"
+                    name="discountPercent"
+                    min="1"
+                    max="100"
+                    placeholder="Знижка %"
+                    value={promotionSettings.discountPercent}
+                    onChange={handlePromotionChange}
+                    style={inputStyle}
+                  />
+                </div>
+
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    marginBottom: "20px",
+                    fontWeight: 600,
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    name="isActive"
+                    checked={promotionSettings.isActive}
+                    onChange={handlePromotionChange}
+                  />
+                  Акція активна
+                </label>
+
+                <button
+                  type="submit"
+                  disabled={promotionSaving || promotionLoading}
+                  style={{
+                    border: "none",
+                    background: "#e56a45",
+                    color: "#fff",
+                    borderRadius: "14px",
+                    padding: "14px 22px",
+                    fontSize: "16px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    opacity: promotionSaving || promotionLoading ? 0.7 : 1,
+                  }}
+                >
+                  {promotionSaving ? "Зберігаємо..." : "Зберегти налаштування"}
+                </button>
+              </form>
+            </section>
           )}
 
           {activeSection === "settings" && (

@@ -33,6 +33,7 @@ export default function CartDrawer() {
   const [discountOfferProduct, setDiscountOfferProduct] = useState(null);
   const [discountOfferDismissed, setDiscountOfferDismissed] = useState(false);
   const [discountOfferAccepted, setDiscountOfferAccepted] = useState(false);
+  const [promoSettings, setPromoSettings] = useState(null);
 
   const isMobile = window.matchMedia("(max-width: 768px)").matches;
 
@@ -40,16 +41,21 @@ export default function CartDrawer() {
     loadUpsell();
   }, []);
 
+  useEffect(() => {
+    fetch("/promotions/settings")
+      .then((res) => res.json())
+      .then((data) => setPromoSettings(data))
+      .catch(() => console.error("Ошибка загрузки акции"));
+  }, []);
+
   const rollItemsForDiscountOffer = cartItems.filter((item) => {
     const category = item.category?.toLowerCase?.() || "";
     const isRoll = category === "rolls" || category === "роллы";
     const isDiscountOfferItem = item.isDiscountOffer === true;
-    const isGiftItem = (item.freeQuantity ?? 0) > 0;
+    const isGiftItem = Number(item.freeQuantity ?? 0) > 0;
+    const hasPromoType = item.promoType && item.promoType !== "none";
 
-    const isEligible = item.discountOfferEligible === true;
-
-    return isRoll && isEligible && !isDiscountOfferItem && !isGiftItem;
-    w;
+    return isRoll && !isDiscountOfferItem && !isGiftItem && !hasPromoType;
   });
 
   const rollsSum = rollItemsForDiscountOffer.reduce((sum, item) => {
@@ -57,23 +63,41 @@ export default function CartDrawer() {
     return sum + item.price * paidQty;
   }, 0);
 
-  const hasDiscountOfferItemInCart = cartItems.some((item) => {
-    const freeQty = Number(item.freeQuantity ?? 0);
-    const isDiscountOffer = item.isDiscountOffer === true;
-    return freeQty > 0 || isDiscountOffer;
+  const rollsInCartIds = cartItems.map((item) => item.id);
+
+  const availableDiscountRolls = allProducts.filter((product) => {
+    const category = product.category?.toLowerCase?.() || "";
+    const isRoll = category === "rolls" || category === "роллы";
+    const isEligible = product.discountOfferEligible === true;
+    const isNotInCart = !rollsInCartIds.includes(product.id);
+
+    return isRoll && isEligible && isNotInCart;
   });
 
-  useEffect(() => {
-    if (!hasDiscountOfferItemInCart) {
-      setDiscountOfferAccepted(false);
-    }
-  }, [hasDiscountOfferItemInCart]);
+  const hasAvailableDiscountRoll = availableDiscountRolls.length > 0;
+
+  const hasAnyPromoInCart = cartItems.some((item) => {
+    const hasGift = Number(item.freeQuantity ?? 0) > 0;
+    const hasDiscount = item.isDiscountOffer === true;
+    const hasPromoType = item.promoType && item.promoType !== "none";
+
+    return hasGift || hasDiscount || hasPromoType;
+  });
 
   const shouldTriggerDiscountOffer =
-    rollsSum >= 600 &&
+    rollsSum >= (promoSettings?.triggerSum ?? 600) &&
+    hasAvailableDiscountRoll &&
     !discountOfferDismissed &&
     !discountOfferAccepted &&
-    !hasDiscountOfferItemInCart;
+    !hasAnyPromoInCart;
+
+  useEffect(() => {
+    if (!hasAnyPromoInCart) {
+      setDiscountOfferAccepted(false);
+      setDiscountOfferDismissed(false);
+      setDiscountOfferProduct(null);
+    }
+  }, [hasAnyPromoInCart]);
 
   useEffect(() => {
     if (!isCartOpen) return;
@@ -88,14 +112,12 @@ export default function CartDrawer() {
 
   useEffect(() => {
     if (shouldTriggerDiscountOffer) {
-      if (!discountOfferProduct) {
-        const randomRoll = getRandomRollOffer();
-        setDiscountOfferProduct(randomRoll);
-      }
+      const randomRoll = getRandomRollOffer();
+      setDiscountOfferProduct(randomRoll);
     } else {
       setDiscountOfferProduct(null);
     }
-  }, [shouldTriggerDiscountOffer, upsellProducts, cartItems]);
+  }, [shouldTriggerDiscountOffer, allProducts, cartItems]);
 
   useEffect(() => {
     if (cartItems.length === 0) {
@@ -106,17 +128,11 @@ export default function CartDrawer() {
   }, [cartItems.length]);
 
   function getRandomRollOffer() {
-    const rollsInCartIds = cartItems.map((item) => item.id);
+    if (availableDiscountRolls.length === 0) return null;
 
-    const availableRolls = allProducts.filter(
-      (product) =>
-        product.category === "rolls" && !rollsInCartIds.includes(product.id)
-    );
-
-    if (!availableRolls.length) return null;
-
-    const randomIndex = Math.floor(Math.random() * availableRolls.length);
-    return availableRolls[randomIndex];
+    return availableDiscountRolls[
+      Math.floor(Math.random() * availableDiscountRolls.length)
+    ];
   }
 
   async function geocodeAddress(addressText) {
@@ -301,22 +317,23 @@ export default function CartDrawer() {
   );
 
   const shouldShowDiscountOffer =
-    rollSubtotalForDiscountOffer >= 600 && !hasDiscountOfferItemInCart;
+    rollSubtotalForDiscountOffer >= 600 && !hasAnyPromoInCart;
 
   const shouldShowRegularUpsell =
-    !shouldShowDiscountOffer && !discountOfferProduct;
+    !shouldTriggerDiscountOffer && !discountOfferProduct;
 
   function handleAddDiscountOffer() {
     if (!discountOfferProduct) return;
 
-    const discountedPrice = Math.round(discountOfferProduct.price * 0.75);
+    const percent = promoSettings?.discountPercent ?? 25;
+    const discountedPrice = Math.round(price * (1 - percent / 100));
 
     addToCart({
       ...discountOfferProduct,
       originalPrice: discountOfferProduct.price,
       price: discountedPrice,
       isDiscountOffer: true,
-      discountLabel: "-25%",
+      discountLabel: `-${promoSettings?.discountPercent ?? 25}%`,
     });
 
     setDiscountOfferAccepted(true);
@@ -715,7 +732,7 @@ export default function CartDrawer() {
                 ))}
               </div>
 
-              {discountOfferProduct ? (
+              {shouldTriggerDiscountOffer && discountOfferProduct ? (
                 <div
                   style={{
                     marginTop: "20px",
