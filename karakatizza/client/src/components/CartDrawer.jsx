@@ -208,39 +208,38 @@ export default function CartDrawer() {
   }
 
   async function geocodeAddress(addressText) {
-    const normalized = normalizeAddress(addressText);
+    const normalized = addressText.trim();
 
-    const queries = [Миколаїв`${normalized}`, Николаев`${normalized}`];
+    const variants = [
+      normalized,
+      normalized.replace("е", "ё"),
+      normalized.replace("ё", "е"),
+      normalized.replace("і", "и"),
+      normalized.replace("и", "і"),
+    ];
 
-    for (const q of queries) {
-      const query = encodeURIComponent(q);
+    const cities = ["Миколаїв", "Николаев"];
 
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ua&addressdetails=1&q=${query}`
-      );
+    for (const city of cities) {
+      for (const variant of variants) {
+        const query = encodeURIComponent(`${city} ${variant}`);
 
-      const data = await response.json();
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ua&q=${query}`
+        );
 
-      if (Array.isArray(data) && data.length > 0) {
-        const item = data[0];
+        const data = await response.json();
 
-        const road =
-          item.address?.road ||
-          item.address?.pedestrian ||
-          item.address?.residential ||
-          item.address?.street ||
-          "";
+        if (Array.isArray(data) && data.length > 0) {
+          const item = data[0];
 
-        const houseNumber = item.address?.house_number || "";
-
-        const shortLabel = [road, houseNumber].filter(Boolean).join(" ");
-
-        return {
-          lat: Number(item.lat),
-          lng: Number(item.lon),
-          label: item.display_name,
-          shortLabel: shortLabel || item.display_name,
-        };
+          return {
+            lat: Number(item.lat),
+            lng: Number(item.lon),
+            label: item.display_name,
+            shortLabel: normalized,
+          };
+        }
       }
     }
 
@@ -248,22 +247,21 @@ export default function CartDrawer() {
   }
 
   async function handleApplyAddress() {
-    if (!deliveryAddress.trim()) return;
+    if (!deliveryAddress?.trim()) return;
 
     try {
       setDeliveryLoading(true);
 
-      const location = await geocodeAddress(deliveryAddress);
-
+      const location = await geocodeAddress(deliveryAddress.trim());
       const distanceKm = await getRouteDistanceKm(location.lat, location.lng);
 
       setDeliveryInfo({
         distanceKm,
-        resolvedAddress: location.shortLabel || location.label,
+        resolvedAddress: location.label,
         addressFound: true,
       });
 
-      setConfirmedAddress(location.shortLabel || location.label);
+      setConfirmedAddress(deliveryAddress.trim());
     } catch (error) {
       setDeliveryInfo({
         type: "operator",
@@ -277,26 +275,6 @@ export default function CartDrawer() {
     } finally {
       setDeliveryLoading(false);
     }
-  }
-
-  async function geocodeAddress(addressText) {
-    const query = encodeURIComponent(`Миколаїв, ${addressText}`);
-
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ua&addressdetails=1&q=${query}`
-    );
-
-    const data = await response.json();
-
-    if (!Array.isArray(data) || data.length === 0) {
-      throw new Error("ADDRESS_NOT_FOUND");
-    }
-
-    return {
-      lat: Number(data[0].lat),
-      lng: Number(data[0].lon),
-      label: data[0].display_name,
-    };
   }
 
   async function loadUpsell() {
@@ -658,7 +636,7 @@ export default function CartDrawer() {
                 onKeyDown={(e) => {
                   if (
                     e.key === "Enter" &&
-                    deliveryAddress.trim() &&
+                    deliveryAddress?.trim() &&
                     !deliveryLoading
                   ) {
                     e.preventDefault();
@@ -683,7 +661,7 @@ export default function CartDrawer() {
             <button
               type="button"
               onClick={handleApplyAddress}
-              disabled={!deliveryAddress.trim() || deliveryLoading}
+              disabled={!deliveryAddress?.trim() || deliveryLoading}
               style={{
                 border: "none",
                 borderRadius: "12px",
