@@ -61,9 +61,16 @@ export function CartProvider({ children }) {
     const safePaidQuantity = Number(quantity) || 1;
 
     setCartItems((prev) => {
-      const hasDiscountOfferAlready = prev.some(
-        (item) => item.isDiscountOffer === true
-      );
+      const hasDiscountOfferAlready = prev.some((item) => {
+        if (item.id === product.id) return false;
+
+        return (
+          item.isDiscountOffer === true ||
+          Number(item.freeQuantity ?? 0) > 0 ||
+          item.isGiftRoll === true ||
+          (item.promoType && item.promoType !== "none")
+        );
+      });
 
       const existingItem = prev.find((item) => item.id === product.id);
 
@@ -165,9 +172,16 @@ export function CartProvider({ children }) {
 
   const increaseQuantity = (productId) => {
     setCartItems((prev) => {
-      const hasDiscountOfferAlready = prev.some(
-        (item) => item.isDiscountOffer === true
-      );
+      const hasDiscountOfferAlready = prev.some((item) => {
+        if (item.id === productId) return false;
+
+        return (
+          item.isDiscountOffer === true ||
+          Number(item.freeQuantity ?? 0) > 0 ||
+          item.isGiftRoll === true ||
+          (item.promoType && item.promoType !== "none")
+        );
+      });
 
       return prev.map((item) => {
         if (item.id !== productId) return item;
@@ -196,9 +210,16 @@ export function CartProvider({ children }) {
 
   const decreaseQuantity = (productId) => {
     setCartItems((prev) => {
-      const hasDiscountOfferAlready = prev.some(
-        (item) => item.isDiscountOffer === true
-      );
+      const hasDiscountOfferAlready = prev.some((item) => {
+        if (item.id === productId) return false;
+
+        return (
+          item.isDiscountOffer === true ||
+          Number(item.freeQuantity ?? 0) > 0 ||
+          item.isGiftRoll === true ||
+          (item.promoType && item.promoType !== "none")
+        );
+      });
 
       return prev
         .map((item) => {

@@ -17,6 +17,10 @@ import {
   getPromotionSettings,
   updatePromotionSettings,
 } from "../api/promotionsApi";
+import {
+  getGiftRollSettings,
+  updateGiftRollSettings,
+} from "../api/giftRollApi";
 
 const sidebarItems = [
   { key: "products", label: "Товари", icon: "🍣" },
@@ -85,14 +89,24 @@ export default function Admin() {
     triggerSum: 600,
     isActive: true,
   });
-
   const [promotionLoading, setPromotionLoading] = useState(false);
   const [promotionSaving, setPromotionSaving] = useState(false);
+
+  const [giftRollSettings, setGiftRollSettings] = useState({
+    triggerSum: 1000,
+    giftProductId: "",
+    isActive: true,
+    weekdaysOnly: true,
+  });
+
+  const [giftRollLoading, setGiftRollLoading] = useState(false);
+  const [giftRollSaving, setGiftRollSaving] = useState(false);
 
   useEffect(() => {
     loadProducts();
     loadBanners();
     loadPromotionSettings();
+    loadGiftRollSettings();
   }, []);
 
   const loadProducts = async () => {
@@ -124,6 +138,24 @@ export default function Admin() {
       console.error("LOAD PROMOTION SETTINGS ERROR:", error);
     } finally {
       setPromotionLoading(false);
+    }
+  };
+
+  const loadGiftRollSettings = async () => {
+    try {
+      setGiftRollLoading(true);
+      const data = await getGiftRollSettings();
+
+      setGiftRollSettings({
+        triggerSum: data?.triggerSum ?? 1000,
+        giftProductId: data?.giftProductId ?? "",
+        isActive: data?.isActive ?? true,
+        weekdaysOnly: data?.weekdaysOnly ?? true,
+      });
+    } catch (error) {
+      console.error("GIFT ROLL SETTINGS LOAD ERROR:", error);
+    } finally {
+      setGiftRollLoading(false);
     }
   };
 
@@ -163,6 +195,11 @@ export default function Admin() {
       });
   }, [products, categoryFilter, search]);
 
+  const rollProducts = products.filter((p) => {
+    const category = p.category?.toLowerCase?.() || "";
+    return category === "rolls" || category === "роллы";
+  });
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
@@ -191,6 +228,28 @@ export default function Admin() {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+  };
+
+  const handleSaveGiftRollSettings = async () => {
+    try {
+      setGiftRollSaving(true);
+
+      await updateGiftRollSettings({
+        triggerSum: Number(giftRollSettings.triggerSum) || 1000,
+        giftProductId: giftRollSettings.giftProductId || null,
+        isActive: giftRollSettings.isActive === true,
+        weekdaysOnly: giftRollSettings.weekdaysOnly === true,
+      });
+
+      setMessage("✅ Налаштування подарункового ролу збережено");
+    } catch (error) {
+      console.error("SAVE GIFT ROLL SETTINGS ERROR:", error);
+      setError(
+        error.message || "Помилка збереження налаштувань подарункового ролу"
+      );
+    } finally {
+      setGiftRollSaving(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -1631,7 +1690,7 @@ export default function Admin() {
                   fontWeight: 800,
                 }}
               >
-                Налаштування акції
+                Налаштування акції знижка
               </h2>
 
               <p
@@ -1712,6 +1771,122 @@ export default function Admin() {
                   {promotionSaving ? "Зберігаємо..." : "Зберегти налаштування"}
                 </button>
               </form>
+              <div
+                style={{
+                  background: "#fff",
+                  borderRadius: "16px",
+                  padding: "20px",
+                  marginTop: "20px",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
+                }}
+              >
+                <h3 style={{ marginBottom: "16px" }}>Подарунковий рол</h3>
+
+                <p style={{ color: "#666", marginBottom: "16px" }}>
+                  Від заданої суми в кошику автоматично додається подарунковий
+                  рол. Акція може працювати тільки у будні.
+                </p>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "16px",
+                    marginBottom: "16px",
+                  }}
+                >
+                  <input
+                    type="number"
+                    placeholder="Сума спрацювання"
+                    value={giftRollSettings.triggerSum}
+                    onChange={(e) =>
+                      setGiftRollSettings((prev) => ({
+                        ...prev,
+                        triggerSum: e.target.value,
+                      }))
+                    }
+                    style={inputStyle}
+                  />
+
+                  <select
+                    value={giftRollSettings.giftProductId}
+                    onChange={(e) =>
+                      setGiftRollSettings((prev) => ({
+                        ...prev,
+                        giftProductId: e.target.value,
+                      }))
+                    }
+                    style={inputStyle}
+                  >
+                    <option value="">Оберіть рол для подарунка</option>
+                    {rollProducts.map((product) => (
+                      <option key={product.id} value={product.id}>
+                        {product.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    marginBottom: "12px",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={giftRollSettings.isActive}
+                    onChange={(e) =>
+                      setGiftRollSettings((prev) => ({
+                        ...prev,
+                        isActive: e.target.checked,
+                      }))
+                    }
+                  />
+                  Акція активна
+                </label>
+
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    marginBottom: "18px",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={giftRollSettings.weekdaysOnly}
+                    onChange={(e) =>
+                      setGiftRollSettings((prev) => ({
+                        ...prev,
+                        weekdaysOnly: e.target.checked,
+                      }))
+                    }
+                  />
+                  Лише з понеділка по четвер
+                </label>
+
+                <button
+                  type="button"
+                  onClick={handleSaveGiftRollSettings}
+                  disabled={giftRollSaving}
+                  style={{
+                    border: "none",
+                    background: "#e56a45",
+                    color: "#fff",
+                    borderRadius: "12px",
+                    padding: "12px 18px",
+                    fontWeight: "700",
+                    cursor: "pointer",
+                    opacity: giftRollSaving ? 0.7 : 1,
+                  }}
+                >
+                  {giftRollSaving ? "Збереження..." : "Зберегти налаштування"}
+                </button>
+              </div>
             </section>
           )}
 

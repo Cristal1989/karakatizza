@@ -711,6 +711,11 @@ app.post("/order", async (req, res) => {
       regularSticksCount,
       trainingSticksCount,
       sticksExtraPrice,
+      entrance,
+      paymentMethod,
+      needExactTime,
+      exactTime,
+      condiments,
     } = req.body;
 
     let sticksText = "";
@@ -731,7 +736,19 @@ app.post("/order", async (req, res) => {
     message += `👤 Ім'я: ${name}\n`;
     message += `📞 Телефон: ${phone}\n`;
     message += `📍 Адреса: ${address}\n\n`;
-
+    if (entrance) {
+      message += `🏢 Під'їзд: ${entrance}\n`;
+    }
+    if (paymentMethod) {
+      const paymentText = paymentMethod === "card" ? "Картка" : "Готівка";
+      message += `💳 Оплата: ${paymentText}\n`;
+    }
+    if (needExactTime && exactTime) {
+      message += `⏰ На час: ${exactTime}\n`;
+    }
+    if (comment && comment.trim()) {
+      message += `💬 Коментар: ${comment.trim()}\n`;
+    }
     message += `🧾 Замовлення:\n`;
 
     items.forEach((item) => {
@@ -765,7 +782,51 @@ app.post("/order", async (req, res) => {
       message += `${sticksText}\n`;
     }
 
-    message += `💰 Разом: ${calculatedTotal} грн`;
+    if (condiments) {
+      const {
+        soySauceCount = 0,
+        gingerCount = 0,
+        wasabiCount = 0,
+        extraSoyCount = 0,
+        extraGingerCount = 0,
+        extraWasabiCount = 0,
+        extraPrice = 0,
+      } = condiments;
+
+      if (soySauceCount || gingerCount || wasabiCount) {
+        message += `\n🍱 Додатки:\n`;
+
+        if (soySauceCount) {
+          message += `Соєвий соус: ${soySauceCount}`;
+          if (extraSoyCount > 0) {
+            message += `(+${extraSoyCount} платно)`;
+          }
+          message += `\n`;
+        }
+
+        if (gingerCount) {
+          message += `Імбир: ${gingerCount}`;
+          if (extraGingerCount > 0) {
+            message += `(+${extraGingerCount} платно)`;
+          }
+          message += `\n`;
+        }
+
+        if (wasabiCount) {
+          message += `Васабі: ${wasabiCount}`;
+          if (extraWasabiCount > 0) {
+            message += `(+${extraWasabiCount} платно)`;
+          }
+          message += `\n`;
+        }
+
+        if (extraPrice > 0) {
+          message += `💰 Додатково за соуси: ${extraPrice} грн\n`;
+        }
+      }
+    }
+
+    message += `💰 Разом: ${totalPrice} грн`;
 
     const telegramUrl = `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`;
 

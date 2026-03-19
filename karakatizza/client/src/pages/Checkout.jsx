@@ -27,11 +27,124 @@ export default function Checkout() {
     name: "",
     phone: "+380",
     address: "",
+    entrance: "",
     comment: "",
+    paymentMethod: "cash",
+    needExactTime: false,
+    exactTime: "",
+    soySauceCount: 0,
+    gingerCount: 0,
+    wasabiCount: 0,
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const inputStyle = {
+    width: "100%",
+    padding: "14px 16px",
+    borderRadius: "12px",
+    border: "1px solid #ddd",
+    fontSize: "16px",
+    boxSizing: "border-box",
+  };
+
+  const cardStyle = {
+    background: "#fff",
+    border: "1px solid #f0e3dc",
+    borderRadius: "18px",
+    padding: "18px",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.04)",
+  };
+
+  const sectionTitleStyle = {
+    fontSize: "18px",
+    fontWeight: 800,
+    color: "#222",
+    marginBottom: "12px",
+  };
+
+  const tabStyle = {
+    padding: "12px",
+    borderRadius: "12px",
+    border: "1px solid #e2e2e2",
+    background: "#fff",
+    cursor: "pointer",
+    fontWeight: 700,
+  };
+
+  const activeTabStyle = {
+    ...tabStyle,
+    border: "none",
+    background: "linear-gradient(135deg, #f06a4d, #e85a43)",
+    color: "#fff",
+  };
+
+  const qtyBtnStyle = {
+    width: "32px",
+    height: "32px",
+    borderRadius: "10px",
+    border: "none",
+    background: "#f2f2f2",
+    cursor: "pointer",
+    fontSize: "18px",
+  };
+
+  const nameRegex = /^[A-Za-zА-Яа-яІіЇїЄєҐґ\s'-]+$/;
+  const phoneRegex = /^\+380\d{9}$/;
+  const addressRegex = /^[A-Za-zА-Яа-яІіЇїЄєҐґ0-9\s./,\-]+$/;
+
+  const hasSushiItems = cartItems.some((item) => {
+    const category = item.category?.toLowerCase?.() || "";
+    return (
+      category === "роллы" ||
+      category === "rolls" ||
+      category === "маки" ||
+      category === "maki" ||
+      category === "сеты" ||
+      category === "sets"
+    );
+  });
+
+  const freeCondiments = cartItems.reduce(
+    (acc, item) => {
+      const category = item.category?.toLowerCase?.() || "";
+      const paidQty = item.paidQuantity ?? item.quantity ?? 0;
+
+      const isRoll = category === "роллы" || category === "rolls";
+      const isMaki = category === "маки" || category === "maki";
+      const isSet = category === "сеты" || category === "sets";
+
+      if (isRoll || isMaki) {
+        acc.soy += paidQty;
+        acc.ginger += paidQty;
+        acc.wasabi += paidQty;
+      }
+
+      if (isSet) {
+        acc.soy += Number(item.freeSoySauce ?? 0) * paidQty;
+        acc.ginger += Number(item.freeGinger ?? 0) * paidQty;
+        acc.wasabi += Number(item.freeWasabi ?? 0) * paidQty;
+      }
+
+      return acc;
+    },
+    { soy: 0, ginger: 0, wasabi: 0 }
+  );
+
+  const extraSoyCount = Math.max(0, form.soySauceCount - freeCondiments.soy);
+  const extraGingerCount = Math.max(
+    0,
+    form.gingerCount - freeCondiments.ginger
+  );
+  const extraWasabiCount = Math.max(
+    0,
+    form.wasabiCount - freeCondiments.wasabi
+  );
+
+  const condimentsExtraPrice =
+    extraSoyCount * 15 + extraGingerCount * 15 + extraWasabiCount * 10;
+  const finalCheckoutTotal = checkoutTotalPrice + condimentsExtraPrice;
 
   useEffect(() => {
     if (confirmedAddress && checkoutMode === "delivery") {
@@ -50,18 +163,38 @@ export default function Checkout() {
     }
   }, [confirmedAddress, checkoutMode]);
 
-  const inputStyle = {
-    width: "100%",
-    padding: "14px 16px",
-    borderRadius: "12px",
-    border: "1px solid #ddd",
-    fontSize: "16px",
-    boxSizing: "border-box",
-  };
+  useEffect(() => {
+    if (!hasSushiItems) {
+      setForm((prev) => ({
+        ...prev,
+        soySauceCount: 0,
+        gingerCount: 0,
+        wasabiCount: 0,
+      }));
+      return;
+    }
 
-  const nameRegex = /^[A-Za-zА-Яа-яІіЇїЄєҐґ\s'-]+$/;
-  const phoneRegex = /^\+380\d{9}$/;
-  const addressRegex = /^[A-Za-zА-Яа-яІіЇїЄєҐґ0-9\s./,\-]+$/;
+    setForm((prev) => ({
+      ...prev,
+      soySauceCount:
+        prev.soySauceCount === 0 && freeCondiments.soy > 0
+          ? 1
+          : prev.soySauceCount,
+      gingerCount:
+        prev.gingerCount === 0 && freeCondiments.ginger > 0
+          ? 1
+          : prev.gingerCount,
+      wasabiCount:
+        prev.wasabiCount === 0 && freeCondiments.wasabi > 0
+          ? 1
+          : prev.wasabiCount,
+    }));
+  }, [
+    hasSushiItems,
+    freeCondiments.soy,
+    freeCondiments.ginger,
+    freeCondiments.wasabi,
+  ]);
 
   const handleNameChange = (e) => {
     const value = e.target.value;
@@ -140,6 +273,10 @@ export default function Checkout() {
       return "Адреса може містити лише літери, цифри, пробіли, крапку, кому, дефіс і слеш";
     }
 
+    if (form.needExactTime && !form.exactTime.trim()) {
+      return "Вкажіть час замовлення";
+    }
+
     if (cartItems.length === 0) {
       return "Кошик порожній";
     }
@@ -170,7 +307,24 @@ export default function Checkout() {
             ? "Самовивіз: Миколаїв, вул. Мала Морська 108 ТЦ Портал"
             : form.address.trim(),
         comment: form.comment.trim(),
-        totalPrice: checkoutTotalPrice,
+        totalPrice: finalCheckoutTotal,
+        entrance: form.entrance.trim(),
+        paymentMethod: form.paymentMethod,
+        needExactTime: form.needExactTime,
+        exactTime: form.needExactTime ? form.exactTime : "",
+        resolvedAddress: deliveryInfo?.resolvedAddress || "",
+        condiments: {
+          soySauceCount: form.soySauceCount,
+          gingerCount: form.gingerCount,
+          wasabiCount: form.wasabiCount,
+          freeSoySauce: freeCondiments.soy,
+          freeGinger: freeCondiments.ginger,
+          freeWasabi: freeCondiments.wasabi,
+          extraSoyCount,
+          extraGingerCount,
+          extraWasabiCount,
+          extraPrice: condimentsExtraPrice,
+        },
         regularSticksCount,
         trainingSticksCount,
         sticksExtraPrice,
@@ -185,8 +339,6 @@ export default function Checkout() {
           discountLabel: item.discountLabel,
         })),
       };
-
-      console.log("ORDER DATA", orderData);
 
       await createOrder(orderData);
 
@@ -382,14 +534,213 @@ export default function Checkout() {
             />
 
             {checkoutMode === "delivery" && (
-              <input
-                type="text"
-                placeholder="Адреса доставки"
-                value={form.address}
-                onChange={handleAddressChange}
-                required
-                style={inputStyle}
-              />
+              <div>
+                <input
+                  type="text"
+                  placeholder="Адреса доставки"
+                  value={form.address}
+                  onChange={handleAddressChange}
+                  required
+                  style={inputStyle}
+                />
+
+                <input
+                  type="text"
+                  placeholder="Під’їзд (не обов’язково)"
+                  value={form.entrance}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, entrance: e.target.value }))
+                  }
+                  style={inputStyle}
+                />
+              </div>
+            )}
+            <div style={cardStyle}>
+              <div style={sectionTitleStyle}>Оплата</div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "10px",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() =>
+                    setForm((prev) => ({ ...prev, paymentMethod: "cash" }))
+                  }
+                  style={
+                    form.paymentMethod === "cash" ? activeTabStyle : tabStyle
+                  }
+                >
+                  Готівка
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setForm((prev) => ({ ...prev, paymentMethod: "card" }))
+                  }
+                  style={
+                    form.paymentMethod === "card" ? activeTabStyle : tabStyle
+                  }
+                >
+                  Картка
+                </button>
+              </div>
+            </div>
+
+            <div style={cardStyle}>
+              <label
+                style={{ display: "flex", gap: "10px", alignItems: "center" }}
+              >
+                <input
+                  type="checkbox"
+                  checked={form.needExactTime}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      needExactTime: e.target.checked,
+                      exactTime: e.target.checked ? prev.exactTime : "",
+                    }))
+                  }
+                />
+                Потрібно на певний час
+              </label>
+
+              {form.needExactTime && (
+                <input
+                  type="time"
+                  value={form.exactTime}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, exactTime: e.target.value }))
+                  }
+                  style={{ ...inputStyle, marginTop: "12px" }}
+                />
+              )}
+            </div>
+
+            {hasSushiItems && (
+              <div style={cardStyle}>
+                <div style={sectionTitleStyle}>Додатки до ролів</div>
+                <div
+                  style={{
+                    color: "#666",
+                    fontSize: "14px",
+                    marginBottom: "14px",
+                  }}
+                >
+                  Частина додається безкоштовно залежно від кількості ролів,
+                  макі та сетів.
+                </div>
+
+                {[
+                  {
+                    key: "soySauceCount",
+                    label: "Соєвий соус",
+                    freeCount: freeCondiments.soy,
+                    extraPrice: 15,
+                  },
+                  {
+                    key: "gingerCount",
+                    label: "Імбир",
+                    freeCount: freeCondiments.ginger,
+                    extraPrice: 15,
+                  },
+                  {
+                    key: "wasabiCount",
+                    label: "Васабі",
+                    freeCount: freeCondiments.wasabi,
+                    extraPrice: 10,
+                  },
+                ].map((item) => {
+                  const value = form[item.key];
+                  const extraCount = Math.max(0, value - item.freeCount);
+
+                  return (
+                    <div
+                      key={item.key}
+                      style={{
+                        padding: "14px",
+                        border: "1px solid #eee",
+                        borderRadius: "14px",
+                        marginBottom: "10px",
+                        background: "#fffaf8",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        <strong>{item.label}</strong>
+                        <span style={{ color: "#666" }}>
+                          Безкоштовно: {item.freeCount}
+                        </span>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setForm((prev) => ({
+                              ...prev,
+                              [item.key]: Math.max(0, prev[item.key] - 1),
+                            }))
+                          }
+                          style={qtyBtnStyle}
+                        >
+                          -
+                        </button>
+
+                        <span
+                          style={{
+                            minWidth: "28px",
+                            textAlign: "center",
+                            fontWeight: 700,
+                          }}
+                        >
+                          {value}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setForm((prev) => ({
+                              ...prev,
+                              [item.key]: prev[item.key] + 1,
+                            }))
+                          }
+                          style={qtyBtnStyle}
+                        >
+                          +
+                        </button>
+                      </div>
+
+                      {extraCount > 0 && (
+                        <div
+                          style={{
+                            marginTop: "8px",
+                            color: "#d32f2f",
+                            fontSize: "13px",
+                          }}
+                        >
+                          Додатково: {extraCount} × {item.extraPrice} грн
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             )}
 
             <div
@@ -574,6 +925,47 @@ export default function Checkout() {
               style={inputStyle}
             />
 
+            <div
+              style={{
+                marginTop: "18px",
+                padding: "18px",
+                borderRadius: "18px",
+                background: "#fff7f3",
+                border: "1px solid #f3d8cb",
+                display: "grid",
+                gap: "10px",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span>Сума товарів</span>
+                <strong>{checkoutTotalPrice} грн</strong>
+              </div>
+
+              {condimentsExtraPrice > 0 && (
+                <div
+                  style={{ display: "flex", justifyContent: "space-between" }}
+                >
+                  <span>Додаткові соус / імбир / васабі</span>
+                  <strong>{condimentsExtraPrice} грн</strong>
+                </div>
+              )}
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: "22px",
+                  fontWeight: 800,
+                  color: "#222",
+                  paddingTop: "10px",
+                  borderTop: "1px solid #ead7ce",
+                }}
+              >
+                <span>До сплати</span>
+                <span>{finalCheckoutTotal} грн</span>
+              </div>
+            </div>
+
             {error && (
               <div
                 style={{
@@ -606,87 +998,6 @@ export default function Checkout() {
               {loading ? "Відправка..." : "Підтвердити замовлення"}
             </button>
           </form>
-        </div>
-
-        <div
-          style={{
-            background: "#fff",
-            borderRadius: "20px",
-            padding: "24px",
-            boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-          }}
-        >
-          <h2
-            style={{
-              fontSize: "22px",
-              fontWeight: 800,
-              marginBottom: "16px",
-            }}
-          >
-            Ваше замовлення
-          </h2>
-
-          <div style={{ display: "grid", gap: "14px" }}>
-            {cartItems.map((item) => (
-              <div
-                key={item.id}
-                style={{
-                  borderBottom: "1px solid #eee",
-                  paddingBottom: "10px",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontWeight: 700,
-                  }}
-                >
-                  <span>{item.name}</span>
-                  <span>
-                    {item.price * (item.paidQuantity ?? item.quantity)} грн
-                  </span>
-                </div>
-
-                <div
-                  style={{
-                    color: "#666",
-                    fontSize: "14px",
-                    marginTop: "4px",
-                  }}
-                >
-                  {item.quantity} × {item.price} грн
-                </div>
-
-                {item.freeQuantity > 0 && (
-                  <div
-                    style={{
-                      color: "#2e7d32",
-                      fontSize: "13px",
-                      fontWeight: "700",
-                    }}
-                  >
-                    Акція: {item.freeQuantity} шт у подарунок
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          <div
-            style={{
-              marginTop: "20px",
-              paddingTop: "14px",
-              borderTop: "1px solid #eee",
-              display: "flex",
-              justifyContent: "space-between",
-              fontSize: "22px",
-              fontWeight: 800,
-            }}
-          >
-            <span>Разом</span>
-            <span>{checkoutTotalPrice} грн</span>
-          </div>
         </div>
       </div>
     </div>

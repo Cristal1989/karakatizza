@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useCart } from "../hooks/useCart";
 import { getProducts, getImageUrl } from "../api/productsApi";
 import {
@@ -7,6 +7,7 @@ import {
   getDeliveryInfo,
 } from "../services/deliveryService";
 import { getPromotionSettings } from "../api/promotionsApi";
+import { getGiftRollSettings } from "../api/giftRollApi";
 
 export default function CartDrawer() {
   const {
@@ -25,6 +26,8 @@ export default function CartDrawer() {
     setConfirmedAddress,
   } = useCart();
 
+  const isGiftProcessingRef = useRef(false);
+
   const [upsellProducts, setUpsellProducts] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
   const [deliveryAddress, setDeliveryAddress] = useState("");
@@ -42,12 +45,26 @@ export default function CartDrawer() {
     isActive: true,
   });
 
+  const [giftRollSettings, setGiftRollSettings] = useState({
+    triggerSum: 1000,
+    giftProductId: "",
+    isActive: true,
+    weekdaysOnly: true,
+  });
+
+  const [giftRollProduct, setGiftRollProduct] = useState(null);
+
   const isMobile = window.matchMedia("(max-width: 768px)").matches;
 
   useEffect(() => {
     loadUpsell();
     loadPromotionSettings();
+    loadGiftRollSettings();
   }, []);
+
+  const selectedGiftRollProduct = allProducts.find(
+    (product) => product.id === giftRollSettings.giftProductId
+  );
 
   useEffect(() => {
     fetch("/promotions/settings")
@@ -65,6 +82,37 @@ export default function CartDrawer() {
 
     return isRoll && !isDiscountOfferItem && !isGiftItem && !hasPromoType;
   });
+
+  const discountOfferItemInCart = cartItems.find(
+    (item) => item.isDiscountOffer === true
+  );
+  const giftRollInCart = cartItems.find((item) => item.isGiftRoll === true);
+
+  const hasDiscountOfferActive =
+    !!discountOfferItemInCart ||
+    !!discountOfferProduct ||
+    !!discountOfferAccepted;
+
+  const isGiftRollWeekdayAllowed = giftRollSettings.weekdaysOnly
+    ? isWeekdayNow()
+    : true;
+
+  const shouldGiftRollBeActive =
+    giftRollSettings.isActive === true &&
+    Number(giftRollSettings.triggerSum || 0) > 0 &&
+    !!giftRollSettings.giftProductId &&
+    !!selectedGiftRollProduct &&
+    isGiftRollWeekdayAllowed &&
+    totalPrice >= Number(giftRollSettings.triggerSum || 0) &&
+    !hasDiscountOfferActive;
+
+  useEffect(() => {
+    if (!discountOfferItemInCart) {
+      setDiscountOfferAccepted(false);
+      setDiscountOfferDismissed(false);
+      setDiscountOfferProduct(null);
+    }
+  }, [discountOfferItemInCart]);
 
   const rollsSum = rollItemsForDiscountOffer.reduce((sum, item) => {
     const paidQty = item.paidQuantity ?? item.quantity ?? 0;
@@ -85,6 +133,8 @@ export default function CartDrawer() {
   const hasAvailableDiscountRoll = availableDiscountRolls.length > 0;
 
   const hasAnyPromoInCart = cartItems.some((item) => {
+    if (item.isGiftRoll === true) return false;
+
     const hasGift = Number(item.freeQuantity ?? 0) > 0;
     const hasDiscount = item.isDiscountOffer === true;
     const hasPromoType = item.promoType && item.promoType !== "none";
@@ -94,11 +144,12 @@ export default function CartDrawer() {
 
   const shouldTriggerDiscountOffer =
     promotionSettings.isActive &&
-    rollsSum >= promotionSettings.triggerSum &&
+    rollsSum >= Number(promotionSettings.triggerSum || 0) &&
     hasAvailableDiscountRoll &&
     !discountOfferDismissed &&
     !discountOfferAccepted &&
-    !hasAnyPromoInCart;
+    !giftRollInCart &&
+    !shouldGiftRollBeActive;
 
   useEffect(() => {
     if (!hasAnyPromoInCart) {
@@ -133,8 +184,15 @@ export default function CartDrawer() {
       setDiscountOfferProduct(null);
       setDiscountOfferDismissed(false);
       setDiscountOfferAccepted(false);
+      return;
     }
-  }, [cartItems.length]);
+
+    if (rollsSum < Number(promotionSettings.triggerSum || 0)) {
+      setDiscountOfferProduct(null);
+      setDiscountOfferDismissed(false);
+      setDiscountOfferAccepted(false);
+    }
+  }, [cartItems.length, rollsSum, promotionSettings.triggerSum]);
 
   function getRandomRollOffer() {
     if (availableDiscountRolls.length === 0) return null;
@@ -142,6 +200,11 @@ export default function CartDrawer() {
     return availableDiscountRolls[
       Math.floor(Math.random() * availableDiscountRolls.length)
     ];
+  }
+
+  function isWeekdayNow() {
+    const day = new Date().getDay(); // 0 = sunday, 1 = monday ... 6 = saturday
+    return day >= 1 && day <= 4; // пн-чт
   }
 
   async function geocodeAddress(addressText) {
@@ -269,6 +332,21 @@ export default function CartDrawer() {
     }
   }
 
+  async function loadGiftRollSettings() {
+    try {
+      const data = await getGiftRollSettings();
+
+      setGiftRollSettings({
+        triggerSum: data?.triggerSum ?? 1000,
+        giftProductId: data?.giftProductId ?? "",
+        isActive: data?.isActive ?? true,
+        weekdaysOnly: data?.weekdaysOnly ?? true,
+      });
+    } catch (error) {
+      console.error("Gift roll settings load error:", error);
+    }
+  }
+
   const defaultMinOrder = 400;
 
   const calculatedDeliveryInfo =
@@ -340,7 +418,10 @@ export default function CartDrawer() {
   );
 
   const shouldShowDiscountOffer =
-    rollSubtotalForDiscountOffer >= 600 && !hasAnyPromoInCart;
+    rollSubtotalForDiscountOffer >= Number(promotionSettings.triggerSum || 0) &&
+    !giftRollInCart &&
+    !shouldGiftRollBeActive &&
+    !hasDiscountOfferActive;
 
   const shouldShowRegularUpsell =
     !shouldTriggerDiscountOffer && !discountOfferProduct;
@@ -363,6 +444,56 @@ export default function CartDrawer() {
     setDiscountOfferAccepted(true);
     setDiscountOfferProduct(null);
   }
+
+  useEffect(() => {
+    if (isGiftProcessingRef.current) return;
+
+    if (!selectedGiftRollProduct) {
+      if (giftRollInCart) {
+        isGiftProcessingRef.current = true;
+        removeFromCart(giftRollInCart.id);
+
+        setTimeout(() => {
+          isGiftProcessingRef.current = false;
+        }, 0);
+      }
+      return;
+    }
+
+    if (shouldGiftRollBeActive) {
+      if (!giftRollInCart) {
+        isGiftProcessingRef.current = true;
+
+        addToCart({
+          ...selectedGiftRollProduct,
+          price: 0,
+          originalPrice: selectedGiftRollProduct.price,
+          isGiftRoll: true,
+          giftLabel: "Подарунок",
+        });
+
+        setTimeout(() => {
+          isGiftProcessingRef.current = false;
+        }, 0);
+      }
+    } else {
+      if (giftRollInCart) {
+        isGiftProcessingRef.current = true;
+
+        removeFromCart(giftRollInCart.id);
+
+        setTimeout(() => {
+          isGiftProcessingRef.current = false;
+        }, 0);
+      }
+    }
+  }, [
+    shouldGiftRollBeActive,
+    selectedGiftRollProduct,
+    giftRollInCart,
+    addToCart,
+    removeFromCart,
+  ]);
 
   if (!isCartOpen) return null;
 
@@ -661,7 +792,18 @@ export default function CartDrawer() {
                             <div>{item.price} грн за шт</div>
                           )}
                         </div>
-                        {item.freeQuantity > 0 ? (
+                        {item.isGiftRoll ? (
+                          <div
+                            style={{
+                              marginTop: "4px",
+                              fontSize: "13px",
+                              color: "#4caf50",
+                              fontWeight: "600",
+                            }}
+                          >
+                            Подарунок
+                          </div>
+                        ) : item.freeQuantity > 0 ? (
                           <div
                             style={{
                               marginTop: "4px",
@@ -694,53 +836,57 @@ export default function CartDrawer() {
                             flexWrap: "wrap",
                           }}
                         >
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "8px",
-                            }}
-                          >
-                            <button
-                              onClick={() => decreaseQuantity(item.id)}
-                              style={{
-                                width: "32px",
-                                height: "32px",
-                                border: "none",
-                                borderRadius: "8px",
-                                backgroundColor: "#e9e9e9",
-                                cursor: "pointer",
-                                fontSize: "18px",
-                              }}
-                            >
-                              -
-                            </button>
+                          {!item.isGiftRoll && (
+                            <>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "8px",
+                                }}
+                              >
+                                <button
+                                  onClick={() => decreaseQuantity(item.id)}
+                                  style={{
+                                    width: "32px",
+                                    height: "32px",
+                                    border: "none",
+                                    borderRadius: "8px",
+                                    backgroundColor: "#e9e9e9",
+                                    cursor: "pointer",
+                                    fontSize: "18px",
+                                  }}
+                                >
+                                  -
+                                </button>
 
-                            <span
-                              style={{
-                                minWidth: "20px",
-                                textAlign: "center",
-                                fontWeight: "700",
-                              }}
-                            >
-                              {item.quantity}
-                            </span>
+                                <span
+                                  style={{
+                                    minWidth: "20px",
+                                    textAlign: "center",
+                                    fontWeight: "700",
+                                  }}
+                                >
+                                  {item.quantity}
+                                </span>
 
-                            <button
-                              onClick={() => increaseQuantity(item.id)}
-                              style={{
-                                width: "32px",
-                                height: "32px",
-                                border: "none",
-                                borderRadius: "8px",
-                                backgroundColor: "#e9e9e9",
-                                cursor: "pointer",
-                                fontSize: "18px",
-                              }}
-                            >
-                              +
-                            </button>
-                          </div>
+                                <button
+                                  onClick={() => increaseQuantity(item.id)}
+                                  style={{
+                                    width: "32px",
+                                    height: "32px",
+                                    border: "none",
+                                    borderRadius: "8px",
+                                    backgroundColor: "#e9e9e9",
+                                    cursor: "pointer",
+                                    fontSize: "18px",
+                                  }}
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </>
+                          )}
 
                           <div
                             style={{
@@ -753,20 +899,34 @@ export default function CartDrawer() {
                           </div>
                         </div>
 
-                        <button
-                          onClick={() => removeFromCart(item.id)}
-                          style={{
-                            marginTop: "12px",
-                            border: "none",
-                            background: "none",
-                            color: "#d32f2f",
-                            cursor: "pointer",
-                            padding: 0,
-                            fontWeight: "600",
-                          }}
-                        >
-                          Видалити
-                        </button>
+                        {!item.isGiftRoll && (
+                          <button
+                            onClick={() => removeFromCart(item.id)}
+                            style={{
+                              marginTop: "12px",
+                              border: "none",
+                              background: "none",
+                              color: "#d32f2f",
+                              cursor: "pointer",
+                              padding: 0,
+                              fontWeight: "600",
+                            }}
+                          >
+                            Видалити
+                          </button>
+                        )}
+                        {item.isGiftRoll && (
+                          <div
+                            style={{
+                              marginTop: "8px",
+                              fontSize: "13px",
+                              color: "#999",
+                              fontWeight: "600",
+                            }}
+                          >
+                            Додається автоматично
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
