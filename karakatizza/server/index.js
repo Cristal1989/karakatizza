@@ -96,7 +96,7 @@ app.get("/products", async (req, res) => {
         priority,
         discount_offer_eligible AS "discountOfferEligible"
       FROM products
-      ORDER BY priority ASC, created_at ASC
+      ORDER BY priority ASC
     `);
 
     const products = result.rows.map((p) => ({
