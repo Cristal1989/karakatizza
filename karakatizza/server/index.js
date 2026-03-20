@@ -408,23 +408,21 @@ app.put("/products/:id", (req, res) => {
       console.log("BODY:", req.body);
 
       await pool.query(
-        `
-    UPDATE products
-    SET
-      name = $1,
-      price = $2,
-      category = $3,
-      description = $4,
-      image = $5,
-      popular = $6,
-      promo_type = $7,
-      priority = $8,
-      discount_offer_eligible = $9,
-      free_soy_sauce = $10,
-      free_ginger = $11,
-      free_wasabi = $12
-    WHERE id = $13
-  `,
+        `UPDATE products
+   SET
+     name = $1,
+     price = $2,
+     category = $3,
+     description = $4,
+     image = $5,
+     popular = $6,
+     promo_type = $7,
+     priority = $8,
+     discount_offer_eligible = $9,
+     free_soy_sauce = $10,
+     free_ginger = $11,
+     free_wasabi = $12
+   WHERE id = $13`,
         [
           updatedProduct.name,
           updatedProduct.price,

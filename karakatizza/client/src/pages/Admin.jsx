@@ -52,6 +52,10 @@ export default function Admin() {
     description: "",
     promoType: "none",
     priority: 10,
+
+    freeSoySauce: 0,
+    freeGinger: 0,
+    freeWasabi: 0,
   });
 
   const [image, setImage] = useState(null);
@@ -269,6 +273,9 @@ export default function Admin() {
       formData.append("popular", String(!!popular));
       formData.append("promoType", form.promoType || "none");
       formData.append("priority", String(form.priority || 10));
+      formData.append("freeSoySauce", String(form.freeSoySauce || 0));
+      formData.append("freeGinger", String(form.freeGinger || 0));
+      formData.append("freeWasabi", String(form.freeWasabi || 0));
       formData.append(
         "discountOfferEligible",
         String(!!form.discountOfferEligible)
@@ -312,6 +319,10 @@ export default function Admin() {
         promoType: "none",
         priority: 10,
         discountOfferEligible: false,
+
+        freeSoySauce: 0,
+        freeGinger: 0,
+        freeWasabi: 0,
       });
 
       setPopular(false);
@@ -406,6 +417,9 @@ export default function Admin() {
       formData.append("popular", !!product.popular);
       formData.append("promoType", product.promoType || "none");
       formData.append("priority", nextPriority);
+      formData.append("freeSoySauce", product.freeSoySauce || 0);
+      formData.append("freeGinger", product.freeGinger || 0);
+      formData.append("freeWasabi", product.freeWasabi || 0);
       formData.append(
         "discountOfferEligible",
         String(!!form.discountOfferEligible)
@@ -433,6 +447,10 @@ export default function Admin() {
       promoType: product.promoType || "none",
       priority: Number(product.priority ?? 10),
       discountOfferEligible: product.discountOfferEligible ?? false,
+
+      freeSoySauce: product.freeSoySauce || 0,
+      freeGinger: product.freeGinger || 0,
+      freeWasabi: product.freeWasabi || 0,
     });
 
     setPopular(!!product.popular);
@@ -899,6 +917,66 @@ export default function Admin() {
                     />
                     Участвует в акции (скидка %)
                   </label>
+                  {form.category === "sets" && (
+                    <div style={{ marginTop: "12px" }}>
+                      <div style={{ fontWeight: 600, marginBottom: "8px" }}>
+                        Безкоштовні соуси до сету:
+                      </div>
+
+                      <div style={{ display: "grid", gap: "8px" }}>
+                        <label
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
+                        >
+                          <span>Соєвий соус:</span>
+                          <input
+                            type="number"
+                            name="freeSoySauce"
+                            value={form.freeSoySauce}
+                            onChange={handleChange}
+                            style={{ width: "80px" }}
+                          />
+                        </label>
+
+                        <label
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
+                        >
+                          <span>Імбир:</span>
+                          <input
+                            type="number"
+                            name="freeGinger"
+                            value={form.freeGinger}
+                            onChange={handleChange}
+                            style={{ width: "80px" }}
+                          />
+                        </label>
+
+                        <label
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
+                        >
+                          <span>Васабі:</span>
+                          <input
+                            type="number"
+                            name="freeWasabi"
+                            value={form.freeWasabi}
+                            onChange={handleChange}
+                            style={{ width: "80px" }}
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  )}
 
                   <div style={{ marginBottom: "16px" }}>
                     <input

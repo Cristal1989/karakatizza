@@ -124,9 +124,9 @@ export default function Checkout() {
       }
 
       if (isSet) {
-        acc.soy += Number(item.freeSoySauce ?? 0) * paidQty;
-        acc.ginger += Number(item.freeGinger ?? 0) * paidQty;
-        acc.wasabi += Number(item.freeWasabi ?? 0) * paidQty;
+        acc.soy += Number(item.freeSoySauce || 0) * paidQty;
+        acc.ginger += Number(item.freeGinger || 0) * paidQty;
+        acc.wasabi += Number(item.freeWasabi || 0) * paidQty;
       }
 
       return acc;
