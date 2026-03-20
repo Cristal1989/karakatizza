@@ -94,9 +94,12 @@ app.get("/products", async (req, res) => {
         popular,
         promo_type AS "promoType",
         priority,
-        discount_offer_eligible AS "discountOfferEligible"
+        discount_offer_eligible AS "discountOfferEligible",
+        free_soy_sauce AS "freeSoySauce",
+        free_ginger AS "freeGinger",
+        free_wasabi AS "freeWasabi"
       FROM products
-      ORDER BY priority ASC
+      ORDER BY priority ASC, created_at ASC
     `);
 
     const products = result.rows.map((p) => ({
@@ -106,6 +109,9 @@ app.get("/products", async (req, res) => {
       popular: !!p.popular,
       promoType: p.promoType || "none",
       discountOfferEligible: !!p.discountOfferEligible,
+      freeSoySauce: Number(p.freeSoySauce || 0),
+      freeGinger: Number(p.freeGinger || 0),
+      freeWasabi: Number(p.freeWasabi || 0),
     }));
 
     res.set("Cache-Control", "public, max-age=120");
@@ -166,9 +172,9 @@ app.post("/products", upload.single("image"), async (req, res) => {
       promoType,
       priority,
       discountOfferEligible,
-      freeSoySauce = 0,
-      freeGinger = 0,
-      freeWasabi = 0,
+      freeSoySauce,
+      freeGinger,
+      freeWasabi,
     } = req.body;
 
     if (!name || !price || !category) {
@@ -190,17 +196,30 @@ app.post("/products", upload.single("image"), async (req, res) => {
       promoType: promoType || "none",
       priority: Number(priority) || 10,
       discountOfferEligible: discountOfferEligible === "true",
-      freeSoySauce: Number(freeSoySauce) || 0,
-      freeGinger: Number(freeGinger) || 0,
-      freeWasabi: Number(freeWasabi) || 0,
+      freeSoySauce: Number(freeSoySauce || 0),
+      freeGinger: Number(freeGinger || 0),
+      freeWasabi: Number(freeWasabi || 0),
     };
 
     await pool.query(
-      `INSERT INTO products (
-  id, name, price, category, description, image, popular, promo_type, priority, discount_offer_eligible,
-free_soy_sauce, free_ginger, free_wasabi
-)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+      `
+    INSERT INTO products (
+      id,
+      name,
+      price,
+      category,
+      description,
+      image,
+      popular,
+      promo_type,
+      priority,
+      discount_offer_eligible,
+      free_soy_sauce,
+      free_ginger,
+      free_wasabi
+    )
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+  `,
       [
         newProduct.id,
         newProduct.name,
@@ -381,28 +400,31 @@ app.put("/products/:id", (req, res) => {
         promoType: promoType || "none",
         priority: Number(priority) || 10,
         discountOfferEligible: discountOfferEligible === "true",
-        freeSoySauce: Number(freeSoySauce) || 0,
-        freeGinger: Number(freeGinger) || 0,
-        freeWasabi: Number(freeWasabi) || 0,
+        freeSoySauce: Number(freeSoySauce || 0),
+        freeGinger: Number(freeGinger || 0),
+        freeWasabi: Number(freeWasabi || 0),
       };
 
       console.log("BODY:", req.body);
 
       await pool.query(
-        `UPDATE products
-   SET name = $1,
-       price = $2,
-       category = $3,
-       description = $4,
-       image = $5,
-       popular = $6,
-       promo_type = $7,
-       priority = $8,
-       discount_offer_eligible = $9,
-free_soy_sauce = $10,
-free_ginger = $11,
-free_wasabi = $12
-WHERE id = $13`,
+        `
+    UPDATE products
+    SET
+      name = $1,
+      price = $2,
+      category = $3,
+      description = $4,
+      image = $5,
+      popular = $6,
+      promo_type = $7,
+      priority = $8,
+      discount_offer_eligible = $9,
+      free_soy_sauce = $10,
+      free_ginger = $11,
+      free_wasabi = $12
+    WHERE id = $13
+  `,
         [
           updatedProduct.name,
           updatedProduct.price,
