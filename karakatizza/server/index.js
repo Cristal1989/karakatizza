@@ -84,7 +84,7 @@ app.get("/", (req, res) => {
 app.get("/products", async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT 
+      SELECT
         id,
         name,
         price,
@@ -94,7 +94,7 @@ app.get("/products", async (req, res) => {
         popular,
         promo_type AS "promoType",
         priority,
-        discount_offer_eligible AS "discountOfferEligible",
+        discount_offer_eligible AS "discountOfferEligible"
       FROM products
       ORDER BY priority ASC, created_at ASC
     `);
@@ -109,9 +109,9 @@ app.get("/products", async (req, res) => {
     }));
 
     res.set("Cache-Control", "public, max-age=120");
-
     return res.json(products);
   } catch (error) {
+    console.error("GET /products ERROR:", error);
     return res.status(500).json({
       message: "Не вдалося отримати товари",
       error: error.message,
