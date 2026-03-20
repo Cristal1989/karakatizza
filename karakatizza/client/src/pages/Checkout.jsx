@@ -22,7 +22,6 @@ export default function Checkout() {
     checkoutTotalPrice,
   } = useCart();
 
-  const [address, setAddress] = useState("");
   const [form, setForm] = useState({
     name: "",
     phone: "+380",
@@ -32,10 +31,13 @@ export default function Checkout() {
     paymentMethod: "cash",
     needExactTime: false,
     exactTime: "",
-    soySauceCount: 0,
-    gingerCount: 0,
-    wasabiCount: 0,
+    soySauceCount: 1,
+    gingerCount: 1,
+    wasabiCount: 1,
   });
+  const [deliveryInfo, setDeliveryInfo] = useState(null);
+  const [deliveryLoading, setDeliveryLoading] = useState(false);
+  const [deliveryError, setDeliveryError] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -196,6 +198,17 @@ export default function Checkout() {
     freeCondiments.wasabi,
   ]);
 
+  useEffect(() => {
+    if (checkoutMode === "pickup") {
+      setForm((prev) => ({
+        ...prev,
+        address: "",
+      }));
+      setDeliveryInfo(null);
+      setDeliveryError("");
+    }
+  }, [checkoutMode]);
+
   const handleNameChange = (e) => {
     const value = e.target.value;
 
@@ -288,7 +301,6 @@ export default function Checkout() {
     e.preventDefault();
 
     const validationError = validateForm();
-
     if (validationError) {
       setError(validationError);
       return;
@@ -298,6 +310,21 @@ export default function Checkout() {
       setLoading(true);
       setError("");
 
+      let checkedDeliveryInfo = deliveryInfo;
+
+      if (checkoutMode === "delivery") {
+        const ok = await handleCheckDelivery();
+        if (!ok) {
+          setLoading(false);
+          return;
+        }
+
+        checkedDeliveryInfo = {
+          ...deliveryInfo,
+          shortAddress: form.address.trim(),
+        };
+      }
+
       const orderData = {
         name: form.name.trim(),
         phone: form.phone.trim(),
@@ -306,13 +333,16 @@ export default function Checkout() {
           checkoutMode === "pickup"
             ? "Самовивіз: Миколаїв, вул. Мала Морська 108 ТЦ Портал"
             : form.address.trim(),
+        resolvedAddress:
+          checkoutMode === "delivery"
+            ? checkedDeliveryInfo?.resolvedAddress || ""
+            : "",
         comment: form.comment.trim(),
         totalPrice: finalCheckoutTotal,
         entrance: form.entrance.trim(),
         paymentMethod: form.paymentMethod,
         needExactTime: form.needExactTime,
-        exactTime: form.needExactTime ? form.exactTime : "",
-        resolvedAddress: deliveryInfo?.resolvedAddress || "",
+        exactTime: form.needExactTime ? form.exactTime.trim() : "",
         condiments: {
           soySauceCount: form.soySauceCount,
           gingerCount: form.gingerCount,
@@ -346,11 +376,49 @@ export default function Checkout() {
       navigate("/success");
     } catch (err) {
       console.error(err);
-      setError("Не вдалося відправити замовлення");
+      setError(err.message || "Не вдалося відправити замовлення");
     } finally {
       setLoading(false);
     }
   };
+
+  async function handleCheckDelivery() {
+    if (checkoutMode !== "delivery") return null;
+
+    const rawAddress = form.address.trim();
+
+    if (!rawAddress) {
+      setDeliveryError("Введіть адресу доставки");
+      setDeliveryInfo(null);
+      return null;
+    }
+
+    try {
+      setDeliveryLoading(true);
+      setDeliveryError("");
+
+      const location = await geocodeAddress(rawAddress);
+      const distanceKm = await getRouteDistanceKm(location.lat, location.lng);
+      const info = getDeliveryInfo(distanceKm, finalCheckoutTotal);
+
+      const nextDeliveryInfo = {
+        ...info,
+        lat: location.lat,
+        lng: location.lng,
+        resolvedAddress: location.displayName || rawAddress,
+        shortAddress: rawAddress,
+      };
+
+      setDeliveryInfo(nextDeliveryInfo);
+      return nextDeliveryInfo;
+    } catch (error) {
+      setDeliveryInfo(null);
+      setDeliveryError(error.message || "Не вдалося перевірити доставку");
+      return null;
+    } finally {
+      setDeliveryLoading(false);
+    }
+  }
 
   async function geocodeAddress(addressText) {
     const query = encodeURIComponent(`Миколаїв, ${addressText}`);
@@ -369,34 +437,6 @@ export default function Checkout() {
       lng: Number(data[0].lon),
       displayName: data[0].display_name,
     };
-  }
-
-  async function handleCheckDelivery() {
-    if (!address.trim()) {
-      setDeliveryError("Введіть адресу доставки");
-      setDeliveryInfo(null);
-      return;
-    }
-
-    try {
-      setDeliveryLoading(true);
-      setDeliveryError("");
-      setDeliveryInfo(null);
-
-      const location = await geocodeAddress(address);
-      const distanceKm = await getRouteDistanceKm(location.lat, location.lng);
-      const info = getDeliveryInfo(distanceKm, totalPrice);
-
-      setDeliveryInfo({
-        ...info,
-        resolvedAddress: location.displayName,
-      });
-    } catch (error) {
-      setDeliveryError(error.message || "Не вдалося перевірити доставку");
-      setDeliveryInfo(null);
-    } finally {
-      setDeliveryLoading(false);
-    }
   }
 
   return (

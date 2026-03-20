@@ -41,6 +41,10 @@ export function CartProvider({ children }) {
   const [trainingSticksCount, setTrainingSticksCount] = useState(0);
   const [activePromoType, setActivePromoType] = useState(null);
 
+  const [soySauceCount, setSoySauceCount] = useState(0);
+  const [gingerCount, setGingerCount] = useState(0);
+  const [wasabiCount, setWasabiCount] = useState(0);
+
   const sticksExtraPrice = trainingSticksCount * 2;
 
   useEffect(() => {
@@ -61,6 +65,12 @@ export function CartProvider({ children }) {
     const safePaidQuantity = Number(quantity) || 1;
 
     setCartItems((prev) => {
+      if (product.category === "sets") {
+        setSoySauceCount((prev) => prev + (product.freeSoySauce || 0));
+        setGingerCount((prev) => prev + (product.freeGinger || 0));
+        setWasabiCount((prev) => prev + (product.freeWasabi || 0));
+      }
+
       const hasDiscountOfferAlready = prev.some((item) => {
         if (item.id === product.id) return false;
 

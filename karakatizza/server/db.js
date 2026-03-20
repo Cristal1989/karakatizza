@@ -133,4 +133,19 @@ export async function initDb() {
     SELECT 1 FROM gift_roll_settings
   );
 `);
+
+  await pool.query(`
+  ALTER TABLE products
+  ADD COLUMN IF NOT EXISTS free_soy_sauce INTEGER DEFAULT 0;
+`);
+
+  await pool.query(`
+  ALTER TABLE products
+  ADD COLUMN IF NOT EXISTS free_ginger INTEGER DEFAULT 0;
+`);
+
+  await pool.query(`
+  ALTER TABLE products
+  ADD COLUMN IF NOT EXISTS free_wasabi INTEGER DEFAULT 0;
+`);
 }

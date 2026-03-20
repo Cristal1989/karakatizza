@@ -667,14 +667,14 @@ export default function CartDrawer() {
                 borderRadius: "12px",
                 padding: "13px 14px",
                 background:
-                  !deliveryAddress.trim() || deliveryLoading
+                  !deliveryAddress?.trim() || deliveryLoading
                     ? "#cccccc"
                     : "#e56a45",
                 color: "#fff",
                 fontSize: "15px",
                 fontWeight: "700",
                 cursor:
-                  !deliveryAddress.trim() || deliveryLoading
+                  !deliveryAddress?.trim() || deliveryLoading
                     ? "default"
                     : "pointer",
               }}
