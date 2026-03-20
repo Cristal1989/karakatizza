@@ -95,9 +95,6 @@ app.get("/products", async (req, res) => {
         promo_type AS "promoType",
         priority,
         discount_offer_eligible AS "discountOfferEligible",
-        free_soy_sauce AS "freeSoySauce",
-free_ginger AS "freeGinger",
-free_wasabi AS "freeWasabi",
       FROM products
       ORDER BY priority ASC, created_at ASC
     `);
@@ -109,9 +106,6 @@ free_wasabi AS "freeWasabi",
       popular: !!p.popular,
       promoType: p.promoType || "none",
       discountOfferEligible: !!p.discountOfferEligible,
-      freeSoySauce: Number(p.freeSoySauce || 0),
-      freeGinger: Number(p.freeGinger || 0),
-      freeWasabi: Number(p.freeWasabi || 0),
     }));
 
     res.set("Cache-Control", "public, max-age=120");
