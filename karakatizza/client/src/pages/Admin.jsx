@@ -48,10 +48,19 @@ export default function Admin() {
   const [form, setForm] = useState({
     name: "",
     price: "",
+    oldPrice: "",
     category: "",
     description: "",
+    weight: "",
+
     promoType: "none",
     priority: 10,
+    discountOfferEligible: false,
+
+    isVisible: true,
+    isHit: false,
+    isNew: false,
+    isWeeklyOffer: false,
 
     freeSoySauce: 0,
     freeGinger: 0,
@@ -113,20 +122,25 @@ export default function Admin() {
     loadGiftRollSettings();
   }, []);
 
-  const loadProducts = async () => {
+  async function loadProducts() {
     try {
       setProductsLoading(true);
-      const data = await getProducts();
+
+      const data = await getProducts(true);
       console.log("LOADED PRODUCTS:", data);
-      setProducts(data);
+      console.log(
+        "HIDDEN PRODUCTS:",
+        Array.isArray(data) ? data.filter((p) => p.isVisible === false) : data
+      );
+
+      setProducts(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("LOAD PRODUCTS ERROR:", err);
       setError(err.message || "Не вдалося завантажити товари");
     } finally {
       setProductsLoading(false);
     }
-  };
-
+  }
   const loadPromotionSettings = async () => {
     try {
       setPromotionLoading(true);
@@ -186,15 +200,18 @@ export default function Admin() {
         const q = search.trim().toLowerCase();
         if (!q) return true;
 
-        return (
-          (product.name || "").toLowerCase().includes(q) ||
-          (product.description || "").toLowerCase().includes(q)
-        );
+        return (product.name || "")
+          .toLowerCase()
+          .includes(q)(product.description || "")
+          .toLowerCase()
+          .includes(q);
       })
       .sort((a, b) => {
         const pa = Number(a.priority ?? 10);
         const pb = Number(b.priority ?? 10);
+
         if (pa !== pb) return pa - pb;
+
         return (a.name || "").localeCompare(b.name || "", "uk");
       });
   }, [products, categoryFilter, search]);
@@ -268,30 +285,35 @@ export default function Admin() {
 
       formData.append("name", form.name?.trim() || "");
       formData.append("price", String(form.price || ""));
+      formData.append("oldPrice", String(form.oldPrice || ""));
       formData.append("category", form.category || "");
       formData.append("description", form.description || "");
+      formData.append("weight", form.weight || "");
+
       formData.append("popular", String(!!popular));
       formData.append("promoType", form.promoType || "none");
       formData.append("priority", String(form.priority || 10));
-      formData.append("freeSoySauce", String(form.freeSoySauce || 0));
-      formData.append("freeGinger", String(form.freeGinger || 0));
-      formData.append("freeWasabi", String(form.freeWasabi || 0));
+
       formData.append(
         "discountOfferEligible",
         String(!!form.discountOfferEligible)
       );
 
+      formData.append("isVisible", String(!!form.isVisible));
+      formData.append("isHit", String(!!form.isHit));
+      formData.append("isNew", String(!!form.isNew));
+      formData.append("isWeeklyOffer", String(!!form.isWeeklyOffer));
+
+      formData.append("freeSoySauce", String(form.freeSoySauce || 0));
+      formData.append("freeGinger", String(form.freeGinger || 0));
+      formData.append("freeWasabi", String(form.freeWasabi || 0));
+
       if (image) {
         formData.append("image", image);
       }
 
-      for (const pair of formData.entries()) {
-        console.log("FORMDATA:", pair[0], pair[1]);
-      }
-
       if (editingId) {
         const result = await updateProduct(editingId, formData);
-        console.log("UPDATE RESULT:", result);
 
         if (result?.product) {
           setProducts((prev) =>
@@ -302,7 +324,6 @@ export default function Admin() {
         setMessage("✅ Товар оновлено");
       } else {
         const result = await createProduct(formData);
-        console.log("CREATE RESULT:", result);
 
         if (result?.product) {
           setProducts((prev) => [result.product, ...prev]);
@@ -314,11 +335,19 @@ export default function Admin() {
       setForm({
         name: "",
         price: "",
+        oldPrice: "",
         category: "",
         description: "",
+        weight: "",
+
         promoType: "none",
         priority: 10,
         discountOfferEligible: false,
+
+        isVisible: true,
+        isHit: false,
+        isNew: false,
+        isWeeklyOffer: false,
 
         freeSoySauce: 0,
         freeGinger: 0,
@@ -402,7 +431,7 @@ export default function Admin() {
       }
 
       if (direction === "down") {
-        nextPriority = Math.min(10, currentPriority + 1);
+        nextPriority = Math.min(999, currentPriority + 1);
       }
 
       if (nextPriority === currentPriority) {
@@ -411,19 +440,29 @@ export default function Admin() {
 
       const formData = new FormData();
       formData.append("name", product.name || "");
-      formData.append("price", product.price || "");
+      formData.append("price", String(product.price || ""));
+      formData.append("oldPrice", String(product.oldPrice || ""));
       formData.append("category", product.category || "");
       formData.append("description", product.description || "");
-      formData.append("popular", !!product.popular);
+      formData.append("weight", product.weight || "");
+
+      formData.append("popular", String(!!product.popular));
       formData.append("promoType", product.promoType || "none");
-      formData.append("priority", nextPriority);
-      formData.append("freeSoySauce", product.freeSoySauce || 0);
-      formData.append("freeGinger", product.freeGinger || 0);
-      formData.append("freeWasabi", product.freeWasabi || 0);
+      formData.append("priority", String(nextPriority));
+
       formData.append(
         "discountOfferEligible",
-        String(!!form.discountOfferEligible)
+        String(!!product.discountOfferEligible)
       );
+
+      formData.append("isVisible", String(product.isVisible !== false));
+      formData.append("isHit", String(!!product.isHit));
+      formData.append("isNew", String(!!product.isNew));
+      formData.append("isWeeklyOffer", String(!!product.isWeeklyOffer));
+
+      formData.append("freeSoySauce", String(product.freeSoySauce || 0));
+      formData.append("freeGinger", String(product.freeGinger || 0));
+      formData.append("freeWasabi", String(product.freeWasabi || 0));
 
       await updateProduct(product.id, formData);
 
@@ -431,7 +470,7 @@ export default function Admin() {
       await loadProducts();
     } catch (error) {
       console.error(error);
-      setMessage(`❌ ${error.message}`);
+      setError(error.message || "Не вдалося змінити пріоритет");
     }
   };
 
@@ -442,11 +481,19 @@ export default function Admin() {
     setForm({
       name: product.name || "",
       price: product.price || "",
+      oldPrice: product.oldPrice || "",
       category: product.category || "",
       description: product.description || "",
+      weight: product.weight || "",
+
       promoType: product.promoType || "none",
       priority: Number(product.priority ?? 10),
       discountOfferEligible: product.discountOfferEligible ?? false,
+
+      isVisible: product.isVisible !== false,
+      isHit: product.isHit ?? false,
+      isNew: product.isNew ?? false,
+      isWeeklyOffer: product.isWeeklyOffer ?? false,
 
       freeSoySauce: product.freeSoySauce || 0,
       freeGinger: product.freeGinger || 0,
@@ -470,11 +517,23 @@ export default function Admin() {
     setForm({
       name: "",
       price: "",
+      oldPrice: "",
       category: "",
       description: "",
+      weight: "",
+
       promoType: "none",
       priority: 10,
       discountOfferEligible: false,
+
+      isVisible: true,
+      isHit: false,
+      isNew: false,
+      isWeeklyOffer: false,
+
+      freeSoySauce: 0,
+      freeGinger: 0,
+      freeWasabi: 0,
     });
 
     setPopular(false);
@@ -794,13 +853,17 @@ export default function Admin() {
 
                 <form
                   onSubmit={handleSubmit}
-                  style={{ display: "grid", gap: "16px" }}
+                  style={{
+                    display: "grid",
+                    gap: "20px",
+                  }}
                 >
                   <div
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "1fr 220px 180px",
+                      gridTemplateColumns: "1fr 220px 140px",
                       gap: "16px",
+                      alignItems: "stretch",
                     }}
                   >
                     <input
@@ -811,6 +874,21 @@ export default function Admin() {
                       onChange={handleChange}
                       style={inputStyle}
                     />
+                    {products.isVisible === false && (
+                      <span
+                        style={{
+                          marginLeft: "8px",
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          color: "#a94442",
+                          background: "#fdecea",
+                          padding: "4px 8px",
+                          borderRadius: "999px",
+                        }}
+                      >
+                        Прихований
+                      </span>
+                    )}
 
                     <input
                       type="number"
@@ -819,6 +897,7 @@ export default function Admin() {
                       value={form.price}
                       onChange={handleChange}
                       style={inputStyle}
+                      min="0"
                     />
 
                     <input
@@ -831,6 +910,112 @@ export default function Admin() {
                       onChange={handleChange}
                       style={inputStyle}
                     />
+                  </div>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 220px",
+                      gap: "16px",
+                      alignItems: "stretch",
+                    }}
+                  >
+                    <input
+                      type="text"
+                      name="weight"
+                      value={form.weight}
+                      onChange={handleChange}
+                      placeholder="Вага / об'єм (наприклад: 250 г, 500 мл, 32 шт)"
+                      style={inputStyle}
+                    />
+
+                    <input
+                      type="number"
+                      name="oldPrice"
+                      value={form.oldPrice}
+                      onChange={handleChange}
+                      placeholder="Стара ціна (якщо є акція)"
+                      min="0"
+                      style={inputStyle}
+                    />
+                  </div>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(4, minmax(180px, 1fr))",
+                      gap: "12px 20px",
+                      alignItems: "center",
+                      padding: "6px 0",
+                    }}
+                  >
+                    <label
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        fontSize: "15px",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        name="isVisible"
+                        checked={!!form.isVisible}
+                        onChange={handleChange}
+                      />
+                      Показувати в меню
+                    </label>
+
+                    <label
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        fontSize: "15px",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        name="isHit"
+                        checked={!!form.isHit}
+                        onChange={handleChange}
+                      />
+                      Маячок HIT
+                    </label>
+
+                    <label
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        fontSize: "15px",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        name="isNew"
+                        checked={!!form.isNew}
+                        onChange={handleChange}
+                      />
+                      Маячок NEW
+                    </label>
+
+                    <label
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        fontSize: "15px",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        name="isWeeklyOffer"
+                        checked={!!form.isWeeklyOffer}
+                        onChange={handleChange}
+                      />
+                      Акція тижня
+                    </label>
                   </div>
 
                   <div
@@ -852,7 +1037,7 @@ export default function Admin() {
                       <option value="sets">Сети</option>
                       <option value="sushi">Суші</option>
                       <option value="sushi_burger">Суші бургер</option>
-                      <option value="snacks">Салати і закуски</option>
+                      <option value="snacks">Салати / Закуски</option>
                       <option value="bowls">Суші боули</option>
                       <option value="drinks">Напої</option>
                       <option value="extras">Додатково</option>
@@ -875,175 +1060,202 @@ export default function Admin() {
                     value={form.description}
                     onChange={handleChange}
                     rows={4}
-                    style={inputStyle}
+                    style={{
+                      ...inputStyle,
+                      resize: "vertical",
+                      minHeight: "110px",
+                      paddingTop: "14px",
+                    }}
                   />
 
-                  <label
+                  <div
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      padding: "14px 16px",
-                      border: "1px solid #ddd",
-                      borderRadius: "12px",
-                      background: "#fff",
-                      cursor: "pointer",
+                      display: "grid",
+                      gridTemplateColumns: "1fr",
+                      gap: "12px",
+                      padding: "16px",
+                      border: "1px solid #eee",
+                      borderRadius: "16px",
+                      background: "#fafafa",
                     }}
                   >
-                    <input
-                      type="checkbox"
-                      checked={popular}
-                      onChange={(e) => setPopular(e.target.checked)}
-                    />
-                    <span style={{ fontWeight: 700 }}>Хіт продажу</span>
-                  </label>
-                  <label
+                    <label
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        fontSize: "15px",
+                        fontWeight: 600,
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={!!popular}
+                        onChange={(e) => setPopular(e.target.checked)}
+                      />
+                      Хіт продажу
+                    </label>
+
+                    <label
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        fontSize: "15px",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        name="discountOfferEligible"
+                        checked={!!form.discountOfferEligible}
+                        onChange={handleChange}
+                      />
+                      Участвує в акції (знижка %)
+                    </label>
+                  </div>
+
+                  <div
                     style={{
-                      display: "flex",
-                      gap: "8px",
-                      alignItems: "center",
-                      marginTop: "10px",
+                      display: "grid",
+                      gridTemplateColumns: "repeat(3, 1fr)",
+                      gap: "16px",
                     }}
                   >
-                    <input
-                      type="checkbox"
-                      checked={form.discountOfferEligible || false}
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          discountOfferEligible: e.target.checked,
-                        })
-                      }
-                    />
-                    Участвует в акции (скидка %)
-                  </label>
-                  {form.category === "sets" && (
-                    <div style={{ marginTop: "12px" }}>
-                      <div style={{ fontWeight: 600, marginBottom: "8px" }}>
-                        Безкоштовні соуси до сету:
-                      </div>
-
-                      <div style={{ display: "grid", gap: "8px" }}>
-                        <label
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                          }}
-                        >
-                          <span>Соєвий соус:</span>
-                          <input
-                            type="number"
-                            name="freeSoySauce"
-                            value={form.freeSoySauce}
-                            onChange={handleChange}
-                            style={{ width: "80px" }}
-                          />
-                        </label>
-
-                        <label
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                          }}
-                        >
-                          <span>Імбир:</span>
-                          <input
-                            type="number"
-                            name="freeGinger"
-                            value={form.freeGinger}
-                            onChange={handleChange}
-                            style={{ width: "80px" }}
-                          />
-                        </label>
-
-                        <label
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                          }}
-                        >
-                          <span>Васабі:</span>
-                          <input
-                            type="number"
-                            name="freeWasabi"
-                            value={form.freeWasabi}
-                            onChange={handleChange}
-                            style={{ width: "80px" }}
-                          />
-                        </label>
-                      </div>
+                    <div style={{ display: "grid", gap: "6px" }}>
+                      <span style={{ fontSize: "13px", color: "#666" }}>
+                        Соєвий соус (безкоштовно)
+                      </span>
+                      <input
+                        type="number"
+                        name="freeSoySauce"
+                        min="0"
+                        value={form.freeSoySauce}
+                        onChange={handleChange}
+                        style={inputStyle}
+                      />
                     </div>
-                  )}
 
-                  <div style={{ marginBottom: "16px" }}>
+                    <div style={{ display: "grid", gap: "6px" }}>
+                      <span style={{ fontSize: "13px", color: "#666" }}>
+                        Імбир (безкоштовно)
+                      </span>
+                      <input
+                        type="number"
+                        name="freeGinger"
+                        min="0"
+                        value={form.freeGinger}
+                        onChange={handleChange}
+                        style={inputStyle}
+                      />
+                    </div>
+
+                    <div style={{ display: "grid", gap: "6px" }}>
+                      <span style={{ fontSize: "13px", color: "#666" }}>
+                        Васабі (безкоштовно)
+                      </span>
+                      <input
+                        type="number"
+                        name="freeWasabi"
+                        min="0"
+                        value={form.freeWasabi}
+                        onChange={handleChange}
+                        style={inputStyle}
+                      />
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gap: "12px",
+                      padding: "16px",
+                      border: "1px dashed #d9d9d9",
+                      borderRadius: "16px",
+                      background: "#fcfcfc",
+                    }}
+                  >
                     <input
                       id="product-image-input"
                       type="file"
                       accept="image/*"
                       onChange={handleImageChange}
                     />
+
+                    {imagePreview ? (
+                      <div
+                        style={{
+                          width: "180px",
+                          height: "180px",
+                          borderRadius: "18px",
+                          overflow: "hidden",
+                          border: "1px solid #eee",
+                          background: "#fff",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <img
+                          src={imagePreview}
+                          alt="preview"
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "contain",
+                            display: "block",
+                          }}
+                        />
+                      </div>
+                    ) : null}
                   </div>
 
-                  {imagePreview ? (
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "16px",
-                        marginTop: "12px",
-                        marginBottom: "20px",
-                      }}
-                    >
-                      <img
-                        src={imagePreview}
-                        alt="Фото товару"
-                        style={{
-                          width: "96px",
-                          height: "96px",
-                          objectFit: "cover",
-                          borderRadius: "12px",
-                          border: "1px solid #eee",
-                        }}
-                      />
-
-                      <div>
-                        <div style={{ fontWeight: 700, marginBottom: "4px" }}>
-                          Фото товару
-                        </div>
-                        <div style={{ color: "#666", fontSize: "14px" }}>
-                          Нове фото вибрано, ще не збережено
-                        </div>
-                      </div>
-                    </div>
-                  ) : null}
-
                   <div
-                    style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}
+                    style={{
+                      display: "flex",
+                      gap: "12px",
+                      flexWrap: "wrap",
+                      alignItems: "center",
+                    }}
                   >
                     <button
                       type="submit"
                       disabled={loading}
-                      style={primaryButtonStyle}
+                      style={{
+                        border: "none",
+                        borderRadius: "14px",
+                        padding: "14px 22px",
+                        background: loading ? "#f3b29c" : "#e56a45",
+                        color: "#fff",
+                        fontSize: "16px",
+                        fontWeight: 700,
+                        cursor: loading ? "default" : "pointer",
+                      }}
                     >
                       {loading
                         ? "Збереження..."
                         : editingId
-                        ? "Зберегти зміни"
+                        ? "Оновити товар"
                         : "Додати товар"}
                     </button>
 
-                    {editingId && (
+                    {editingId ? (
                       <button
                         type="button"
                         onClick={handleCancelEdit}
-                        style={secondaryButtonStyle}
+                        style={{
+                          border: "1px solid #ddd",
+                          borderRadius: "14px",
+                          padding: "14px 22px",
+                          background: "#fff",
+                          color: "#222",
+                          fontSize: "16px",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
                       >
                         Скасувати редагування
                       </button>
-                    )}
+                    ) : null}
                   </div>
                 </form>
 

@@ -83,18 +83,18 @@ app.get("/", (req, res) => {
 
 app.get("/products", async (req, res) => {
   try {
-    const { admin } = req.query;
-
-    const isAdminMode = String(admin) === "1";
+    const isAdmin = req.query.admin === "1";
 
     const result = await pool.query(`
       SELECT
         id,
         name,
         price,
+        old_price AS "oldPrice",
         category,
         description,
         image,
+        weight,
         popular,
         promo_type AS "promoType",
         priority,
@@ -102,20 +102,19 @@ app.get("/products", async (req, res) => {
         free_soy_sauce AS "freeSoySauce",
         free_ginger AS "freeGinger",
         free_wasabi AS "freeWasabi",
-        weight,
         is_visible AS "isVisible",
         is_hit AS "isHit",
         is_new AS "isNew",
-        is_weekly_offer AS "isWeeklyOffer",
-        old_price AS "oldPrice"
+        is_weekly_offer AS "isWeeklyOffer"
       FROM products
-      ${isAdminMode ? "" : "WHERE is_visible = true"}
+      ${isAdmin ? "" : "WHERE is_visible = true"}
       ORDER BY priority ASC, created_at ASC
     `);
 
     const products = result.rows.map((p) => ({
       ...p,
       price: Number(p.price),
+      oldPrice: p.oldPrice != null ? Number(p.oldPrice) : null,
       priority: Number(p.priority ?? 10),
       popular: !!p.popular,
       promoType: p.promoType || "none",
@@ -123,12 +122,11 @@ app.get("/products", async (req, res) => {
       freeSoySauce: Number(p.freeSoySauce || 0),
       freeGinger: Number(p.freeGinger || 0),
       freeWasabi: Number(p.freeWasabi || 0),
+      isVisible: p.isVisible === true,
+      isHit: p.isHit === true,
+      isNew: p.isNew === true,
+      isWeeklyOffer: p.isWeeklyOffer === true,
       weight: p.weight || "",
-      isVisible: p.isVisible !== false,
-      isHit: !!p.isHit,
-      isNew: !!p.isNew,
-      isWeeklyOffer: !!p.isWeeklyOffer,
-      oldPrice: p.oldPrice != null ? Number(p.oldPrice) : null,
     }));
 
     res.set("Cache-Control", "public, max-age=120");

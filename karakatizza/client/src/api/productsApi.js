@@ -5,13 +5,13 @@ export const API_BASE_URL =
 export function getImageUrl(image, options = {}) {
   if (!image) return "";
 
-  const { width = 600, height = 600, crop = "fill" } = options;
+  const { width = 600, height = 600, crop = "fit" } = options;
 
   if (image.startsWith("http")) {
     if (image.includes("/image/upload/")) {
       return image.replace(
-        `"/image/upload/",
-        /image/upload/f_auto,q_auto,w_${width},h_${height},c_${crop}/`
+        "/image/upload/",
+        `/image/upload/f_auto,q_auto,w_${width},h_${height},c_${crop}/`
       );
     }
 
@@ -21,8 +21,11 @@ export function getImageUrl(image, options = {}) {
   return `${API_BASE_URL}${image}`;
 }
 
-export async function getProducts() {
-  const res = await fetch(`${API_BASE_URL}/products?ts=${Date.now()}`, {
+export async function getProducts(isAdmin = false) {
+  const query = isAdmin ? "?admin=1" : "";
+  const url = `${API_BASE_URL}/products${query}${query ? "&" : "?"}ts=${Date.now()}`;
+
+  const res = await fetch(url, {
     cache: "no-store",
   });
 
