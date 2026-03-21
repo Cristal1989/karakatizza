@@ -148,6 +148,7 @@ export default function CartDrawer() {
     hasAvailableDiscountRoll &&
     !discountOfferDismissed &&
     !discountOfferAccepted &&
+    !hasAnyPromoInCart &&
     !giftRollInCart &&
     !shouldGiftRollBeActive;
 
@@ -180,6 +181,8 @@ export default function CartDrawer() {
   }, [shouldTriggerDiscountOffer, allProducts, cartItems]);
 
   useEffect(() => {
+    const triggerSum = Number(promotionSettings.triggerSum || 0);
+
     if (cartItems.length === 0) {
       setDiscountOfferProduct(null);
       setDiscountOfferDismissed(false);
@@ -187,12 +190,19 @@ export default function CartDrawer() {
       return;
     }
 
-    if (rollsSum < Number(promotionSettings.triggerSum || 0)) {
+    if (rollsSum < triggerSum) {
+      // 🔥 УДАЛЯЕМ скидочные товары из корзины
+      cartItems.forEach((item) => {
+        if (item.isDiscountOffer) {
+          removeFromCart(item.id);
+        }
+      });
+
       setDiscountOfferProduct(null);
       setDiscountOfferDismissed(false);
       setDiscountOfferAccepted(false);
     }
-  }, [cartItems.length, rollsSum, promotionSettings.triggerSum]);
+  }, [cartItems, rollsSum, promotionSettings.triggerSum]);
 
   function getRandomRollOffer() {
     if (availableDiscountRolls.length === 0) return null;
@@ -284,10 +294,7 @@ export default function CartDrawer() {
       setAllProducts(products);
 
       const filtered = products.filter(
-        (p) =>
-          p.category === "drinks" ||
-          p.category === "snacks" ||
-          p.category === "extras"
+        (p) => p.category === "drinks" || p.category === "snacks"
       );
 
       setUpsellProducts(filtered);
@@ -718,27 +725,59 @@ export default function CartDrawer() {
                       borderRadius: "16px",
                       padding: "14px",
                       backgroundColor: "#fafafa",
+                      display: "block",
                     }}
                   >
-                    <div style={{ display: "flex", gap: "12px" }}>
-                      <img
-                        src={getImageUrl(item.image)}
-                        alt={item.name}
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "88px 1fr auto",
+                        gap: "12px",
+                        alignItems: "center",
+                      }}
+                    >
+                      {/* Картинка */}
+                      <div
                         style={{
-                          width: "74px",
-                          height: "74px",
-                          objectFit: "cover",
-                          borderRadius: "12px",
-                          flexShrink: 0,
+                          width: "88px",
+                          height: "88px",
+                          minWidth: "88px",
+                          borderRadius: "14px",
+                          overflow: "hidden",
+                          background: "#fff",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          border: "1px solid #eee",
                         }}
-                      />
+                      >
+                        <img
+                          src={getImageUrl(item.image)}
+                          alt={item.name}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            display: "block",
+                            objectFit: "contain",
+                            padding:
+                              item.category === "drinks"
+                                ? "8px"
+                                : item.category === "rolls" ||
+                                  item.category === "sets"
+                                ? "2px"
+                                : "4px",
+                          }}
+                        />
+                      </div>
 
-                      <div style={{ flex: 1 }}>
+                      {/* Центр: название / цена за шт / статус / количество */}
+                      <div style={{ minWidth: 0 }}>
                         <div
                           style={{
                             fontSize: "18px",
                             fontWeight: "700",
                             color: "#222",
+                            lineHeight: 1.2,
                           }}
                         >
                           {item.name}
@@ -770,16 +809,17 @@ export default function CartDrawer() {
                             <div>{item.price} грн за шт</div>
                           )}
                         </div>
+
                         {item.isGiftRoll ? (
                           <div
                             style={{
                               marginTop: "4px",
                               fontSize: "13px",
-                              color: "#4caf50",
+                              color: "#999",
                               fontWeight: "600",
                             }}
                           >
-                            Подарунок
+                            🎁 Подарунок
                           </div>
                         ) : item.freeQuantity > 0 ? (
                           <div
@@ -804,107 +844,100 @@ export default function CartDrawer() {
                             Знижка {item.discountLabel || "-25%"}
                           </div>
                         ) : null}
-                        <div
-                          style={{
-                            marginTop: "12px",
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            gap: "10px",
-                            flexWrap: "wrap",
-                          }}
-                        >
-                          {!item.isGiftRoll && (
-                            <>
-                              <div
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: "8px",
-                                }}
-                              >
-                                <button
-                                  onClick={() => decreaseQuantity(item.id)}
-                                  style={{
-                                    width: "32px",
-                                    height: "32px",
-                                    border: "none",
-                                    borderRadius: "8px",
-                                    backgroundColor: "#e9e9e9",
-                                    cursor: "pointer",
-                                    fontSize: "18px",
-                                  }}
-                                >
-                                  -
-                                </button>
 
-                                <span
-                                  style={{
-                                    minWidth: "20px",
-                                    textAlign: "center",
-                                    fontWeight: "700",
-                                  }}
-                                >
-                                  {item.quantity}
-                                </span>
-
-                                <button
-                                  onClick={() => increaseQuantity(item.id)}
-                                  style={{
-                                    width: "32px",
-                                    height: "32px",
-                                    border: "none",
-                                    borderRadius: "8px",
-                                    backgroundColor: "#e9e9e9",
-                                    cursor: "pointer",
-                                    fontSize: "18px",
-                                  }}
-                                >
-                                  +
-                                </button>
-                              </div>
-                            </>
-                          )}
-
+                        {!item.isGiftRoll && !item.isDiscountOffer && (
                           <div
-                            style={{
-                              fontWeight: "800",
-                              color: "#111",
-                            }}
-                          >
-                            {item.price * (item.paidQuantity ?? item.quantity)}{" "}
-                            грн
-                          </div>
-                        </div>
-
-                        {!item.isGiftRoll && (
-                          <button
-                            onClick={() => removeFromCart(item.id)}
                             style={{
                               marginTop: "12px",
-                              border: "none",
-                              background: "none",
-                              color: "#d32f2f",
-                              cursor: "pointer",
-                              padding: 0,
-                              fontWeight: "600",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "10px",
+                              background: "#fff",
+                              borderRadius: "10px",
+                              // padding: "4px 8px",
+                              width: "fit-content",
                             }}
                           >
-                            Видалити
-                          </button>
-                        )}
-                        {item.isGiftRoll && (
-                          <div
-                            style={{
-                              marginTop: "8px",
-                              fontSize: "13px",
-                              color: "#999",
-                              fontWeight: "600",
-                            }}
-                          >
-                            Додається автоматично
+                            <button
+                              onClick={() => decreaseQuantity(item.id)}
+                              style={{
+                                width: "28px",
+                                height: "28px",
+                                border: "none",
+                                borderRadius: "8px",
+                                background: "#dedede",
+                                cursor: "pointer",
+                                fontSize: "16px",
+                              }}
+                            >
+                              -
+                            </button>
+
+                            <span
+                              style={{
+                                minWidth: "20px",
+                                textAlign: "center",
+                                fontWeight: "600",
+                              }}
+                            >
+                              {item.quantity}
+                            </span>
+                            <button
+                              onClick={() => increaseQuantity(item.id)}
+                              style={{
+                                width: "28px",
+                                height: "28px",
+                                border: "none",
+                                borderRadius: "8px",
+                                background: "#dedede",
+                                cursor: "pointer",
+                                fontSize: "16px",
+                              }}
+                            >
+                              +
+                            </button>
                           </div>
                         )}
+
+                        {(item.isGiftRoll || item.isDiscountOffer) && (
+                          <div
+                            style={{
+                              marginTop: "12px",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "10px",
+                              width: "fit-content",
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: "13px",
+                                color: item.isGiftRoll ? "#999" : "#4caf50",
+                                fontWeight: "600",
+                              }}
+                            >
+                              {item.isGiftRoll
+                                ? "Додається автоматично"
+                                : "Акційний товар"}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Справа: итоговая цена */}
+                      <div
+                        style={{
+                          minWidth: "90px",
+                          textAlign: "right",
+                          fontWeight: "700",
+                          fontSize: "16px",
+                          color: "#222",
+                          alignSelf: "center",
+                        }}
+                      >
+                        {item.isDiscountOffer && item.originalPrice
+                          ? `${item.price} грн`
+                          : `${item.price * item.quantity} грн`}
                       </div>
                     </div>
                   </div>
@@ -1115,17 +1148,39 @@ export default function CartDrawer() {
                             border: "1px solid #eee",
                           }}
                         >
-                          <img
-                            src={getImageUrl(product.image)}
-                            alt={product.name}
+                          <div
                             style={{
                               width: "64px",
                               height: "64px",
-                              objectFit: "cover",
+                              minWidth: "64px",
                               borderRadius: "12px",
+                              overflow: "hidden",
+                              background: "#fff",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              border: "1px solid #eee",
                               flexShrink: 0,
                             }}
-                          />
+                          >
+                            <img
+                              src={getImageUrl(product.image)}
+                              alt={product.name}
+                              style={{
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "contain",
+                                padding:
+                                  product.category === "drinks"
+                                    ? "8px"
+                                    : product.category === "rolls" ||
+                                      product.category === "sets"
+                                    ? "2px"
+                                    : "4px",
+                                display: "block",
+                              }}
+                            />
+                          </div>
 
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div
@@ -1133,6 +1188,7 @@ export default function CartDrawer() {
                                 fontSize: "15px",
                                 fontWeight: "700",
                                 color: "#222",
+                                lineHeight: 1.2,
                               }}
                             >
                               {product.name}
@@ -1143,6 +1199,7 @@ export default function CartDrawer() {
                                 fontSize: "13px",
                                 color: "#666",
                                 marginTop: "4px",
+                                lineHeight: 1.25,
                               }}
                             >
                               {product.description}
@@ -1166,6 +1223,7 @@ export default function CartDrawer() {
                             style={{
                               width: "40px",
                               height: "40px",
+                              minWidth: "40px",
                               borderRadius: "12px",
                               border: "none",
                               background: "#e56a45",

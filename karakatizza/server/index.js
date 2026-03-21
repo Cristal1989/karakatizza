@@ -83,6 +83,10 @@ app.get("/", (req, res) => {
 
 app.get("/products", async (req, res) => {
   try {
+    const { admin } = req.query;
+
+    const isAdminMode = String(admin) === "1";
+
     const result = await pool.query(`
       SELECT
         id,
@@ -97,8 +101,15 @@ app.get("/products", async (req, res) => {
         discount_offer_eligible AS "discountOfferEligible",
         free_soy_sauce AS "freeSoySauce",
         free_ginger AS "freeGinger",
-        free_wasabi AS "freeWasabi"
+        free_wasabi AS "freeWasabi",
+        weight,
+        is_visible AS "isVisible",
+        is_hit AS "isHit",
+        is_new AS "isNew",
+        is_weekly_offer AS "isWeeklyOffer",
+        old_price AS "oldPrice"
       FROM products
+      ${isAdminMode ? "" : "WHERE is_visible = true"}
       ORDER BY priority ASC, created_at ASC
     `);
 
@@ -112,6 +123,12 @@ app.get("/products", async (req, res) => {
       freeSoySauce: Number(p.freeSoySauce || 0),
       freeGinger: Number(p.freeGinger || 0),
       freeWasabi: Number(p.freeWasabi || 0),
+      weight: p.weight || "",
+      isVisible: p.isVisible !== false,
+      isHit: !!p.isHit,
+      isNew: !!p.isNew,
+      isWeeklyOffer: !!p.isWeeklyOffer,
+      oldPrice: p.oldPrice != null ? Number(p.oldPrice) : null,
     }));
 
     res.set("Cache-Control", "public, max-age=120");
@@ -120,7 +137,6 @@ app.get("/products", async (req, res) => {
     console.error("GET /products ERROR:", error);
     return res.status(500).json({
       message: "Не вдалося отримати товари",
-      error: error.message,
     });
   }
 });
@@ -175,6 +191,12 @@ app.post("/products", upload.single("image"), async (req, res) => {
       freeSoySauce,
       freeGinger,
       freeWasabi,
+      weight,
+      isVisible,
+      isHit,
+      isNew,
+      isWeeklyOffer,
+      oldPrice,
     } = req.body;
 
     if (!name || !price || !category) {
@@ -199,27 +221,44 @@ app.post("/products", upload.single("image"), async (req, res) => {
       freeSoySauce: Number(freeSoySauce || 0),
       freeGinger: Number(freeGinger || 0),
       freeWasabi: Number(freeWasabi || 0),
+
+      weight: weight || "",
+      isVisible: isVisible === undefined ? true : isVisible === "true",
+      isHit: isHit === "true",
+      isNew: isNew === "true",
+      isWeeklyOffer: isWeeklyOffer === "true",
+      oldPrice:
+        oldPrice !== undefined && oldPrice !== "" ? Number(oldPrice) : null,
     };
 
     await pool.query(
       `
-    INSERT INTO products (
-      id,
-      name,
-      price,
-      category,
-      description,
-      image,
-      popular,
-      promo_type,
-      priority,
-      discount_offer_eligible,
-      free_soy_sauce,
-      free_ginger,
-      free_wasabi
-    )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-  `,
+      INSERT INTO products (
+        id,
+        name,
+        price,
+        category,
+        description,
+        image,
+        popular,
+        promo_type,
+        priority,
+        discount_offer_eligible,
+        free_soy_sauce,
+        free_ginger,
+        free_wasabi,
+        weight,
+        is_visible,
+        is_hit,
+        is_new,
+        is_weekly_offer,
+        old_price
+      )
+      VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9,
+        $10, $11, $12, $13, $14, $15, $16, $17, $18, $19
+      )
+      `,
       [
         newProduct.id,
         newProduct.name,
@@ -234,6 +273,12 @@ app.post("/products", upload.single("image"), async (req, res) => {
         newProduct.freeSoySauce,
         newProduct.freeGinger,
         newProduct.freeWasabi,
+        newProduct.weight,
+        newProduct.isVisible,
+        newProduct.isHit,
+        newProduct.isNew,
+        newProduct.isWeeklyOffer,
+        newProduct.oldPrice,
       ]
     );
 
@@ -242,10 +287,9 @@ app.post("/products", upload.single("image"), async (req, res) => {
       product: newProduct,
     });
   } catch (error) {
-    console.error("POST PRODUCT ERROR:", error);
+    console.error("POST /products ERROR:", error);
     return res.status(500).json({
-      message: "Помилка створення товару",
-      error: error.message,
+      message: "Не вдалося створити товар",
     });
   }
 });
@@ -316,7 +360,6 @@ app.put("/products/:id", (req, res) => {
   upload.single("image")(req, res, async (uploadError) => {
     if (uploadError) {
       console.error("UPLOAD PRODUCT ERROR:", uploadError);
-
       return res.status(500).json({
         message: "Помилка завантаження фото",
         error: uploadError.message,
@@ -325,6 +368,7 @@ app.put("/products/:id", (req, res) => {
 
     try {
       const { id } = req.params;
+
       const {
         name,
         price,
@@ -337,10 +381,13 @@ app.put("/products/:id", (req, res) => {
         freeSoySauce,
         freeGinger,
         freeWasabi,
+        weight,
+        isVisible,
+        isHit,
+        isNew,
+        isWeeklyOffer,
+        oldPrice,
       } = req.body;
-
-      console.log("PUT PRODUCT BODY:", req.body);
-      console.log("PUT PRODUCT FILE:", req.file);
 
       if (!name || !price || !category) {
         return res.status(400).json({
@@ -352,7 +399,7 @@ app.put("/products/:id", (req, res) => {
         `SELECT * FROM products WHERE id = $1`,
         [id]
       );
-      req.file;
+
       if (existing.rows.length === 0) {
         return res.status(404).json({ message: "Товар не знайдено" });
       }
@@ -403,26 +450,40 @@ app.put("/products/:id", (req, res) => {
         freeSoySauce: Number(freeSoySauce || 0),
         freeGinger: Number(freeGinger || 0),
         freeWasabi: Number(freeWasabi || 0),
+
+        weight: weight || "",
+        isVisible: isVisible === undefined ? true : isVisible === "true",
+        isHit: isHit === "true",
+        isNew: isNew === "true",
+        isWeeklyOffer: isWeeklyOffer === "true",
+        oldPrice:
+          oldPrice !== undefined && oldPrice !== "" ? Number(oldPrice) : null,
       };
 
-      console.log("BODY:", req.body);
-
       await pool.query(
-        `UPDATE products
-   SET
-     name = $1,
-     price = $2,
-     category = $3,
-     description = $4,
-     image = $5,
-     popular = $6,
-     promo_type = $7,
-     priority = $8,
-     discount_offer_eligible = $9,
-     free_soy_sauce = $10,
-     free_ginger = $11,
-     free_wasabi = $12
-   WHERE id = $13`,
+        `
+        UPDATE products
+        SET
+          name = $1,
+          price = $2,
+          category = $3,
+          description = $4,
+          image = $5,
+          popular = $6,
+          promo_type = $7,
+          priority = $8,
+          discount_offer_eligible = $9,
+          free_soy_sauce = $10,
+          free_ginger = $11,
+          free_wasabi = $12,
+          weight = $13,
+          is_visible = $14,
+          is_hit = $15,
+          is_new = $16,
+          is_weekly_offer = $17,
+          old_price = $18
+        WHERE id = $19
+        `,
         [
           updatedProduct.name,
           updatedProduct.price,
@@ -436,6 +497,12 @@ app.put("/products/:id", (req, res) => {
           updatedProduct.freeSoySauce,
           updatedProduct.freeGinger,
           updatedProduct.freeWasabi,
+          updatedProduct.weight,
+          updatedProduct.isVisible,
+          updatedProduct.isHit,
+          updatedProduct.isNew,
+          updatedProduct.isWeeklyOffer,
+          updatedProduct.oldPrice,
           updatedProduct.id,
         ]
       );
@@ -446,10 +513,8 @@ app.put("/products/:id", (req, res) => {
       });
     } catch (error) {
       console.error("PUT PRODUCT ERROR:", error);
-
       return res.status(500).json({
-        message: "Помилка оновлення товару",
-        error: error.message,
+        message: "Не вдалося оновити товар",
       });
     }
   });

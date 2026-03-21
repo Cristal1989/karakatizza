@@ -148,4 +148,34 @@ export async function initDb() {
   ALTER TABLE products
   ADD COLUMN IF NOT EXISTS free_wasabi INTEGER DEFAULT 0;
 `);
+
+  await pool.query(`
+  ALTER TABLE products
+  ADD COLUMN IF NOT EXISTS weight TEXT;
+`);
+
+  await pool.query(`
+  ALTER TABLE products
+  ADD COLUMN IF NOT EXISTS is_visible BOOLEAN NOT NULL DEFAULT true;
+`);
+
+  await pool.query(`
+  ALTER TABLE products
+  ADD COLUMN IF NOT EXISTS is_hit BOOLEAN NOT NULL DEFAULT false;
+`);
+
+  await pool.query(`
+  ALTER TABLE products
+  ADD COLUMN IF NOT EXISTS is_new BOOLEAN NOT NULL DEFAULT false;
+`);
+
+  await pool.query(`
+  ALTER TABLE products
+  ADD COLUMN IF NOT EXISTS is_weekly_offer BOOLEAN NOT NULL DEFAULT false;
+`);
+
+  await pool.query(`
+  ALTER TABLE products
+  ADD COLUMN IF NOT EXISTS old_price NUMERIC;
+`);
 }
