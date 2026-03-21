@@ -115,40 +115,6 @@ export default function Home() {
           boxSizing: "border-box",
         }}
       >
-        <Hero banners={banners} products={products} />
-
-        {/* <section
-          id="menu"
-          style={{
-            marginBottom: "20px",
-          }}
-        >
-          <div
-            style={{
-              marginBottom: "16px",
-            }}
-          >
-            <h2
-              style={{
-                fontSize: "34px",
-                fontWeight: "800",
-                margin: "0 0 8px 0",
-              }}
-            >
-              Меню
-            </h2>
-
-            <p
-              style={{
-                color: "#666",
-                margin: 0,
-              }}
-            >
-              Обирайте роли, сети, закуски та напої
-            </p>
-          </div>
-        </section> */}
-
         <div
           id="menu"
           style={{
@@ -156,7 +122,7 @@ export default function Home() {
             top: 0,
             zIndex: 40,
             background: "#fafafa",
-            padding: isMobile ? "6px 0 8px" : "8px 0 10px",
+            padding: isMobile ? "6px 0 6px" : "8px 0 8px",
             marginBottom: "0",
             borderBottom: "1px solid #f0f0f0",
           }}
@@ -166,6 +132,7 @@ export default function Home() {
             onChange={setActiveCategory}
           />
         </div>
+        <Hero banners={banners} products={products} />
 
         {loading && (
           <div

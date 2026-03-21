@@ -52,16 +52,18 @@ export default function Checkout() {
 
   const compactGrid3Style = {
     display: "grid",
-    gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)",
-    gap: "12px",
-    maxWidth: "420px",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gap: isMobile ? "8px" : "14px",
+    alignItems: "stretch",
   };
 
   const compactGrid2EqualStyle = {
     display: "grid",
-    gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
-    gap: "12px",
-    maxWidth: "360px",
+    gridTemplateColumns: isMobile
+      ? "repeat(2, minmax(0, 1fr))"
+      : "repeat(2, minmax(0, 1fr))",
+    gap: isMobile ? "10px" : "14px",
+    alignItems: "stretch",
   };
   const fieldStyle = {
     width: "100%",
@@ -84,61 +86,75 @@ export default function Checkout() {
   };
 
   const compactOptionCardStyle = {
-    border: "1px solid #eee7e1",
-    borderRadius: "14px",
-    padding: "12px",
-    background: "#fff",
-    margin: "0 auto",
+    border: "1px solid #ece3dc",
+    borderRadius: isMobile ? "14px" : "18px",
+    background: "#fffdfa",
+    padding: isMobile ? "10px 8px" : "16px 14px",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    textAlign: "center",
+    minHeight: isMobile ? "104px" : "124px",
+    boxSizing: "border-box",
   };
 
   const compactOptionTitleStyle = {
-    fontSize: "15px",
+    fontSize: isMobile ? "13px" : "18px",
     fontWeight: 800,
     color: "#222",
-    marginBottom: "8px",
+    marginBottom: isMobile ? "6px" : "10px",
+    lineHeight: 1.15,
     textAlign: "center",
   };
 
   const compactFreeStyle = {
-    fontSize: "13px",
-    color: "#7a746e",
-    marginTop: "8px",
+    fontSize: isMobile ? "11px" : "14px",
+    color: "#7b746e",
+    textAlign: "center",
+    lineHeight: 1.2,
   };
 
   const compactExtraStyle = {
-    fontSize: "12px",
-    color: "#d46b4d",
+    marginTop: "4px",
+    fontSize: isMobile ? "11px" : "13px",
+    color: "#c56542",
     fontWeight: 600,
-    marginTop: "6px",
+    textAlign: "center",
   };
 
   const compactQtyWrapStyle = {
-    display: "inline-flex",
+    display: "flex",
     alignItems: "center",
-    gap: "8px",
-    border: "1px solid #ebe4dd",
-    borderRadius: "12px",
-    padding: "4px 8px",
-    background: "#faf8f6",
+    justifyContent: "center",
+    gap: isMobile ? "6px" : "12px",
+    marginTop: "2px",
+    marginBottom: isMobile ? "6px" : "10px",
   };
 
   const compactQtyBtnStyle = {
-    width: "26px",
-    height: "26px",
-    borderRadius: "8px",
-    border: "1px solid #e5ddd6",
-    background: "#f3efeb",
-    cursor: "pointer",
+    width: isMobile ? "28px" : "36px",
+    height: isMobile ? "28px" : "36px",
+    borderRadius: isMobile ? "8px" : "10px",
+    border: "1px solid #e6ddd6",
+    background: "#f7f3ef",
+    color: "#555",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: isMobile ? "16px" : "19px",
     fontWeight: 700,
-    fontSize: "15px",
+    cursor: "pointer",
+    padding: 0,
     lineHeight: 1,
   };
 
   const compactQtyValueStyle = {
-    minWidth: "18px",
+    minWidth: isMobile ? "16px" : "24px",
     textAlign: "center",
+    fontSize: isMobile ? "15px" : "18px",
     fontWeight: 700,
-    fontSize: "15px",
+    color: "#222",
   };
 
   const sectionCardStyle = {
@@ -258,6 +274,87 @@ export default function Checkout() {
     background: "#fff8ef",
     border: "1px solid #f1dfbf",
     color: "#8a5a1f",
+  };
+  const mobileListStyle = {
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px",
+  };
+
+  const mobileItemStyle = {
+    border: "1px solid #ece3dc",
+    borderRadius: "14px",
+    background: "#fffdfa",
+    padding: "10px 12px",
+  };
+
+  const mobileRowStyle = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "12px",
+  };
+
+  const mobileLeftStyle = {
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    gap: "4px",
+    minWidth: 0,
+    flex: 1,
+  };
+
+  const mobileTitleStyle = {
+    fontSize: "16px",
+    fontWeight: 700,
+    color: "#222",
+    lineHeight: 1.2,
+  };
+
+  const mobileMetaStyle = {
+    fontSize: "12px",
+    color: "#7b746e",
+    lineHeight: 1.25,
+  };
+
+  const mobileExtraStyle = {
+    fontSize: "12px",
+    color: "#c56542",
+    fontWeight: 600,
+    lineHeight: 1.25,
+  };
+
+  const mobileQtyWrapStyle = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "6px",
+    flexShrink: 0,
+  };
+
+  const mobileQtyBtnStyle = {
+    width: "30px",
+    height: "30px",
+    borderRadius: "8px",
+    border: "1px solid #e6ddd6",
+    background: "#f7f3ef",
+    color: "#555",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "18px",
+    fontWeight: 700,
+    cursor: "pointer",
+    padding: 0,
+    lineHeight: "1",
+  };
+
+  const mobileQtyValueStyle = {
+    minWidth: "18px",
+    textAlign: "center",
+    fontSize: "15px",
+    fontWeight: 700,
+    color: "#222",
   };
 
   const nameRegex = /^[A-Za-zА-Яа-яІіЇїЄєҐґ\s'-]+$/;
@@ -910,213 +1007,450 @@ export default function Checkout() {
           {hasSushiItems && (
             <div style={sectionCardStyle}>
               <div style={sectionTitleStyle}>Додатки до ролів</div>
+
               <div style={sectionHintStyle}>
-                Частина додається безкоштовно залежно від кількості ролів та
-                сетів.
+                Частина додається безкоштовно залежно від кількості ролів, макі
+                та сетів.
               </div>
 
-              <div style={compactGrid3Style}>
-                <div style={compactOptionCardStyle}>
-                  <div style={compactOptionTitleStyle}>Соєвий соус</div>
+              {isMobile ? (
+                <div style={mobileListStyle}>
+                  <div style={mobileItemStyle}>
+                    <div style={mobileRowStyle}>
+                      <div style={mobileLeftStyle}>
+                        <div style={mobileTitleStyle}>Соєвий соус</div>
+                        <div style={mobileMetaStyle}>
+                          Безкоштовно: {freeCondiments.soy}
+                        </div>
+                        {extraSoyCount > 0 && (
+                          <div style={mobileExtraStyle}>
+                            + {extraSoyCount} × 15 грн
+                          </div>
+                        )}
+                      </div>
 
-                  <div style={compactQtyWrapStyle}>
-                    <button
-                      type="button"
-                      style={compactQtyBtnStyle}
-                      onClick={() =>
-                        setForm((prev) => ({
-                          ...prev,
-                          soySauceCount: Math.max(0, prev.soySauceCount - 1),
-                        }))
-                      }
-                    >
-                      -
-                    </button>
+                      <div style={mobileQtyWrapStyle}>
+                        <button
+                          type="button"
+                          style={mobileQtyBtnStyle}
+                          onClick={() =>
+                            setForm((prev) => ({
+                              ...prev,
+                              soySauceCount: Math.max(
+                                0,
+                                prev.soySauceCount - 1
+                              ),
+                            }))
+                          }
+                        >
+                          -
+                        </button>
 
-                    <span style={compactQtyValueStyle}>
-                      {form.soySauceCount}
-                    </span>
+                        <span style={mobileQtyValueStyle}>
+                          {form.soySauceCount}
+                        </span>
 
-                    <button
-                      type="button"
-                      style={compactQtyBtnStyle}
-                      onClick={() =>
-                        setForm((prev) => ({
-                          ...prev,
-                          soySauceCount: prev.soySauceCount + 1,
-                        }))
-                      }
-                    >
-                      +
-                    </button>
-                  </div>
-
-                  <div style={compactFreeStyle}>
-                    Безкоштовно: {freeCondiments.soy}
-                  </div>
-
-                  {extraSoyCount > 0 && (
-                    <div style={compactExtraStyle}>
-                      + {extraSoyCount} × 15 грн
+                        <button
+                          type="button"
+                          style={mobileQtyBtnStyle}
+                          onClick={() =>
+                            setForm((prev) => ({
+                              ...prev,
+                              soySauceCount: prev.soySauceCount + 1,
+                            }))
+                          }
+                        >
+                          +
+                        </button>
+                      </div>
                     </div>
-                  )}
-                </div>
-
-                <div style={compactOptionCardStyle}>
-                  <div style={compactOptionTitleStyle}>Імбир</div>
-
-                  <div style={compactQtyWrapStyle}>
-                    <button
-                      type="button"
-                      style={compactQtyBtnStyle}
-                      onClick={() =>
-                        setForm((prev) => ({
-                          ...prev,
-                          gingerCount: Math.max(0, prev.gingerCount - 1),
-                        }))
-                      }
-                    >
-                      -
-                    </button>
-
-                    <span style={compactQtyValueStyle}>{form.gingerCount}</span>
-
-                    <button
-                      type="button"
-                      style={compactQtyBtnStyle}
-                      onClick={() =>
-                        setForm((prev) => ({
-                          ...prev,
-                          gingerCount: prev.gingerCount + 1,
-                        }))
-                      }
-                    >
-                      +
-                    </button>
                   </div>
 
-                  <div style={compactFreeStyle}>
-                    Безкоштовно: {freeCondiments.ginger}
-                  </div>
+                  <div style={mobileItemStyle}>
+                    <div style={mobileRowStyle}>
+                      <div style={mobileLeftStyle}>
+                        <div style={mobileTitleStyle}>Імбир</div>
+                        <div style={mobileMetaStyle}>
+                          Безкоштовно: {freeCondiments.ginger}
+                        </div>
+                        {extraGingerCount > 0 && (
+                          <div style={mobileExtraStyle}>
+                            + {extraGingerCount} × 15 грн
+                          </div>
+                        )}
+                      </div>
 
-                  {extraGingerCount > 0 && (
-                    <div style={compactExtraStyle}>
-                      + {extraGingerCount} × 15 грн
+                      <div style={mobileQtyWrapStyle}>
+                        <button
+                          type="button"
+                          style={mobileQtyBtnStyle}
+                          onClick={() =>
+                            setForm((prev) => ({
+                              ...prev,
+                              gingerCount: Math.max(0, prev.gingerCount - 1),
+                            }))
+                          }
+                        >
+                          -
+                        </button>
+
+                        <span style={mobileQtyValueStyle}>
+                          {form.gingerCount}
+                        </span>
+
+                        <button
+                          type="button"
+                          style={mobileQtyBtnStyle}
+                          onClick={() =>
+                            setForm((prev) => ({
+                              ...prev,
+                              gingerCount: prev.gingerCount + 1,
+                            }))
+                          }
+                        >
+                          +
+                        </button>
+                      </div>
                     </div>
-                  )}
-                </div>
-
-                <div style={compactOptionCardStyle}>
-                  <div style={compactOptionTitleStyle}>Васабі</div>
-
-                  <div style={compactQtyWrapStyle}>
-                    <button
-                      type="button"
-                      style={compactQtyBtnStyle}
-                      onClick={() =>
-                        setForm((prev) => ({
-                          ...prev,
-                          wasabiCount: Math.max(0, prev.wasabiCount - 1),
-                        }))
-                      }
-                    >
-                      -
-                    </button>
-
-                    <span style={compactQtyValueStyle}>{form.wasabiCount}</span>
-
-                    <button
-                      type="button"
-                      style={compactQtyBtnStyle}
-                      onClick={() =>
-                        setForm((prev) => ({
-                          ...prev,
-                          wasabiCount: prev.wasabiCount + 1,
-                        }))
-                      }
-                    >
-                      +
-                    </button>
                   </div>
 
-                  <div style={compactFreeStyle}>
-                    Безкоштовно: {freeCondiments.wasabi}
-                  </div>
+                  <div style={mobileItemStyle}>
+                    <div style={mobileRowStyle}>
+                      <div style={mobileLeftStyle}>
+                        <div style={mobileTitleStyle}>Васабі</div>
+                        <div style={mobileMetaStyle}>
+                          Безкоштовно: {freeCondiments.wasabi}
+                        </div>
+                        {extraWasabiCount > 0 && (
+                          <div style={mobileExtraStyle}>
+                            + {extraWasabiCount} × 10 грн
+                          </div>
+                        )}
+                      </div>
 
-                  {extraWasabiCount > 0 && (
-                    <div style={compactExtraStyle}>
-                      + {extraWasabiCount} × 10 грн
+                      <div style={mobileQtyWrapStyle}>
+                        <button
+                          type="button"
+                          style={mobileQtyBtnStyle}
+                          onClick={() =>
+                            setForm((prev) => ({
+                              ...prev,
+                              wasabiCount: Math.max(0, prev.wasabiCount - 1),
+                            }))
+                          }
+                        >
+                          -
+                        </button>
+
+                        <span style={mobileQtyValueStyle}>
+                          {form.wasabiCount}
+                        </span>
+
+                        <button
+                          type="button"
+                          style={mobileQtyBtnStyle}
+                          onClick={() =>
+                            setForm((prev) => ({
+                              ...prev,
+                              wasabiCount: prev.wasabiCount + 1,
+                            }))
+                          }
+                        >
+                          +
+                        </button>
+                      </div>
                     </div>
-                  )}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div style={compactGrid3Style}>
+                  <div style={compactOptionCardStyle}>
+                    <div style={compactOptionTitleStyle}>Соєвий соус</div>
+
+                    <div style={compactQtyWrapStyle}>
+                      <button
+                        type="button"
+                        style={compactQtyBtnStyle}
+                        onClick={() =>
+                          setForm((prev) => ({
+                            ...prev,
+                            soySauceCount: Math.max(0, prev.soySauceCount - 1),
+                          }))
+                        }
+                      >
+                        -
+                      </button>
+
+                      <span style={compactQtyValueStyle}>
+                        {form.soySauceCount}
+                      </span>
+
+                      <button
+                        type="button"
+                        style={compactQtyBtnStyle}
+                        onClick={() =>
+                          setForm((prev) => ({
+                            ...prev,
+                            soySauceCount: prev.soySauceCount + 1,
+                          }))
+                        }
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    <div style={compactFreeStyle}>
+                      Безкоштовно: {freeCondiments.soy}
+                    </div>
+
+                    {extraSoyCount > 0 && (
+                      <div style={compactExtraStyle}>
+                        + {extraSoyCount} × 15 грн
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={compactOptionCardStyle}>
+                    <div style={compactOptionTitleStyle}>Імбир</div>
+
+                    <div style={compactQtyWrapStyle}>
+                      <button
+                        type="button"
+                        style={compactQtyBtnStyle}
+                        onClick={() =>
+                          setForm((prev) => ({
+                            ...prev,
+                            gingerCount: Math.max(0, prev.gingerCount - 1),
+                          }))
+                        }
+                      >
+                        -
+                      </button>
+
+                      <span style={compactQtyValueStyle}>
+                        {form.gingerCount}
+                      </span>
+
+                      <button
+                        type="button"
+                        style={compactQtyBtnStyle}
+                        onClick={() =>
+                          setForm((prev) => ({
+                            ...prev,
+                            gingerCount: prev.gingerCount + 1,
+                          }))
+                        }
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    <div style={compactFreeStyle}>
+                      Безкоштовно: {freeCondiments.ginger}
+                    </div>
+
+                    {extraGingerCount > 0 && (
+                      <div style={compactExtraStyle}>
+                        + {extraGingerCount} × 15 грн
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={compactOptionCardStyle}>
+                    <div style={compactOptionTitleStyle}>Васабі</div>
+
+                    <div style={compactQtyWrapStyle}>
+                      <button
+                        type="button"
+                        style={compactQtyBtnStyle}
+                        onClick={() =>
+                          setForm((prev) => ({
+                            ...prev,
+                            wasabiCount: Math.max(0, prev.wasabiCount - 1),
+                          }))
+                        }
+                      >
+                        -
+                      </button>
+
+                      <span style={compactQtyValueStyle}>
+                        {form.wasabiCount}
+                      </span>
+
+                      <button
+                        type="button"
+                        style={compactQtyBtnStyle}
+                        onClick={() =>
+                          setForm((prev) => ({
+                            ...prev,
+                            wasabiCount: prev.wasabiCount + 1,
+                          }))
+                        }
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    <div style={compactFreeStyle}>
+                      Безкоштовно: {freeCondiments.wasabi}
+                    </div>
+
+                    {extraWasabiCount > 0 && (
+                      <div style={compactExtraStyle}>
+                        + {extraWasabiCount} × 10 грн
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
           <div style={sectionCardStyle}>
             <div style={sectionTitleStyle}>Палички</div>
 
-            <div style={compactGrid2EqualStyle}>
-              <div style={compactOptionCardStyle}>
-                <div style={compactOptionTitleStyle}>Звичайні</div>
+            {isMobile ? (
+              <div style={mobileListStyle}>
+                <div style={mobileItemStyle}>
+                  <div style={mobileRowStyle}>
+                    <div style={mobileLeftStyle}>
+                      <div style={mobileTitleStyle}>Звичайні</div>
+                    </div>
 
-                <div style={compactQtyWrapStyle}>
-                  <button
-                    type="button"
-                    style={compactQtyBtnStyle}
-                    onClick={() =>
-                      setRegularSticksCount((prev) => Math.max(0, prev - 1))
-                    }
-                  >
-                    -
-                  </button>
+                    <div style={mobileQtyWrapStyle}>
+                      <button
+                        type="button"
+                        style={mobileQtyBtnStyle}
+                        onClick={() =>
+                          setRegularSticksCount((prev) => Math.max(0, prev - 1))
+                        }
+                      >
+                        -
+                      </button>
 
-                  <span style={compactQtyValueStyle}>{regularSticksCount}</span>
+                      <span style={mobileQtyValueStyle}>
+                        {regularSticksCount}
+                      </span>
 
-                  <button
-                    type="button"
-                    style={compactQtyBtnStyle}
-                    onClick={() => setRegularSticksCount((prev) => prev + 1)}
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
-              <div style={compactOptionCardStyle}>
-                <div style={compactOptionTitleStyle}>Навчальні (+2 грн)</div>
-
-                <div style={compactQtyWrapStyle}>
-                  <button
-                    type="button"
-                    style={compactQtyBtnStyle}
-                    onClick={() =>
-                      setTrainingSticksCount((prev) => Math.max(0, prev - 1))
-                    }
-                  >
-                    -
-                  </button>
-
-                  <span style={compactQtyValueStyle}>
-                    {trainingSticksCount}
-                  </span>
-
-                  <button
-                    type="button"
-                    style={compactQtyBtnStyle}
-                    onClick={() => setTrainingSticksCount((prev) => prev + 1)}
-                  >
-                    +
-                  </button>
-                </div>
-
-                {sticksExtraPrice > 0 && (
-                  <div style={compactExtraStyle}>
-                    Додатково: {sticksExtraPrice} грн
+                      <button
+                        type="button"
+                        style={mobileQtyBtnStyle}
+                        onClick={() =>
+                          setRegularSticksCount((prev) => prev + 1)
+                        }
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
-                )}
+                </div>
+
+                <div style={mobileItemStyle}>
+                  <div style={mobileRowStyle}>
+                    <div style={mobileLeftStyle}>
+                      <div style={mobileTitleStyle}>Навчальні (+2 грн)</div>
+                      {sticksExtraPrice > 0 && (
+                        <div style={mobileExtraStyle}>
+                          Додатково: {sticksExtraPrice} грн
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={mobileQtyWrapStyle}>
+                      <button
+                        type="button"
+                        style={mobileQtyBtnStyle}
+                        onClick={() =>
+                          setTrainingSticksCount((prev) =>
+                            Math.max(0, prev - 1)
+                          )
+                        }
+                      >
+                        -
+                      </button>
+
+                      <span style={mobileQtyValueStyle}>
+                        {trainingSticksCount}
+                      </span>
+
+                      <button
+                        type="button"
+                        style={mobileQtyBtnStyle}
+                        onClick={() =>
+                          setTrainingSticksCount((prev) => prev + 1)
+                        }
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div style={compactGrid2EqualStyle}>
+                <div style={compactOptionCardStyle}>
+                  <div style={compactOptionTitleStyle}>Звичайні</div>
+
+                  <div style={compactQtyWrapStyle}>
+                    <button
+                      type="button"
+                      style={compactQtyBtnStyle}
+                      onClick={() =>
+                        setRegularSticksCount((prev) => Math.max(0, prev - 1))
+                      }
+                    >
+                      -
+                    </button>
+
+                    <span style={compactQtyValueStyle}>
+                      {regularSticksCount}
+                    </span>
+
+                    <button
+                      type="button"
+                      style={compactQtyBtnStyle}
+                      onClick={() => setRegularSticksCount((prev) => prev + 1)}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                <div style={compactOptionCardStyle}>
+                  <div style={compactOptionTitleStyle}>Навчальні (+2 грн)</div>
+
+                  <div style={compactQtyWrapStyle}>
+                    <button
+                      type="button"
+                      style={compactQtyBtnStyle}
+                      onClick={() =>
+                        setTrainingSticksCount((prev) => Math.max(0, prev - 1))
+                      }
+                    >
+                      -
+                    </button>
+
+                    <span style={compactQtyValueStyle}>
+                      {trainingSticksCount}
+                    </span>
+
+                    <button
+                      type="button"
+                      style={compactQtyBtnStyle}
+                      onClick={() => setTrainingSticksCount((prev) => prev + 1)}
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  {sticksExtraPrice > 0 && (
+                    <div style={compactExtraStyle}>
+                      Додатково: {sticksExtraPrice} грн
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           <div style={sectionCardStyle}>

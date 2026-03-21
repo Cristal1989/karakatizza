@@ -64,6 +64,7 @@ export default function Header() {
                 objectFit: "contain",
                 transform: isMobile ? "translateY(18px)" : "translateY(24px)",
                 flexShrink: 0,
+                zIndex: "999",
               }}
             />
           </a>
@@ -88,6 +89,7 @@ export default function Header() {
                 lineHeight: 1.3,
                 color: "rgba(255,255,255,0.78)",
                 maxWidth: isMobile ? "230px" : "none",
+                display: isMobile ? "none" : "block",
               }}
             >
               Доставка ролів, сетів, закусок і напоїв
