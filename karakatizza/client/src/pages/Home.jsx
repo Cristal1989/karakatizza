@@ -21,8 +21,20 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [banners, setBanners] = useState([]);
-  const sectionsRef = useRef({});
+  const sectionRefs = useRef({});
   const { isCartOpen } = useCart();
+
+  const categorySections = [
+    { id: "rolls", title: "Роли" },
+    { id: "maki", title: "Маки" },
+    { id: "sets", title: "Сети" },
+    { id: "sushi_burger", title: "Суші бургер" },
+    { id: "sushi", title: "Суші" },
+    { id: "snacks", title: "Закуски" },
+    { id: "bowls", title: "Боули" },
+    { id: "drinks", title: "Напої" },
+    { id: "extras", title: "Додатково" },
+  ];
 
   useEffect(() => {
     loadProducts();
@@ -96,6 +108,20 @@ export default function Home() {
 
   const isMobile = window.matchMedia("(max-width: 768px)").matches;
 
+  function handleCategoryChange(categoryId) {
+    setActiveCategory(categoryId);
+
+    const target = sectionRefs.current[categoryId];
+    if (!target) return;
+
+    const y = target.getBoundingClientRect().top + window.scrollY - 120;
+
+    window.scrollTo({
+      top: y,
+      behavior: "smooth",
+    });
+  }
+
   return (
     <div
       style={{
@@ -129,9 +155,10 @@ export default function Home() {
         >
           <CategoryTabs
             activeCategory={activeCategory}
-            onChange={setActiveCategory}
+            onChange={handleCategoryChange}
           />
         </div>
+
         <Hero banners={banners} products={products} />
 
         {loading && (
@@ -163,7 +190,43 @@ export default function Home() {
 
         {!loading && !error && (
           <>
-            <ProductGrid products={visibleProducts} />
+            {categorySections.map((section) => {
+              const sectionProducts = products.filter(
+                (product) =>
+                  product.category === section.id && product.isVisible !== false
+              );
+
+              if (!sectionProducts.length) return null;
+
+              return (
+                <section
+                  key={section.id}
+                  id={section.id}
+                  ref={(el) => {
+                    if (el) {
+                      sectionRefs.current[section.id] = el;
+                    }
+                  }}
+                  style={{
+                    marginTop: "36px",
+                    scrollMarginTop: isMobile ? "110px" : "130px",
+                  }}
+                >
+                  <h2
+                    style={{
+                      fontSize: isMobile ? "24px" : "28px",
+                      fontWeight: "800",
+                      color: "#1f2937",
+                      margin: "0 0 18px",
+                    }}
+                  >
+                    {section.title}
+                  </h2>
+
+                  <ProductGrid products={sectionProducts} />
+                </section>
+              );
+            })}
 
             {upsellProducts.length > 0 && (
               <div style={{ marginTop: "40px" }}>

@@ -1,8 +1,8 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const categories = [
   { id: "rolls", label: "Роли", icon: "/svg/roll1.svg" },
-  { id: "maki", label: "Макі", icon: "/svg/maki.svg" },
+  { id: "maki", label: "Маки", icon: "/svg/maki.svg" },
   { id: "sets", label: "Сети", icon: "/svg/set2.svg" },
   { id: "sushi_burger", label: "Суші бургер", icon: "/svg/burger.svg" },
   { id: "sushi", label: "Суші", icon: "/svg/dabl_sushi.svg" },
@@ -14,16 +14,65 @@ const categories = [
 
 export default function CategoryTabs({ activeCategory, onChange }) {
   const isMobile = window.matchMedia("(max-width: 768px)").matches;
-  const [hasScrolled, setHasScrolled] = useState(false);
   const tabsRef = useRef(null);
 
-  const handleTabsScroll = () => {
-    if (!tabsRef.current) return;
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
-    if (tabsRef.current.scrollLeft > 10 && !hasScrolled) {
-      setHasScrolled(true);
-    }
-  };
+  function updateScrollButtons() {
+    const el = tabsRef.current;
+    if (!el) return;
+
+    const maxScrollLeft = el.scrollWidth - el.clientWidth;
+
+    setCanScrollLeft(el.scrollLeft > 6);
+    setCanScrollRight(maxScrollLeft > 6 && el.scrollLeft < maxScrollLeft - 6);
+  }
+
+  useEffect(() => {
+    const el = tabsRef.current;
+    if (!el) return;
+
+    const raf1 = requestAnimationFrame(() => {
+      updateScrollButtons();
+
+      const raf2 = requestAnimationFrame(() => {
+        updateScrollButtons();
+      });
+
+      return () => cancelAnimationFrame(raf2);
+    });
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateScrollButtons();
+    });
+
+    resizeObserver.observe(el);
+
+    window.addEventListener("resize", updateScrollButtons);
+    el.addEventListener("scroll", updateScrollButtons);
+
+    return () => {
+      cancelAnimationFrame(raf1);
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", updateScrollButtons);
+      el.removeEventListener("scroll", updateScrollButtons);
+    };
+  }, []);
+
+  function scrollTabs(direction) {
+    const el = tabsRef.current;
+    if (!el) return;
+
+    const amount = isMobile ? 220 : 320;
+
+    el.scrollBy({
+      left: direction === "left" ? -amount : amount,
+      behavior: "smooth",
+    });
+
+    setTimeout(updateScrollButtons, 250);
+  }
 
   return (
     <div
@@ -31,17 +80,49 @@ export default function CategoryTabs({ activeCategory, onChange }) {
         position: "relative",
       }}
     >
+      {canScrollLeft && (
+        <button
+          type="button"
+          onClick={() => scrollTabs("left")}
+          aria-label="Прокрутити категорії вліво"
+          style={{
+            position: "absolute",
+            left: "-20px",
+            top: "37px",
+            transform: "translateY(-50%)",
+            width: "34px",
+            height: "56px",
+            border: "none",
+            background: "transparent",
+            boxShadow: "none",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "rgba(34,34,34,0.62)",
+            fontSize: "24px",
+            fontWeight: "700",
+            cursor: "pointer",
+            zIndex: 8,
+            padding: 0,
+          }}
+        >
+          ‹
+        </button>
+      )}
+
       <div
         ref={tabsRef}
-        onScroll={handleTabsScroll}
         className="categoryTabs"
         style={{
           display: "flex",
           gap: isMobile ? "14px" : "18px",
           overflowX: "auto",
           overflowY: "hidden",
+          paddingLeft: "42px",
+          paddingRight: "42px",
           paddingBottom: "8px",
           scrollbarWidth: "none",
+          msOverflowStyle: "none",
           WebkitOverflowScrolling: "touch",
         }}
       >
@@ -51,22 +132,18 @@ export default function CategoryTabs({ activeCategory, onChange }) {
           return (
             <button
               key={category.id}
-              onClick={() => {
-                onChange(category.id);
-                if (isMobile && !hasScrolled) {
-                  setHasScrolled(true);
-                }
-              }}
+              type="button"
+              onClick={() => onChange(category.id)}
               className={`categoryButton ${isActive ? "active" : ""}`}
               style={{
                 border: "none",
                 background: "transparent",
-                padding: "10px",
+                padding: "10px 6px",
                 cursor: "pointer",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: isMobile ? "8px" : "22px",
+                gap: isMobile ? "8px" : "10px",
                 minWidth: isMobile ? "72px" : "90px",
                 flex: "0 0 auto",
               }}
@@ -115,45 +192,34 @@ export default function CategoryTabs({ activeCategory, onChange }) {
         })}
       </div>
 
-      {isMobile && !hasScrolled && (
-        <>
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              right: 0,
-              width: "54px",
-              height: "100%",
-              pointerEvents: "none",
-              background:
-                "linear-gradient(to right, rgba(247,247,247,0), rgba(247,247,247,0.96))",
-            }}
-          />
-
-          <div
-            style={{
-              position: "absolute",
-              right: "8px",
-              top: "34%",
-              transform: "translateY(-50%)",
-              width: "28px",
-              height: "28px",
-              borderRadius: "999px",
-              background: "rgba(255,255,255,0.92)",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#555",
-              fontSize: "20px",
-              fontWeight: "700",
-              pointerEvents: "none",
-              zIndex: 2,
-            }}
-          >
-            ›
-          </div>
-        </>
+      {canScrollRight && (
+        <button
+          type="button"
+          onClick={() => scrollTabs("right")}
+          aria-label="Прокрутити категорії вправо"
+          style={{
+            position: "absolute",
+            right: "-20px",
+            top: "37px",
+            transform: "translateY(-50%)",
+            width: "34px",
+            height: "56px",
+            border: "none",
+            background: "transparent",
+            boxShadow: "none",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "rgba(34,34,34,0.62)",
+            fontSize: "24px",
+            fontWeight: "700",
+            cursor: "pointer",
+            zIndex: 8,
+            padding: 0,
+          }}
+        >
+          ›
+        </button>
       )}
     </div>
   );

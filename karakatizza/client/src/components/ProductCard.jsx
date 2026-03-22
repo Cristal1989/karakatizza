@@ -92,7 +92,7 @@ function ProductCard({ product }) {
             {product.isNew && (
               <span
                 style={{
-                  background: "#3a3a3a",
+                  background: "#1B8904",
                   color: "#fff",
                   fontSize: "11px",
                   fontWeight: 700,
