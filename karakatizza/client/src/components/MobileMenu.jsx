@@ -81,7 +81,6 @@ export default function MobileMenu({ isOpen, onClose }) {
           top: 0,
           right: 0,
           width: "100%",
-          // maxWidth: "100%",
           height: "100vh",
           background: "#f7f7f5",
           zIndex: 9999,
@@ -157,9 +156,10 @@ export default function MobileMenu({ isOpen, onClose }) {
               height: "42px",
               borderRadius: "50%",
               border: "none",
-              background: "#eaeae6",
+              background: "#2f3136",
               fontSize: "22px",
               cursor: "pointer",
+              color: "#fff",
             }}
           >
             ✕

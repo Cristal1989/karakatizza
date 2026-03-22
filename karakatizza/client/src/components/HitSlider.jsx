@@ -38,8 +38,7 @@ export default function HitSlider({ products = [] }) {
     cartItems.find((item) => item.id === product.id)?.quantity || 0;
 
   const showOldPrice =
-    product.oldPrice !== null &&
-    product.oldPrice !== undefined &&
+    Number(product.oldPrice) > 0 &&
     Number(product.oldPrice) > Number(product.price);
 
   function handleAddToCart() {
@@ -62,6 +61,7 @@ export default function HitSlider({ products = [] }) {
         display: "flex",
         flexDirection: "column",
         boxSizing: "border-box",
+        height: "420px",
       }}
     >
       {/* HEADER */}
@@ -106,10 +106,12 @@ export default function HitSlider({ products = [] }) {
         style={{
           display: "flex",
           flexDirection: "column",
+          // justifyContent: "space-between",
           borderRadius: "18px",
           overflow: "hidden",
           border: "1px solid #f1f1f1",
           background: "#fff",
+          // height: "380px",
         }}
       >
         {/* IMAGE */}
@@ -178,23 +180,28 @@ export default function HitSlider({ products = [] }) {
         {/* CONTENT */}
         <div
           style={{
-            padding: "12px",
+            padding: "8px 14px 8px",
             display: "flex",
             flexDirection: "column",
+            flex: 1,
           }}
         >
-          {/* TITLE */}
           <div
             style={{
               display: "flex",
+              alignItems: "flex-start",
               justifyContent: "space-between",
-              marginBottom: "4px",
+              gap: "10px",
+              marginBottom: "6px",
             }}
           >
             <div
               style={{
-                fontSize: "18px",
+                fontSize: isMobile ? "20px" : "18px",
                 fontWeight: 800,
+                color: "#222",
+                lineHeight: 1.2,
+                flex: 1,
               }}
             >
               {product.name}
@@ -203,49 +210,73 @@ export default function HitSlider({ products = [] }) {
             <div
               style={{
                 fontSize: "13px",
-                color: "#999",
+                color: "#8c8c8c",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+                marginTop: "2px",
               }}
             >
-              {product.weight}
+              {product.weight || ""}
             </div>
           </div>
 
-          {/* DESCRIPTION */}
           <div
             style={{
-              fontSize: "14px",
+              fontSize: "15px",
               color: "#666",
+              lineHeight: 1.35,
+              height: "42px",
+              overflow: "hidden",
               marginBottom: "10px",
             }}
           >
-            {product.description}
+            {product.description || ""}
           </div>
 
-          {/* PRICE + BUTTON */}
           <div
             style={{
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              gap: "10px",
+              gap: "12px",
+              marginTop: "auto",
+              minHeight: "44px",
             }}
           >
-            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                flexWrap: "nowrap",
+                minHeight: "28px",
+                flex: 1,
+                minWidth: 0,
+              }}
+            >
               <div
                 style={{
-                  fontSize: "18px",
+                  fontSize: isMobile ? "20px" : "20px",
                   fontWeight: 800,
+                  color: showOldPrice ? "#d85a43" : "#111",
+                  lineHeight: 1,
+                  whiteSpace: "nowrap",
+                  flexShrink: 0,
                 }}
               >
                 {product.price} грн
               </div>
 
-              {product.oldPrice && (
+              {showOldPrice && (
                 <div
                   style={{
-                    fontSize: "13px",
-                    color: "#999",
+                    fontSize: isMobile ? "13px" : "14px",
+                    fontWeight: 600,
+                    color: "#9b9b9b",
                     textDecoration: "line-through",
+                    lineHeight: 1,
+                    whiteSpace: "nowrap",
+                    flexShrink: 0,
                   }}
                 >
                   {product.oldPrice} грн
@@ -253,20 +284,93 @@ export default function HitSlider({ products = [] }) {
               )}
             </div>
 
-            <button
-              onClick={handleAddToCart}
+            <div
               style={{
-                background: "#e85d3f",
-                color: "#fff",
-                border: "none",
-                borderRadius: "12px",
-                padding: "10px 14px",
-                fontWeight: 700,
-                cursor: "pointer",
+                width: isMobile ? "118px" : "132px",
+                minWidth: isMobile ? "118px" : "132px",
+                height: "40px",
+                display: "flex",
+                justifyContent: "flex-end",
+                alignItems: "center",
+                flexShrink: 0,
               }}
             >
-              В кошик
-            </button>
+              {quantityInCart > 0 ? (
+                <div
+                  style={{
+                    height: "40px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    background: "#f3f4f6",
+                    borderRadius: "14px",
+                    overflow: "hidden",
+                  }}
+                >
+                  <button
+                    onClick={() => decreaseCartItem(product.id)}
+                    style={{
+                      width: "40px",
+                      height: "40px",
+                      border: "none",
+                      background: "transparent",
+                      fontSize: "22px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    -
+                  </button>
+
+                  <div
+                    style={{
+                      minWidth: "34px",
+                      textAlign: "center",
+                      fontWeight: 800,
+                      fontSize: "16px",
+                    }}
+                  >
+                    {quantityInCart}
+                  </div>
+
+                  <button
+                    onClick={handleAddToCart}
+                    style={{
+                      width: "40px",
+                      height: "40px",
+                      border: "none",
+                      background: "#e85d3f",
+                      color: "#fff",
+                      fontSize: "22px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    +
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={handleAddToCart}
+                  style={{
+                    // width: "100%",
+                    height: "40px",
+                    border: "none",
+                    background: "#e85d3f",
+                    color: "#fff",
+                    padding: isMobile ? "10px 18px" : "12px 26px",
+                    borderRadius: "12px",
+                    fontWeight: 700,
+                    fontSize: isMobile ? "13px" : "14px",
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                    flexShrink: 0,
+                  }}
+                >
+                  В кошик
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
