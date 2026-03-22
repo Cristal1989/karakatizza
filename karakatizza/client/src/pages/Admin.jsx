@@ -280,6 +280,20 @@ export default function Admin() {
       setLoading(true);
       setError("");
       setMessage("");
+      if (!form.name?.trim()) {
+        setMessage("Введи назву товару");
+        return;
+      }
+
+      if (form.price === "" || form.price === null || Number(form.price) <= 0) {
+        setMessage("Вкажи коректну ціну");
+        return;
+      }
+
+      if (!form.category?.trim()) {
+        setMessage("Обери категорію");
+        return;
+      }
 
       const formData = new FormData();
 

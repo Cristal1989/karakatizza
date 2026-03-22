@@ -5,7 +5,8 @@ import { flyToCart } from "../utils/flyToCart";
 
 export default function HitSlider({ products = [] }) {
   const isMobile = window.matchMedia("(max-width: 768px)").matches;
-  const { addToCart } = useCart();
+
+  const { addToCart, cartItems = [], decreaseCartItem = () => {} } = useCart();
 
   const popularProducts = useMemo(() => {
     return products.filter((product) => product.popular).slice(0, 6);
@@ -26,11 +27,20 @@ export default function HitSlider({ products = [] }) {
   if (!popularProducts.length) return null;
 
   const product = popularProducts[current];
+
   const imageSrc = getImageUrl(product.image, {
     width: 900,
     height: 540,
     crop: "fit",
   });
+
+  const quantityInCart =
+    cartItems.find((item) => item.id === product.id)?.quantity || 0;
+
+  const showOldPrice =
+    product.oldPrice !== null &&
+    product.oldPrice !== undefined &&
+    Number(product.oldPrice) > Number(product.price);
 
   function handleAddToCart() {
     addToCart(product);
@@ -49,45 +59,34 @@ export default function HitSlider({ products = [] }) {
         padding: isMobile ? "14px" : "16px",
         boxShadow: "0 12px 32px rgba(0,0,0,0.06)",
         border: "1px solid #f0f0f0",
-        height: isMobile ? "auto" : "420px",
         display: "flex",
         flexDirection: "column",
         boxSizing: "border-box",
       }}
     >
+      {/* HEADER */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          gap: "12px",
           marginBottom: "12px",
-          flex: "0 0 auto",
         }}
       >
         <div
           style={{
-            fontSize: isMobile ? "24px" : "22px",
+            fontSize: isMobile ? "22px" : "20px",
             fontWeight: 800,
-            color: "#1b1b1b",
-            lineHeight: 1.05,
           }}
         >
           🔥 Хіти продажу
         </div>
 
         {popularProducts.length > 1 && (
-          <div
-            style={{
-              display: "flex",
-              gap: "6px",
-              flex: "0 0 auto",
-            }}
-          >
+          <div style={{ display: "flex", gap: "6px" }}>
             {popularProducts.map((_, index) => (
               <button
                 key={index}
-                type="button"
                 onClick={() => setCurrent(index)}
                 style={{
                   width: index === current ? "18px" : "8px",
@@ -95,9 +94,6 @@ export default function HitSlider({ products = [] }) {
                   borderRadius: "999px",
                   border: "none",
                   background: index === current ? "#e85d3f" : "#e5e5e5",
-                  transition: "all 0.2s ease",
-                  cursor: "pointer",
-                  padding: 0,
                 }}
               />
             ))}
@@ -105,9 +101,9 @@ export default function HitSlider({ products = [] }) {
         )}
       </div>
 
+      {/* CARD */}
       <div
         style={{
-          flex: 1,
           display: "flex",
           flexDirection: "column",
           borderRadius: "18px",
@@ -116,14 +112,57 @@ export default function HitSlider({ products = [] }) {
           background: "#fff",
         }}
       >
+        {/* IMAGE */}
         <div
           style={{
-            height: isMobile ? "180px" : "220px",
-            overflow: "hidden",
-            background: "#fff",
-            flex: "0 0 auto",
+            position: "relative",
+            height: isMobile ? "170px" : "200px",
+            flexShrink: 0,
+            borderBottom: "1px solid #f3f3f3",
           }}
         >
+          {/* BADGES */}
+          <div
+            style={{
+              position: "absolute",
+              top: "10px",
+              left: "10px",
+              display: "flex",
+              gap: "6px",
+              zIndex: 2,
+            }}
+          >
+            {product.isHit && (
+              <span
+                style={{
+                  background: "#f08a4b",
+                  color: "#fff",
+                  fontSize: "11px",
+                  padding: "4px 8px",
+                  borderRadius: "999px",
+                  fontWeight: 700,
+                }}
+              >
+                ХІТ
+              </span>
+            )}
+
+            {product.promoType === "2plus1" && (
+              <span
+                style={{
+                  background: "#2563eb",
+                  color: "#fff",
+                  fontSize: "11px",
+                  padding: "4px 8px",
+                  borderRadius: "999px",
+                  fontWeight: 700,
+                }}
+              >
+                2+1
+              </span>
+            )}
+          </div>
+
           <img
             id={`hit-image-${product.id}`}
             src={imageSrc}
@@ -132,28 +171,30 @@ export default function HitSlider({ products = [] }) {
               width: "100%",
               height: "100%",
               objectFit: "contain",
-              objectPosition: "center",
-              display: "block",
             }}
           />
         </div>
 
+        {/* CONTENT */}
         <div
           style={{
-            padding: "14px",
+            padding: "12px",
             display: "flex",
             flexDirection: "column",
-            justifyContent: "space-between",
-            flex: 1,
           }}
         >
-          <div>
+          {/* TITLE */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginBottom: "4px",
+            }}
+          >
             <div
               style={{
-                fontSize: isMobile ? "20px" : "18px",
+                fontSize: "18px",
                 fontWeight: 800,
-                marginBottom: "6px",
-                color: "#111",
               }}
             >
               {product.name}
@@ -161,46 +202,67 @@ export default function HitSlider({ products = [] }) {
 
             <div
               style={{
-                fontSize: "15px",
-                color: "#666",
-                marginBottom: "14px",
+                fontSize: "13px",
+                color: "#999",
               }}
             >
-              {product.description}
+              {product.weight}
             </div>
           </div>
 
+          {/* DESCRIPTION */}
+          <div
+            style={{
+              fontSize: "14px",
+              color: "#666",
+              marginBottom: "10px",
+            }}
+          >
+            {product.description}
+          </div>
+
+          {/* PRICE + BUTTON */}
           <div
             style={{
               display: "flex",
-              justifyContent: "space-between",
               alignItems: "center",
-              gap: "12px",
+              justifyContent: "space-between",
+              gap: "10px",
             }}
           >
-            <div
-              style={{
-                fontSize: isMobile ? "20px" : "18px",
-                fontWeight: 800,
-                color: "#111",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {product.price} грн
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              <div
+                style={{
+                  fontSize: "18px",
+                  fontWeight: 800,
+                }}
+              >
+                {product.price} грн
+              </div>
+
+              {product.oldPrice && (
+                <div
+                  style={{
+                    fontSize: "13px",
+                    color: "#999",
+                    textDecoration: "line-through",
+                  }}
+                >
+                  {product.oldPrice} грн
+                </div>
+              )}
             </div>
 
             <button
-              type="button"
               onClick={handleAddToCart}
               style={{
-                border: "none",
                 background: "#e85d3f",
                 color: "#fff",
-                padding: "12px 16px",
+                border: "none",
                 borderRadius: "12px",
+                padding: "10px 14px",
                 fontWeight: 700,
                 cursor: "pointer",
-                whiteSpace: "nowrap",
               }}
             >
               В кошик

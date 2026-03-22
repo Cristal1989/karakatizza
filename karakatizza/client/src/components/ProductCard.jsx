@@ -229,7 +229,7 @@ function ProductCard({ product }) {
           <div
             style={{
               display: "flex",
-              alignItems: "baseline",
+              alignItems: "center",
               gap: "8px",
               flexWrap: "nowrap",
               minHeight: "28px",
@@ -281,7 +281,6 @@ function ProductCard({ product }) {
             {quantityInCart > 0 ? (
               <div
                 style={{
-                  // width: "100%",
                   height: "40px",
                   display: "inline-flex",
                   alignItems: "center",

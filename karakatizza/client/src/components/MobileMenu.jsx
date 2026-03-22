@@ -244,6 +244,7 @@ export default function MobileMenu({ isOpen, onClose }) {
             color: "#999",
             letterSpacing: "0.5px",
             fontWeight: 500,
+            marginBottom: "20px",
           }}
         >
           KARAKATIZZA MYKOLAIV
