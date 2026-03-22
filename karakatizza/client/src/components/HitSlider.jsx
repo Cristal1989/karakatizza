@@ -29,7 +29,7 @@ export default function HitSlider({ products = [] }) {
   const imageSrc = getImageUrl(product.image, {
     width: 900,
     height: 540,
-    crop: "fill",
+    crop: "fit",
   });
 
   function handleAddToCart() {

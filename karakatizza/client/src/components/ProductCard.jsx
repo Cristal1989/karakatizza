@@ -61,7 +61,10 @@ function ProductCard({ product }) {
           flexShrink: 0,
         }}
       >
-        {(product.isHit || product.isNew || product.isWeeklyOffer) && (
+        {(product.isHit ||
+          product.isNew ||
+          product.isWeeklyOffer ||
+          product.promoType === "2plus1") && (
           <div
             style={{
               position: "absolute",
@@ -92,7 +95,7 @@ function ProductCard({ product }) {
             {product.isNew && (
               <span
                 style={{
-                  background: "#1B8904",
+                  background: "#1b8904",
                   color: "#fff",
                   fontSize: "11px",
                   fontWeight: 700,
@@ -120,6 +123,22 @@ function ProductCard({ product }) {
                 АКЦІЯ
               </span>
             )}
+
+            {product.promoType === "2plus1" && (
+              <span
+                style={{
+                  background: "#2563eb",
+                  color: "#fff",
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  padding: "4px 8px",
+                  borderRadius: "999px",
+                  lineHeight: 1,
+                }}
+              >
+                2+1
+              </span>
+            )}
           </div>
         )}
 
@@ -143,7 +162,7 @@ function ProductCard({ product }) {
 
       <div
         style={{
-          padding: "14px 14px 16px",
+          padding: "8px 14px 8px",
           display: "flex",
           flexDirection: "column",
           flex: 1,
@@ -161,7 +180,7 @@ function ProductCard({ product }) {
         >
           <div
             style={{
-              fontSize: isMobile ? "17px" : "18px",
+              fontSize: isMobile ? "20px" : "18px",
               fontWeight: 800,
               color: "#222",
               lineHeight: 1.2,
@@ -199,49 +218,31 @@ function ProductCard({ product }) {
 
         <div
           style={{
-            marginTop: "auto",
-            minHeight: "72px", // 👈 ключ
             display: "flex",
-            flexDirection: "column",
+            alignItems: "center",
             justifyContent: "space-between",
+            gap: "12px",
+            marginTop: "auto",
+            minHeight: "44px",
           }}
         >
-          {showOldPrice && (
-            <div
-              style={{
-                fontSize: "14px",
-                color: "#999",
-                textDecoration: "line-through",
-                marginBottom: "4px",
-                minHeight: "18px",
-              }}
-            >
-              {product.oldPrice} грн
-            </div>
-          )}
-
-          {!showOldPrice && (
-            <div
-              style={{
-                minHeight: "18px",
-                marginBottom: "4px",
-              }}
-            />
-          )}
-
           <div
             style={{
               display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "12px",
+              alignItems: "baseline",
+              gap: "8px",
+              flexWrap: "nowrap",
+              minHeight: "28px",
+              flex: 1,
+              minWidth: 0,
             }}
           >
             <div
               style={{
-                fontSize: isMobile ? "18px" : "20px",
+                fontSize: isMobile ? "20px" : "20px",
                 fontWeight: 800,
-                color: "#111",
+                color: showOldPrice ? "#d85a43" : "#111",
+                lineHeight: 1,
                 whiteSpace: "nowrap",
                 flexShrink: 0,
               }}
@@ -249,16 +250,45 @@ function ProductCard({ product }) {
               {product.price} грн
             </div>
 
+            {showOldPrice && (
+              <div
+                style={{
+                  fontSize: isMobile ? "13px" : "14px",
+                  fontWeight: 600,
+                  color: "#9b9b9b",
+                  textDecoration: "line-through",
+                  lineHeight: 1,
+                  whiteSpace: "nowrap",
+                  flexShrink: 0,
+                }}
+              >
+                {product.oldPrice} грн
+              </div>
+            )}
+          </div>
+
+          <div
+            style={{
+              width: isMobile ? "118px" : "132px",
+              minWidth: isMobile ? "118px" : "132px",
+              height: "40px",
+              display: "flex",
+              justifyContent: "flex-end",
+              alignItems: "center",
+              flexShrink: 0,
+            }}
+          >
             {quantityInCart > 0 ? (
               <div
                 style={{
+                  // width: "100%",
+                  height: "40px",
                   display: "inline-flex",
                   alignItems: "center",
+                  justifyContent: "space-between",
                   background: "#f3f4f6",
                   borderRadius: "14px",
                   overflow: "hidden",
-                  flexShrink: 0,
-                  minHeight: "40px",
                 }}
               >
                 <button
@@ -307,17 +337,18 @@ function ProductCard({ product }) {
               <button
                 onClick={handleAddToCart}
                 style={{
+                  // width: "100%",
+                  height: "40px",
                   border: "none",
                   background: "#e85d3f",
                   color: "#fff",
-                  padding: "12px 26px",
+                  padding: isMobile ? "10px 18px" : "12px 26px",
                   borderRadius: "12px",
                   fontWeight: 700,
-                  fontSize: "14px",
+                  fontSize: isMobile ? "13px" : "14px",
                   cursor: "pointer",
                   whiteSpace: "nowrap",
                   flexShrink: 0,
-                  height: "40px",
                 }}
               >
                 В кошик

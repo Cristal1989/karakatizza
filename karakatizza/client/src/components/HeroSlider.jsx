@@ -48,8 +48,8 @@ export default function HeroSlider({ banners = [] }) {
   const bannerImageUrl = getImageUrl(
     selectedImage,
     isMobile
-      ? { width: 900, height: 420, crop: "fill" }
-      : { width: 1600, height: 560, crop: "fill" }
+      ? { width: 900, height: 420, crop: "fit" }
+      : { width: 1600, height: 560, crop: "fit" }
   );
 
   const handlePrev = () => {

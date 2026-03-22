@@ -130,7 +130,7 @@ export default function Home() {
       }}
     >
       <Header />
-      <CartToast />
+      {/* <CartToast /> */}
 
       <main
         style={{
@@ -145,10 +145,10 @@ export default function Home() {
           id="menu"
           style={{
             position: "sticky",
-            top: 0,
+            top: "-1px",
             zIndex: 40,
             background: "#fafafa",
-            padding: isMobile ? "6px 0 6px" : "8px 0 8px",
+            padding: isMobile ? "4px 0 4px" : "8px 0 8px",
             marginBottom: "0",
             borderBottom: "1px solid #f0f0f0",
           }}

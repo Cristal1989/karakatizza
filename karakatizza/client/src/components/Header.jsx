@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { SHOP_LOCATION } from "../config/deliveryConfig";
+import MobileMenu from "./MobileMenu";
 
 export default function Header() {
   const isMobile = window.matchMedia("(max-width: 768px)").matches;
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const openMap = () => {
     window.open(
@@ -19,7 +21,7 @@ export default function Header() {
         color: "#fff",
         borderBottom: "1px solid rgba(255,255,255,0.08)",
         boxShadow: "0 4px 18px rgba(0,0,0,0.10)",
-        padding: isMobile ? "14px 16px 18px" : "18px 32px",
+        padding: isMobile ? "12px 16px 14px" : "18px 32px",
         overflow: "visible",
       }}
     >
@@ -31,15 +33,16 @@ export default function Header() {
           flexDirection: isMobile ? "column" : "row",
           alignItems: isMobile ? "flex-start" : "center",
           justifyContent: "space-between",
-          gap: isMobile ? "10px" : "24px",
+          gap: isMobile ? "8px" : "24px",
           overflow: "visible",
+          paddingRight: isMobile ? "96px" : "none",
         }}
       >
         <div
           style={{
             display: "flex",
-            alignItems: isMobile ? "flex-start" : "center",
-            gap: isMobile ? "12px" : "16px",
+            alignItems: isMobile ? "center" : "center",
+            gap: isMobile ? "10px" : "16px",
           }}
         >
           <a
@@ -53,6 +56,7 @@ export default function Header() {
               justifyContent: "center",
               overflow: "visible",
               flex: "0 0 auto",
+              paddingLeft: "10px",
             }}
           >
             <img
@@ -62,7 +66,7 @@ export default function Header() {
                 width: isMobile ? "72px" : "130px",
                 height: "auto",
                 objectFit: "contain",
-                transform: isMobile ? "translateY(18px)" : "translateY(24px)",
+                transform: isMobile ? "translateY(8px)" : "translateY(24px)",
                 flexShrink: 0,
                 zIndex: "999",
               }}
@@ -76,7 +80,10 @@ export default function Header() {
                 fontWeight: 800,
                 color: "#fff",
                 lineHeight: 1,
-                marginBottom: isMobile ? "6px" : "8px",
+                marginBottom: isMobile ? "0" : "8px",
+                display: "flex",
+                alignItems: "center",
+                minHeight: isMobile ? "44px" : "auto",
               }}
             >
               Karakatizza
@@ -135,30 +142,102 @@ export default function Header() {
           </div>
         </div>
         {isMobile && (
-          <button
-            onClick={openMap}
+          <div
             style={{
               position: "absolute",
-              top: "28px",
-              right: "8px",
-              border: "none",
-              background: "transparent",
-              padding: 0,
-              cursor: "pointer",
+              top: "22px",
+              right: "12px",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              zIndex: 20,
             }}
           >
-            <img
-              src="/images/geo1.png"
-              alt="Карта"
+            <button
+              onClick={openMap}
               style={{
                 width: "44px",
                 height: "44px",
-                objectFit: "contain",
+                border: "none",
+                background: "transparent",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 0,
+                cursor: "pointer",
               }}
-            />
-          </button>
+            >
+              <img
+                src="/images/geo1.png"
+                alt="Карта"
+                style={{
+                  width: "38px",
+                  height: "38px",
+                  objectFit: "contain",
+                  display: "block",
+                }}
+              />
+            </button>
+
+            <button
+              onClick={() => setIsMenuOpen(true)}
+              style={{
+                width: "40px",
+                height: "40px",
+                border: "none",
+                borderRadius: "12px",
+                background: "rgba(255,255,255,0.08)",
+                backdropFilter: "blur(6px)",
+                WebkitBackdropFilter: "blur(6px)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 0,
+                cursor: "pointer",
+              }}
+              aria-label="Відкрити меню"
+            >
+              <div
+                style={{
+                  width: "18px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "4px",
+                }}
+              >
+                <span
+                  style={{
+                    display: "block",
+                    height: "2px",
+                    borderRadius: "999px",
+                    background: "#fff",
+                    width: "100%",
+                  }}
+                />
+                <span
+                  style={{
+                    display: "block",
+                    height: "2px",
+                    borderRadius: "999px",
+                    background: "#fff",
+                    width: "100%",
+                  }}
+                />
+                <span
+                  style={{
+                    display: "block",
+                    height: "2px",
+                    borderRadius: "999px",
+                    background: "#fff",
+                    width: "100%",
+                  }}
+                />
+              </div>
+            </button>
+          </div>
         )}
       </div>
+      <MobileMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
     </header>
   );
 }
