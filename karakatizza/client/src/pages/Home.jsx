@@ -25,6 +25,8 @@ export default function Home() {
   const [rollFilter, setRollFilter] = useState("all");
   const sectionRefs = useRef({});
   const { isCartOpen } = useCart();
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupText, setPopupText] = useState("");
 
   const categorySections = [
     { id: "rolls", title: "Роли" },
@@ -54,6 +56,33 @@ export default function Home() {
     }
 
     testRoute();
+  }, []);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("site_settings");
+    if (!saved) return;
+
+    const s = JSON.parse(saved);
+
+    const now = new Date();
+    const currentTime = now.toTimeString().slice(0, 5);
+    const today = now.toISOString().slice(0, 10);
+
+    const isClosedToday = s.closedAllDay && s.closedAllDayDate === today;
+
+    const isAfterHours =
+      currentTime < s.openingTime || currentTime > s.closingTime;
+
+    if (isClosedToday) {
+      setPopupText(s.closedAllDayMessage);
+      setShowPopup(true);
+      return;
+    }
+
+    if (s.enableAfterHoursPopup && isAfterHours) {
+      setPopupText(s.popupMessage);
+      setShowPopup(true);
+    }
   }, []);
 
   async function loadProducts() {
@@ -298,6 +327,215 @@ export default function Home() {
                 <UpsellSection products={upsellProducts} />
               </div>
             )} */}
+            {showPopup && (
+              <div
+                style={{
+                  position: "fixed",
+                  inset: 0,
+                  zIndex: 9999,
+                  background: "rgba(10, 14, 24, 0.62)",
+                  backdropFilter: "blur(6px)",
+                  WebkitBackdropFilter: "blur(6px)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "20px",
+                  animation: "fadeInOverlay 0.25s ease",
+                }}
+              >
+                <div
+                  style={{
+                    width: "100%",
+                    maxWidth: "420px",
+                    borderRadius: "24px",
+                    overflow: "hidden",
+                    background:
+                      "linear-gradient(180deg, rgba(26,33,54,0.98) 0%, rgba(20,26,42,0.98) 100%)",
+                    boxShadow:
+                      "0 24px 60px rgba(0,0,0,0.35), 0 8px 24px rgba(0,0,0,0.18)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    color: "#fff",
+                    animation: "popupIn 0.28s ease",
+                  }}
+                >
+                  <div
+                    style={{
+                      position: "relative",
+                      padding: "22px 22px 18px",
+                      borderBottom: "1px solid rgba(255,255,255,0.06)",
+                      background:
+                        "radial-gradient(circle at top right, rgba(232,93,63,0.22), transparent 35%)",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setShowPopup(false)}
+                      aria-label="Закрити"
+                      style={{
+                        position: "absolute",
+                        top: "14px",
+                        right: "16px",
+                        border: "none",
+                        background: "transparent",
+                        color: "rgba(255,255,255,0.7)",
+                        fontSize: "24px",
+                        fontWeight: 300,
+                        cursor: "pointer",
+                        padding: 0,
+                        lineHeight: 1,
+                      }}
+                    >
+                      ×
+                    </button>
+
+                    <div
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "8px 12px",
+                        borderRadius: "999px",
+                        background: "rgba(232,93,63,0.14)",
+                        color: "#ffb19d",
+                        fontSize: "13px",
+                        fontWeight: 700,
+                        letterSpacing: "0.2px",
+                        marginBottom: "14px",
+                      }}
+                    >
+                      <span style={{ fontSize: "14px" }}>●</span>
+                      Режим роботи
+                    </div>
+
+                    <div
+                      style={{
+                        fontSize: "28px",
+                        fontWeight: 800,
+                        lineHeight: 1.05,
+                        marginBottom: "10px",
+                        letterSpacing: "-0.6px",
+                      }}
+                    >
+                      Ми зараз
+                      <br />
+                      не працюємо
+                    </div>
+
+                    <div
+                      style={{
+                        color: "rgba(255,255,255,0.82)",
+                        fontSize: "16px",
+                        lineHeight: 1.55,
+                        maxWidth: "320px",
+                      }}
+                    >
+                      {popupText}
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      padding: "18px 22px 22px",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "12px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: "10px",
+                        padding: "12px 14px",
+                        borderRadius: "16px",
+                        background: "rgba(255,255,255,0.04)",
+                        border: "1px solid rgba(255,255,255,0.05)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          minWidth: "34px",
+                          height: "34px",
+                          borderRadius: "12px",
+                          background: "rgba(232,93,63,0.14)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#ff9c83",
+                          fontWeight: 800,
+                        }}
+                      >
+                        ⏰
+                      </div>
+
+                      <div>
+                        <div
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: 700,
+                            marginBottom: "4px",
+                            color: "#fff",
+                          }}
+                        >
+                          Замовлення можна оформити вже зараз
+                        </div>
+                        <div
+                          style={{
+                            fontSize: "13px",
+                            lineHeight: 1.5,
+                            color: "rgba(255,255,255,0.72)",
+                          }}
+                        >
+                          Ми побачимо його і зв’яжемося з вами, щойно будемо в
+                          робочому режимі.
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowPopup(false)}
+                      style={{
+                        width: "100%",
+                        border: "none",
+                        borderRadius: "16px",
+                        padding: "15px 18px",
+                        background:
+                          "linear-gradient(180deg, #f07a57 0%, #e85d3f 100%)",
+                        color: "#fff",
+                        fontSize: "16px",
+                        fontWeight: 800,
+                        letterSpacing: "0.2px",
+                        cursor: "pointer",
+                        boxShadow: "0 10px 24px rgba(232,93,63,0.28)",
+                      }}
+                    >
+                      Зрозуміло
+                    </button>
+                  </div>
+                </div>
+
+                <style>
+                  {`
+        @keyframes popupIn {
+          from {
+            opacity: 0;
+            transform: translateY(12px) scale(0.96);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        @keyframes fadeInOverlay {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+      `}
+                </style>
+              </div>
+            )}
           </>
         )}
       </main>

@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 
 export default function Footer() {
+  const isMobile = window.matchMedia("(max-width: 768px)").matches;
   return (
     <footer
       style={{
@@ -17,7 +18,7 @@ export default function Footer() {
           padding: "18px 16px",
           display: "flex",
           flexWrap: "wrap",
-          justifyContent: "center",
+          justifyContent: isMobile ? "center" : "space-between",
           alignItems: "center",
           gap: "12px",
           fontSize: "14px",

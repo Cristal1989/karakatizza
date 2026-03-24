@@ -116,11 +116,51 @@ export default function Admin() {
   const [giftRollLoading, setGiftRollLoading] = useState(false);
   const [giftRollSaving, setGiftRollSaving] = useState(false);
 
+  const [settings, setSettings] = useState({
+    openingTime: "10:00",
+    closingTime: "22:00",
+    enableAfterHoursPopup: true,
+    closedAllDay: false,
+    closedAllDayDate: "",
+    popupMessage:
+      "Ми працюємо з 10.00, але ви можете оформити замовлення, і ми зв’яжемося з вами в робочий час.",
+    closedAllDayMessage:
+      "Сьогодні ми тимчасово не працюємо, але ви можете залишити замовлення і ми зв’яжемося з вами пізніше.",
+  });
+
+  const inputStyle = {
+    width: "100%",
+    padding: "10px",
+    borderRadius: 10,
+    border: "1px solid #ddd",
+    marginTop: 4,
+  };
+
+  const textareaStyle = {
+    width: "100%",
+    marginTop: 10,
+    padding: "10px",
+    borderRadius: 10,
+    border: "1px solid #ddd",
+    minHeight: 60,
+  };
+
+  const checkboxStyle = {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 10,
+  };
+
   useEffect(() => {
     loadProducts();
     loadBanners();
     loadPromotionSettings();
     loadGiftRollSettings();
+  }, []);
+  useEffect(() => {
+    const saved = localStorage.getItem("site_settings");
+    if (saved) setSettings(JSON.parse(saved));
   }, []);
 
   async function loadProducts() {
@@ -2240,10 +2280,142 @@ export default function Admin() {
           )}
 
           {activeSection === "settings" && (
-            <PlaceholderCard
-              title="Налаштування"
-              text="Тут додамо базові налаштування сайту, контакти, години роботи та службову інформацію."
-            />
+            <div
+              style={{
+                maxWidth: 600,
+                marginTop: 20,
+                display: "flex",
+                flexDirection: "column",
+                gap: "16px",
+              }}
+            >
+              {/* Карточка */}
+              <div
+                style={{
+                  background: "#fff",
+                  padding: 20,
+                  borderRadius: 16,
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+                }}
+              >
+                <h3 style={{ marginBottom: 16 }}>Робочі години</h3>
+
+                <div style={{ display: "flex", gap: 10 }}>
+                  <div style={{ flex: 1 }}>
+                    <label>Відкриття</label>
+                    <input
+                      type="time"
+                      value={settings.openingTime}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          openingTime: e.target.value,
+                        })
+                      }
+                      style={inputStyle}
+                    />
+                  </div>
+
+                  <div style={{ flex: 1 }}>
+                    <label>Закриття</label>
+                    <input
+                      type="time"
+                      value={settings.closingTime}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          closingTime: e.target.value,
+                        })
+                      }
+                      style={inputStyle}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Попап */}
+              <div
+                style={{
+                  background: "#fff",
+                  padding: 20,
+                  borderRadius: 16,
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+                }}
+              >
+                <h3 style={{ marginBottom: 12 }}>Попап</h3>
+
+                <label style={checkboxStyle}>
+                  <input
+                    type="checkbox"
+                    checked={settings.enableAfterHoursPopup}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        enableAfterHoursPopup: e.target.checked,
+                      })
+                    }
+                  />
+                  Показувати поза робочим часом
+                </label>
+
+                <label style={checkboxStyle}>
+                  <input
+                    type="checkbox"
+                    checked={settings.closedAllDay}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        closedAllDay: e.target.checked,
+                        closedAllDayDate: new Date().toISOString().slice(0, 10),
+                      })
+                    }
+                  />
+                  Закрито сьогодні
+                </label>
+
+                <textarea
+                  value={settings.popupMessage}
+                  onChange={(e) =>
+                    setSettings({ ...settings, popupMessage: e.target.value })
+                  }
+                  placeholder="Текст попапа"
+                  style={textareaStyle}
+                />
+
+                <textarea
+                  value={settings.closedAllDayMessage}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      closedAllDayMessage: e.target.value,
+                    })
+                  }
+                  placeholder="Текст при закритті"
+                  style={textareaStyle}
+                />
+              </div>
+
+              <button
+                onClick={() => {
+                  localStorage.setItem(
+                    "site_settings",
+                    JSON.stringify(settings)
+                  );
+                  alert("Збережено");
+                }}
+                style={{
+                  padding: "14px",
+                  borderRadius: 12,
+                  background: "#ff6b3d",
+                  color: "#fff",
+                  border: "none",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Зберегти
+              </button>
+            </div>
           )}
         </main>
       </div>
