@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import Header from "../components/Header";
 import Hero from "../components/Hero";
+import Footer from "../components/Footer";
 import ProductGrid from "../components/ProductGrid";
 import ProductCard from "../components/ProductCard";
 import CategoryTabs from "../components/CategoryTabs";
@@ -228,14 +229,15 @@ export default function Home() {
               );
             })}
 
-            {upsellProducts.length > 0 && (
+            {/* {upsellProducts.length > 0 && (
               <div style={{ marginTop: "40px" }}>
                 <UpsellSection products={upsellProducts} />
               </div>
-            )}
+            )} */}
           </>
         )}
       </main>
+      <Footer />
 
       <CartDrawer />
       <MobileCartBar />

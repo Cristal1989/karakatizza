@@ -105,7 +105,8 @@ app.get("/products", async (req, res) => {
         is_visible AS "isVisible",
         is_hit AS "isHit",
         is_new AS "isNew",
-        is_weekly_offer AS "isWeeklyOffer"
+        is_weekly_offer AS "isWeeklyOffer",
+        roll_type AS "rollType"
       FROM products
       ${isAdmin ? "" : "WHERE is_visible = true"}
       ORDER BY priority ASC, created_at ASC
@@ -195,6 +196,7 @@ app.post("/products", upload.single("image"), async (req, res) => {
       isNew,
       isWeeklyOffer,
       oldPrice,
+      rollType,
     } = req.body;
 
     if (!name || !price || !category) {
@@ -227,35 +229,37 @@ app.post("/products", upload.single("image"), async (req, res) => {
       isWeeklyOffer: isWeeklyOffer === "true",
       oldPrice:
         oldPrice !== undefined && oldPrice !== "" ? Number(oldPrice) : null,
+      rollType: rollType || "",
     };
 
     await pool.query(
       `
       INSERT INTO products (
-        id,
-        name,
-        price,
-        category,
-        description,
-        image,
-        popular,
-        promo_type,
-        priority,
-        discount_offer_eligible,
-        free_soy_sauce,
-        free_ginger,
-        free_wasabi,
-        weight,
-        is_visible,
-        is_hit,
-        is_new,
-        is_weekly_offer,
-        old_price
-      )
-      VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9,
-        $10, $11, $12, $13, $14, $15, $16, $17, $18, $19
-      )
+  id,
+  name,
+  price,
+  category,
+  description,
+  image,
+  popular,
+  promo_type,
+  priority,
+  discount_offer_eligible,
+  free_soy_sauce,
+  free_ginger,
+  free_wasabi,
+  weight,
+  is_visible,
+  is_hit,
+  is_new,
+  is_weekly_offer,
+  old_price,
+  roll_type
+)
+VALUES (
+  $1,$2,$3,$4,$5,$6,$7,$8,$9,
+  $10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20
+)
       `,
       [
         newProduct.id,
@@ -277,6 +281,7 @@ app.post("/products", upload.single("image"), async (req, res) => {
         newProduct.isNew,
         newProduct.isWeeklyOffer,
         newProduct.oldPrice,
+        rollType || "",
       ]
     );
 
@@ -385,6 +390,7 @@ app.put("/products/:id", (req, res) => {
         isNew,
         isWeeklyOffer,
         oldPrice,
+        rollType,
       } = req.body;
 
       if (!name || !price || !category) {
@@ -448,6 +454,7 @@ app.put("/products/:id", (req, res) => {
         freeSoySauce: Number(freeSoySauce || 0),
         freeGinger: Number(freeGinger || 0),
         freeWasabi: Number(freeWasabi || 0),
+        rollType: rollType || "",
 
         weight: weight || "",
         isVisible: isVisible === undefined ? true : isVisible === "true",
@@ -479,8 +486,9 @@ app.put("/products/:id", (req, res) => {
           is_hit = $15,
           is_new = $16,
           is_weekly_offer = $17,
-          old_price = $18
-        WHERE id = $19
+          old_price = $18,
+          roll_type = $19
+        WHERE id = $20
         `,
         [
           updatedProduct.name,
@@ -501,6 +509,7 @@ app.put("/products/:id", (req, res) => {
           updatedProduct.isNew,
           updatedProduct.isWeeklyOffer,
           updatedProduct.oldPrice,
+          rollType || "",
           updatedProduct.id,
         ]
       );

@@ -358,7 +358,7 @@ export default function HitSlider({ products = [] }) {
                     border: "none",
                     background: "#e85d3f",
                     color: "#fff",
-                    padding: isMobile ? "10px 18px" : "12px 26px",
+                    padding: isMobile ? "10px 30px" : "12px 26px",
                     borderRadius: "12px",
                     fontWeight: 700,
                     fontSize: isMobile ? "13px" : "14px",

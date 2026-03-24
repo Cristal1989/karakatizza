@@ -178,4 +178,9 @@ export async function initDb() {
   ALTER TABLE products
   ADD COLUMN IF NOT EXISTS old_price NUMERIC;
 `);
+
+  await pool.query(`
+ALTER TABLE products
+ADD COLUMN IF NOT EXISTS roll_type TEXT DEFAULT '';
+`);
 }
