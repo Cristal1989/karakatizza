@@ -22,6 +22,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [banners, setBanners] = useState([]);
+  const [rollFilter, setRollFilter] = useState("all");
   const sectionRefs = useRef({});
   const { isCartOpen } = useCart();
 
@@ -123,6 +124,24 @@ export default function Home() {
     });
   }
 
+  function getFilteredSectionProducts(sectionId, sectionProducts) {
+    const sorted = [...sectionProducts].sort((a, b) => {
+      const priorityA = Number(a.priority ?? 10);
+      const priorityB = Number(b.priority ?? 10);
+      return priorityA - priorityB;
+    });
+
+    if (sectionId !== "rolls") {
+      return sorted;
+    }
+
+    if (rollFilter === "all") {
+      return sorted;
+    }
+
+    return sorted.filter((product) => product.rollType === rollFilter);
+  }
+
   return (
     <div
       style={{
@@ -199,6 +218,11 @@ export default function Home() {
 
               if (!sectionProducts.length) return null;
 
+              const filteredSectionProducts = getFilteredSectionProducts(
+                section.id,
+                sectionProducts
+              );
+
               return (
                 <section
                   key={section.id}
@@ -223,8 +247,48 @@ export default function Home() {
                   >
                     {section.title}
                   </h2>
+                  {section.id === "rolls" && (
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "8px",
+                        overflowX: "auto",
+                        paddingBottom: "4px",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      {[
+                        { key: "all", label: "Усі" },
+                        { key: "cold", label: "Холодні" },
+                        { key: "fried", label: "Смажені" },
+                        { key: "baked", label: "Запечені" },
+                        { key: "rice_free", label: "Без рису" },
+                      ].map((item) => (
+                        <button
+                          key={item.key}
+                          type="button"
+                          onClick={() => setRollFilter(item.key)}
+                          style={{
+                            border: "none",
+                            borderRadius: "999px",
+                            padding: isMobile ? "10px 14px" : "10px 16px",
+                            background:
+                              rollFilter === item.key ? "#e85d3f" : "#f1f1f1",
+                            color: rollFilter === item.key ? "#fff" : "#333",
+                            fontWeight: 700,
+                            fontSize: isMobile ? "14px" : "15px",
+                            cursor: "pointer",
+                            whiteSpace: "nowrap",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
 
-                  <ProductGrid products={sectionProducts} />
+                  <ProductGrid products={filteredSectionProducts} />
                 </section>
               );
             })}

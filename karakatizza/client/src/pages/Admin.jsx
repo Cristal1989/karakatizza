@@ -52,6 +52,7 @@ export default function Admin() {
     category: "",
     description: "",
     weight: "",
+    rollType: "",
 
     promoType: "none",
     priority: 10,
@@ -307,6 +308,10 @@ export default function Admin() {
       formData.append("popular", String(!!popular));
       formData.append("promoType", form.promoType || "none");
       formData.append("priority", String(form.priority || 10));
+      formData.append(
+        "rollType",
+        form.category === "rolls" ? form.rollType || "" : ""
+      );
 
       formData.append(
         "discountOfferEligible",
@@ -353,6 +358,7 @@ export default function Admin() {
         category: "",
         description: "",
         weight: "",
+        rollType: "",
 
         promoType: "none",
         priority: 10,
@@ -463,6 +469,10 @@ export default function Admin() {
       formData.append("popular", String(!!product.popular));
       formData.append("promoType", product.promoType || "none");
       formData.append("priority", String(nextPriority));
+      formData.append(
+        "rollType",
+        form.category === "rolls" ? form.rollType || "" : ""
+      );
 
       formData.append(
         "discountOfferEligible",
@@ -499,6 +509,7 @@ export default function Admin() {
       category: product.category || "",
       description: product.description || "",
       weight: product.weight || "",
+      rollType: product.rollType || "",
 
       promoType: product.promoType || "none",
       priority: Number(product.priority ?? 10),
@@ -535,6 +546,7 @@ export default function Admin() {
       category: "",
       description: "",
       weight: "",
+      rollType: "",
 
       promoType: "none",
       priority: 10,
@@ -1056,6 +1068,39 @@ export default function Admin() {
                       <option value="drinks">Напої</option>
                       <option value="extras">Додатково</option>
                     </select>
+                    {form.category === "rolls" && (
+                      <div style={{ marginTop: "10px" }}>
+                        <label
+                          style={{
+                            display: "block",
+                            marginBottom: "6px",
+                            fontWeight: 600,
+                          }}
+                        >
+                          Тип ролу
+                        </label>
+
+                        <select
+                          name="rollType"
+                          value={form.rollType || ""}
+                          onChange={handleChange}
+                          style={{
+                            width: "100%",
+                            padding: "10px 12px",
+                            borderRadius: "10px",
+                            border: "1px solid #ddd",
+                            background: "#fff",
+                            fontSize: "14px",
+                          }}
+                        >
+                          <option value="">Без підтипу</option>
+                          <option value="cold">Холодні</option>
+                          <option value="fried">Смажені</option>
+                          <option value="baked">Запечені</option>
+                          <option value="rice_free">Без рису</option>
+                        </select>
+                      </div>
+                    )}
 
                     <select
                       name="promoType"
