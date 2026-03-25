@@ -140,6 +140,35 @@ app.get("/products", async (req, res) => {
   }
 });
 
+app.get("/site-settings", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        opening_time AS "openingTime",
+        closing_time AS "closingTime",
+        enable_after_hours_popup AS "enableAfterHoursPopup",
+        closed_all_day AS "closedAllDay",
+        closed_all_day_date AS "closedAllDayDate",
+        popup_message AS "popupMessage",
+        closed_all_day_message AS "closedAllDayMessage"
+      FROM site_settings
+      WHERE id = 1
+      LIMIT 1
+    `);
+
+    if (!result.rows.length) {
+      return res.status(404).json({ message: "Налаштування не знайдено" });
+    }
+
+    return res.json(result.rows[0]);
+  } catch (error) {
+    console.error("GET /site-settings ERROR:", error);
+    return res.status(500).json({
+      message: "Не вдалося отримати налаштування сайту",
+    });
+  }
+});
+
 app.get("/banners", async (req, res) => {
   try {
     const result = await pool.query(`
@@ -525,6 +554,54 @@ app.put("/products/:id", (req, res) => {
       });
     }
   });
+});
+
+app.put("/site-settings", async (req, res) => {
+  try {
+    const {
+      openingTime,
+      closingTime,
+      enableAfterHoursPopup,
+      closedAllDay,
+      closedAllDayDate,
+      popupMessage,
+      closedAllDayMessage,
+    } = req.body;
+
+    await pool.query(
+      `
+      UPDATE site_settings
+      SET
+        opening_time = $1,
+        closing_time = $2,
+        enable_after_hours_popup = $3,
+        closed_all_day = $4,
+        closed_all_day_date = $5,
+        popup_message = $6,
+        closed_all_day_message = $7,
+        updated_at = NOW()
+      WHERE id = 1
+      `,
+      [
+        openingTime || "10:00",
+        closingTime || "22:00",
+        enableAfterHoursPopup === true,
+        closedAllDay === true,
+        closedAllDayDate || "",
+        popupMessage ||
+          "Ми зараз не працюємо, але ви можете оформити замовлення, і ми зв’яжемося з вами в робочий час.",
+        closedAllDayMessage ||
+          "Сьогодні ми тимчасово не працюємо, але ви можете залишити замовлення і ми зв’яжемося з вами пізніше.",
+      ]
+    );
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error("PUT /site-settings ERROR:", error);
+    return res.status(500).json({
+      message: "Не вдалося зберегти налаштування сайту",
+    });
+  }
 });
 
 app.put(

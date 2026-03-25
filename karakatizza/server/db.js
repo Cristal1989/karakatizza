@@ -183,4 +183,43 @@ export async function initDb() {
 ALTER TABLE products
 ADD COLUMN IF NOT EXISTS roll_type TEXT DEFAULT '';
 `);
+
+  await pool.query(`
+  CREATE TABLE IF NOT EXISTS site_settings (
+    id INTEGER PRIMARY KEY DEFAULT 1,
+    opening_time TEXT NOT NULL DEFAULT '10:00',
+    closing_time TEXT NOT NULL DEFAULT '22:00',
+    enable_after_hours_popup BOOLEAN NOT NULL DEFAULT true,
+    closed_all_day BOOLEAN NOT NULL DEFAULT false,
+    closed_all_day_date TEXT DEFAULT '',
+    popup_message TEXT NOT NULL DEFAULT 'Ми зараз не працюємо, але ви можете оформити замовлення, і ми зв’яжемося з вами в робочий час.',
+    closed_all_day_message TEXT NOT NULL DEFAULT 'Сьогодні ми тимчасово не працюємо, але ви можете залишити замовлення і ми зв’яжемося з вами пізніше.',
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+  );
+`);
+
+  await pool.query(`
+  INSERT INTO site_settings (
+    id,
+    opening_time,
+    closing_time,
+    enable_after_hours_popup,
+    closed_all_day,
+    closed_all_day_date,
+    popup_message,
+    closed_all_day_message
+  )
+  SELECT
+    1,
+    '10:00',
+    '22:00',
+    true,
+    false,
+    '',
+    'Ми зараз не працюємо, але ви можете оформити замовлення, і ми зв’яжемося з вами в робочий час.',
+    'Сьогодні ми тимчасово не працюємо, але ви можете залишити замовлення і ми зв’яжемося з вами пізніше.'
+  WHERE NOT EXISTS (
+    SELECT 1 FROM site_settings WHERE id = 1
+  );
+`);
 }
