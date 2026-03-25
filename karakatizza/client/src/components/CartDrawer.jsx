@@ -24,6 +24,10 @@ export default function CartDrawer() {
     setCheckoutMode,
     confirmedAddress,
     setConfirmedAddress,
+    calculatePromo,
+    pickupDiscount,
+    finalTotal,
+    hasAnyPromoInCart,
   } = useCart();
 
   const isGiftProcessingRef = useRef(false);
@@ -87,6 +91,12 @@ export default function CartDrawer() {
     (item) => item.isDiscountOffer === true
   );
   const giftRollInCart = cartItems.find((item) => item.isGiftRoll === true);
+  const baseCartTotalForGift = cartItems.reduce((sum, item) => {
+    if (item.isGiftRoll) return sum;
+
+    const paidQty = item.paidQuantity ?? item.quantity ?? 0;
+    return sum + item.price * paidQty;
+  }, 0);
 
   const hasDiscountOfferActive =
     !!discountOfferItemInCart ||
@@ -103,8 +113,7 @@ export default function CartDrawer() {
     !!giftRollSettings.giftProductId &&
     !!selectedGiftRollProduct &&
     isGiftRollWeekdayAllowed &&
-    totalPrice >= Number(giftRollSettings.triggerSum || 0) &&
-    !hasDiscountOfferActive;
+    baseCartTotalForGift >= Number(giftRollSettings.triggerSum || 0);
 
   useEffect(() => {
     if (!discountOfferItemInCart) {
@@ -132,15 +141,22 @@ export default function CartDrawer() {
 
   const hasAvailableDiscountRoll = availableDiscountRolls.length > 0;
 
-  const hasAnyPromoInCart = cartItems.some((item) => {
-    if (item.isGiftRoll === true) return false;
+  const pickupDiscountBase = cartItems.reduce((sum, item) => {
+    if (item.isGiftRoll || item.isDiscountOffer) return sum;
 
-    const hasGift = Number(item.freeQuantity ?? 0) > 0;
-    const hasDiscount = item.isDiscountOffer === true;
-    const hasPromoType = item.promoType && item.promoType !== "none";
+    const category = item.category?.toLowerCase?.() || "";
+    const isDrink =
+      category === "drinks" || category === "напої" || category === "напитки";
+    const isExtra =
+      category === "extras" ||
+      category === "додатково" ||
+      category === "дополнительно";
 
-    return hasGift || hasDiscount || hasPromoType;
-  });
+    if (isDrink || isExtra) return sum;
+
+    const paidQty = item.paidQuantity ?? item.quantity ?? 0;
+    return sum + item.price * paidQty;
+  }, 0);
 
   const shouldTriggerDiscountOffer =
     promotionSettings.isActive &&
@@ -332,7 +348,7 @@ export default function CartDrawer() {
     }
   }
 
-  const defaultMinOrder = 400;
+  const defaultMinOrder = 1000;
 
   const calculatedDeliveryInfo =
     deliveryInfo?.distanceKm != null
@@ -424,6 +440,9 @@ export default function CartDrawer() {
       price: discountedPrice,
       isDiscountOffer: true,
       discountLabel: `-${promotionSettings.discountPercent}%`,
+      freeSoySauce: 0,
+      freeGinger: 0,
+      freeWasabi: 0,
     });
 
     setDiscountOfferAccepted(true);
@@ -455,6 +474,9 @@ export default function CartDrawer() {
           originalPrice: selectedGiftRollProduct.price,
           isGiftRoll: true,
           giftLabel: "Подарунок",
+          freeSoySauce: 0,
+          freeGinger: 0,
+          freeWasabi: 0,
         });
 
         setTimeout(() => {
@@ -567,128 +589,189 @@ export default function CartDrawer() {
         >
           <div
             style={{
-              backgroundColor: isFreeReached ? "#e8f7ed" : "#f7f3eb",
-              border: `1px solid ${isFreeReached ? "#b7e4c7" : "#eed7b0"}`,
-              borderRadius: "14px",
-              padding: "14px",
-              display: "grid",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
               gap: "10px",
+              marginBottom: "12px",
             }}
           >
             <div
               style={{
                 fontSize: "14px",
-                fontWeight: "700",
-                color: "#222",
-                lineHeight: 1.35,
+                fontWeight: 700,
+                color: "#3b3b3b",
               }}
             >
-              {deliveryTitle}
-            </div>
-
-            <div
-              style={{
-                width: "100%",
-                height: "10px",
-                backgroundColor: "#f0f0f0",
-                borderRadius: "999px",
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  width: `${progressPercent}%`,
-                  height: "100%",
-                  backgroundColor: isFreeReached ? "#2e7d32" : "#f57c00",
-                  borderRadius: "999px",
-                  transition: "0.3s",
-                }}
-              />
-            </div>
-
-            <div
-              style={{
-                fontSize: "13px",
-                color: "#666",
-              }}
-            >
-              Поріг безкоштовної доставки: {currentMinOrder} грн
-            </div>
-
-            {deliveryHint ? (
-              <div
-                style={{
-                  fontSize: "13px",
-                  color: isFreeReached ? "#9a6700" : "#666",
-                  fontWeight: isFreeReached ? "700" : "400",
-                  lineHeight: 1.35,
-                }}
-              >
-                {deliveryHint}
-              </div>
-            ) : null}
-
-            <div style={{ position: "relative" }}>
-              <input
-                type="text"
-                value={deliveryAddress}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  const formatted = value
-                    ? value.charAt(0).toUpperCase() + value.slice(1)
-                    : "";
-
-                  setDeliveryAddress(formatted);
-                }}
-                onKeyDown={(e) => {
-                  if (
-                    e.key === "Enter" &&
-                    deliveryAddress?.trim() &&
-                    !deliveryLoading
-                  ) {
-                    e.preventDefault();
-                    handleApplyAddress();
-                  }
-                }}
-                enterKeyHint="send"
-                placeholder="Вулиця та номер будинку (наприклад: Озерна 11)"
-                style={{
-                  width: "100%",
-                  boxSizing: "border-box",
-                  padding: "13px 14px",
-                  borderRadius: "12px",
-                  border: "1px solid #ddd",
-                  fontSize: "15px",
-                  outline: "none",
-                  background: "#fff",
-                }}
-              />
+              Спосіб отримання
             </div>
 
             <button
               type="button"
-              onClick={handleApplyAddress}
-              disabled={!deliveryAddress?.trim() || deliveryLoading}
+              onClick={() =>
+                setCheckoutMode(
+                  checkoutMode === "pickup" ? "delivery" : "pickup"
+                )
+              }
               style={{
-                border: "none",
-                borderRadius: "12px",
-                padding: "13px 14px",
-                background:
-                  !deliveryAddress?.trim() || deliveryLoading
-                    ? "#cccccc"
-                    : "#e56a45",
-                color: "#fff",
-                fontSize: "15px",
-                fontWeight: "700",
-                cursor:
-                  !deliveryAddress?.trim() || deliveryLoading
-                    ? "default"
-                    : "pointer",
+                border:
+                  "1px solid " +
+                  (checkoutMode === "pickup" ? "#22c55e" : "#e5e7eb"),
+                background: checkoutMode === "pickup" ? "#f0fdf4" : "#fff",
+                color: checkoutMode === "pickup" ? "#166534" : "#444",
+                borderRadius: "999px",
+                height: "34px",
+                padding: "0 12px",
+                fontSize: "13px",
+                fontWeight: 700,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
               }}
             >
-              {deliveryLoading ? "Завантаження..." : "Ввести"}
+              {checkoutMode === "pickup" ? "✓ Самовивіз -5%" : "Самовивіз -5%"}
             </button>
           </div>
+          {checkoutMode !== "pickup" ? (
+            <div
+              style={{
+                backgroundColor: isFreeReached ? "#e8f7ed" : "#f7f3eb",
+                border: `1px solid ${isFreeReached ? "#b7e4c7" : "#eed7b0"}`,
+                borderRadius: "14px",
+                padding: "14px",
+                display: "grid",
+                gap: "10px",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "14px",
+                  fontWeight: "700",
+                  color: "#222",
+                  lineHeight: 1.35,
+                }}
+              >
+                {deliveryTitle}
+              </div>
+
+              <div
+                style={{
+                  width: "100%",
+                  height: "10px",
+                  backgroundColor: "#f0f0f0",
+                  borderRadius: "999px",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    width: `${progressPercent}%`,
+                    height: "100%",
+                    backgroundColor: isFreeReached ? "#2e7d32" : "#f57c00",
+                    borderRadius: "999px",
+                    transition: "0.3s",
+                  }}
+                />
+              </div>
+
+              <div
+                style={{
+                  fontSize: "13px",
+                  color: "#666",
+                }}
+              >
+                Поріг безкоштовної доставки: {currentMinOrder} грн
+              </div>
+
+              {deliveryHint ? (
+                <div
+                  style={{
+                    fontSize: "13px",
+                    color: isFreeReached ? "#9a6700" : "#666",
+                    fontWeight: isFreeReached ? "700" : "400",
+                    lineHeight: 1.35,
+                  }}
+                >
+                  {deliveryHint}
+                </div>
+              ) : null}
+
+              <div style={{ position: "relative" }}>
+                <input
+                  type="text"
+                  value={deliveryAddress}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const formatted = value
+                      ? value.charAt(0).toUpperCase() + value.slice(1)
+                      : "";
+
+                    setDeliveryAddress(formatted);
+                  }}
+                  onKeyDown={(e) => {
+                    if (
+                      e.key === "Enter" &&
+                      deliveryAddress?.trim() &&
+                      !deliveryLoading
+                    ) {
+                      e.preventDefault();
+                      handleApplyAddress();
+                    }
+                  }}
+                  enterKeyHint="send"
+                  placeholder="Вулиця та номер будинку (наприклад: Озерна 11)"
+                  style={{
+                    width: "100%",
+                    boxSizing: "border-box",
+                    padding: "13px 14px",
+                    borderRadius: "12px",
+                    border: "1px solid #ddd",
+                    fontSize: "15px",
+                    outline: "none",
+                    background: "#fff",
+                  }}
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={handleApplyAddress}
+                disabled={!deliveryAddress?.trim() || deliveryLoading}
+                style={{
+                  border: "none",
+                  borderRadius: "12px",
+                  padding: "13px 14px",
+                  background:
+                    !deliveryAddress?.trim() || deliveryLoading
+                      ? "#cccccc"
+                      : "#e56a45",
+                  color: "#fff",
+                  fontSize: "15px",
+                  fontWeight: "700",
+                  cursor:
+                    !deliveryAddress?.trim() || deliveryLoading
+                      ? "default"
+                      : "pointer",
+                }}
+              >
+                {deliveryLoading ? "Завантаження..." : "Ввести"}
+              </button>
+            </div>
+          ) : (
+            <div
+              style={{
+                backgroundColor: "#f0fdf4",
+                border: "1px solid #bbf7d0",
+                borderRadius: "14px",
+                padding: "14px",
+                fontSize: "13px",
+                color: "#166534",
+                fontWeight: "600",
+                lineHeight: 1.4,
+              }}
+            >
+              Самовивіз обрано — адресу вводити не потрібно
+            </div>
+          )}
         </div>
 
         <div
@@ -937,7 +1020,10 @@ export default function CartDrawer() {
                       >
                         {item.isDiscountOffer && item.originalPrice
                           ? `${item.price} грн`
-                          : `${item.price * item.quantity} грн`}
+                          : `${
+                              item.price *
+                              (item.paidQuantity ?? item.quantity ?? 0)
+                            } грн`}
                       </div>
                     </div>
                   </div>
@@ -1258,15 +1344,42 @@ export default function CartDrawer() {
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              marginBottom: "16px",
+              marginBottom: "10px",
               fontSize: "22px",
               fontWeight: "800",
               color: "#111",
             }}
           >
             <span>Разом</span>
-            <span>{totalPrice} грн</span>
+            <span>{finalTotal} грн</span>
           </div>
+          {checkoutMode === "pickup" && pickupDiscount > 0 && (
+            <div
+              style={{
+                marginBottom: "10px",
+                fontSize: "12px",
+                color: "#16a34a",
+                fontWeight: 700,
+              }}
+            >
+              Знижка за самовивіз: -{pickupDiscount} грн
+            </div>
+          )}
+
+          {checkoutMode === "pickup" &&
+            pickupDiscount === 0 &&
+            hasAnyPromoInCart && (
+              <div
+                style={{
+                  fontSize: "12px",
+                  color: "#a16207",
+                  fontWeight: 700,
+                  marginBottom: "10px",
+                }}
+              >
+                Знижка не діє з акціями
+              </div>
+            )}
 
           <div style={{ display: "grid", gap: "10px" }}>
             <Link

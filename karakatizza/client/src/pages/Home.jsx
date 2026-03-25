@@ -80,15 +80,25 @@ export default function Home() {
         const isAfterHours =
           currentTime < s.openingTime || currentTime > s.closingTime;
 
+        const LAST_POPUP_KEY = "last_popup_time";
+        const POPUP_INTERVAL = 30 * 60 * 1000;
+
+        const last = localStorage.getItem(LAST_POPUP_KEY);
+        const canShow = !last || Date.now() - Number(last) > POPUP_INTERVAL;
+
+        if (!canShow) return;
+
         if (isClosedToday) {
           setPopupText(s.closedAllDayMessage);
           setShowPopup(true);
+          localStorage.setItem(LAST_POPUP_KEY, Date.now().toString());
           return;
         }
 
         if (s.enableAfterHoursPopup && isAfterHours) {
           setPopupText(s.popupMessage);
           setShowPopup(true);
+          localStorage.setItem(LAST_POPUP_KEY, Date.now().toString());
         }
       } catch (error) {
         console.error("SETTINGS LOAD ERROR:", error);

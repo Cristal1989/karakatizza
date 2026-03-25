@@ -273,7 +273,50 @@ export function CartProvider({ children }) {
       return sum + item.price * paidQuantity;
     }, 0);
   }, [cartItems]);
-  const checkoutTotalPrice = totalPrice + sticksExtraPrice;
+  // есть ли вообще акции в корзине
+  const hasAnyPromoInCart = cartItems.some((item) => {
+    if (item.isGiftRoll === true) return true;
+
+    const hasGift = Number(item.freeQuantity ?? 0) > 0;
+    const hasDiscount = item.isDiscountOffer === true;
+    const hasPromoType = item.promoType && item.promoType !== "none";
+    const hasWeeklyOffer = item.isWeeklyOffer === true;
+    const hasOldPrice =
+      Number(item.oldPrice ?? item.originalPrice ?? 0) >
+      Number(item.price ?? 0);
+
+    return (
+      hasGift || hasDiscount || hasPromoType || hasWeeklyOffer || hasOldPrice
+    );
+  });
+
+  const pickupDiscountBase = cartItems.reduce((sum, item) => {
+    if (item.isGiftRoll || item.isDiscountOffer) return sum;
+
+    const category = item.category?.toLowerCase?.() || "";
+
+    const isDrink =
+      category === "drinks" || category === "напої" || category === "напитки";
+
+    const isExtra =
+      category === "extras" ||
+      category === "додатково" ||
+      category === "дополнительно";
+
+    if (isDrink || isExtra) return sum;
+
+    const paidQty = item.paidQuantity ?? item.quantity ?? 0;
+
+    return sum + item.price * paidQty;
+  }, 0);
+
+  const pickupDiscount =
+    checkoutMode === "pickup" && !hasAnyPromoInCart
+      ? Math.round(pickupDiscountBase * 0.05)
+      : 0;
+
+      const finalTotal = Math.max(0, totalPrice - pickupDiscount);
+  const checkoutTotalPrice = finalTotal + sticksExtraPrice;
 
   const openCart = () => setIsCartOpen(true);
   const closeCart = () => setIsCartOpen(false);
@@ -297,6 +340,9 @@ export function CartProvider({ children }) {
         totalPrice,
         toastMessage,
         setToastMessage,
+        pickupDiscount,
+        finalTotal,
+        hasAnyPromoInCart,
 
         checkoutMode,
         setCheckoutMode,
@@ -306,6 +352,7 @@ export function CartProvider({ children }) {
         setDeliveryDistanceKm,
         deliverySummary,
         setDeliverySummary,
+        calculatePromo,
 
         regularSticksCount,
         setRegularSticksCount,

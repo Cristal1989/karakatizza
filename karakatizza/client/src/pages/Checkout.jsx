@@ -20,6 +20,9 @@ export default function Checkout() {
     setTrainingSticksCount,
     sticksExtraPrice,
     checkoutTotalPrice,
+    hasAnyPromoInCart,
+    finalTotal,
+    pickupDiscount,
   } = useCart();
 
   const [form, setForm] = useState({
@@ -375,6 +378,10 @@ export default function Checkout() {
 
   const freeCondiments = cartItems.reduce(
     (acc, item) => {
+      if (item.isGiftRoll || item.isDiscountOffer) {
+        return acc;
+      }
+
       const category = item.category?.toLowerCase?.() || "";
       const paidQty = item.paidQuantity ?? item.quantity ?? 0;
 
@@ -1490,7 +1497,7 @@ export default function Checkout() {
           >
             <div style={summaryRowStyle}>
               <span>Сума товарів</span>
-              <span>{checkoutTotalPrice} грн</span>
+              <span>{totalPrice} грн</span>
             </div>
 
             {condimentsExtraPrice > 0 && (
@@ -1506,6 +1513,35 @@ export default function Checkout() {
                 <span>{sticksExtraPrice} грн</span>
               </div>
             )}
+            {pickupDiscount > 0 && (
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "space-between",
+      marginTop: "4px",
+      fontSize: "14px",
+      color: "#16a34a",
+      fontWeight: 700,
+      marginBottom: "6px",
+    }}
+  >
+    <span>Знижка самовивіз 5%</span>
+    <span>-{pickupDiscount} грн</span>
+  </div>
+)}
+{checkoutMode === "pickup" && pickupDiscount === 0 && hasAnyPromoInCart && (
+  <div
+    style={{
+      marginTop: "6px",
+      marginBottom: "6px",
+      fontSize: "12px",
+      color: "#a16207",
+      fontWeight: 600,
+    }}
+  >
+    Знижка не діє разом з акціями
+  </div>
+)}
 
             <div
               style={{
