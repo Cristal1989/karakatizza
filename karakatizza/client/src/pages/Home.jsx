@@ -59,30 +59,43 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const saved = localStorage.getItem("site_settings");
-    if (!saved) return;
+    async function loadSettings() {
+      try {
+        const res = await fetch(
+          (import.meta.env.VITE_API_URL || "http://localhost:5000") +
+            "/site-settings"
+        );
 
-    const s = JSON.parse(saved);
+        if (!res.ok) return;
 
-    const now = new Date();
-    const currentTime = now.toTimeString().slice(0, 5);
-    const today = now.toISOString().slice(0, 10);
+        const s = await res.json();
 
-    const isClosedToday = s.closedAllDay && s.closedAllDayDate === today;
+        const now = new Date();
+        const currentTime = now.toTimeString().slice(0, 5);
+        const today = now.toISOString().slice(0, 10);
 
-    const isAfterHours =
-      currentTime < s.openingTime || currentTime > s.closingTime;
+        const isClosedToday =
+          s.closedAllDay === true && s.closedAllDayDate === today;
 
-    if (isClosedToday) {
-      setPopupText(s.closedAllDayMessage);
-      setShowPopup(true);
-      return;
+        const isAfterHours =
+          currentTime < s.openingTime || currentTime > s.closingTime;
+
+        if (isClosedToday) {
+          setPopupText(s.closedAllDayMessage);
+          setShowPopup(true);
+          return;
+        }
+
+        if (s.enableAfterHoursPopup && isAfterHours) {
+          setPopupText(s.popupMessage);
+          setShowPopup(true);
+        }
+      } catch (error) {
+        console.error("SETTINGS LOAD ERROR:", error);
+      }
     }
 
-    if (s.enableAfterHoursPopup && isAfterHours) {
-      setPopupText(s.popupMessage);
-      setShowPopup(true);
-    }
+    loadSettings();
   }, []);
 
   async function loadProducts() {

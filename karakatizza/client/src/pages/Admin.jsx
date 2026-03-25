@@ -41,6 +41,7 @@ const categoryOptions = [
   { value: "drinks", label: "Напої" },
   { value: "extras", label: "Додатково" },
 ];
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function Admin() {
   const [activeSection, setActiveSection] = useState("products");
@@ -158,10 +159,39 @@ export default function Admin() {
     loadPromotionSettings();
     loadGiftRollSettings();
   }, []);
+
   useEffect(() => {
-    const saved = localStorage.getItem("site_settings");
-    if (saved) setSettings(JSON.parse(saved));
+    async function loadSettings() {
+      try {
+        const res = await fetch(`${API_BASE}/site-settings`);
+        if (!res.ok) throw new Error();
+
+        const data = await res.json();
+        setSettings(data);
+      } catch (e) {
+        console.error("LOAD SETTINGS ERROR", e);
+      }
+    }
+
+    loadSettings();
   }, []);
+
+  async function saveSettings() {
+    try {
+      const res = await fetch(`${API_BASE}/site-settings`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings),
+      });
+
+      if (!res.ok) throw new Error();
+
+      alert("Збережено");
+    } catch (e) {
+      console.error("SAVE SETTINGS ERROR", e);
+      alert("Помилка збереження");
+    }
+  }
 
   async function loadProducts() {
     try {
@@ -2366,7 +2396,9 @@ export default function Admin() {
                       setSettings({
                         ...settings,
                         closedAllDay: e.target.checked,
-                        closedAllDayDate: new Date().toISOString().slice(0, 10),
+                        closedAllDayDate: e.target.checked
+                          ? new Date().toISOString().slice(0, 10)
+                          : "",
                       })
                     }
                   />
@@ -2396,13 +2428,7 @@ export default function Admin() {
               </div>
 
               <button
-                onClick={() => {
-                  localStorage.setItem(
-                    "site_settings",
-                    JSON.stringify(settings)
-                  );
-                  alert("Збережено");
-                }}
+                onClick={saveSettings}
                 style={{
                   padding: "14px",
                   borderRadius: 12,
