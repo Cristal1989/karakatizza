@@ -42,6 +42,7 @@ export default function CartDrawer() {
   const [discountOfferDismissed, setDiscountOfferDismissed] = useState(false);
   const [discountOfferAccepted, setDiscountOfferAccepted] = useState(false);
   const [promoSettings, setPromoSettings] = useState(null);
+  const [promoProducts, setPromoProducts] = useState([]);
 
   const [promotionSettings, setPromotionSettings] = useState({
     discountPercent: 25,
@@ -62,13 +63,17 @@ export default function CartDrawer() {
 
   useEffect(() => {
     loadUpsell();
+    loadPromoProducts();
     loadPromotionSettings();
     loadGiftRollSettings();
   }, []);
 
-  const selectedGiftRollProduct = allProducts.find(
-    (product) => product.id === giftRollSettings.giftProductId
+  const selectedGiftRollProduct = promoProducts.find(
+    (product) => String(product.id) === String(giftRollSettings.giftProductId)
   );
+  console.log("giftProductId:", giftRollSettings.giftProductId, typeof giftRollSettings.giftProductId);
+console.log("promo ids:", promoProducts.map((p) => [p.id, typeof p.id]));
+console.log("selectedGiftRollProduct:", selectedGiftRollProduct);
 
   useEffect(() => {
     fetch("/promotions/settings")
@@ -128,13 +133,13 @@ export default function CartDrawer() {
     return sum + item.price * paidQty;
   }, 0);
 
-  const rollsInCartIds = cartItems.map((item) => item.id);
+  const rollsInCartIds = cartItems.map((item) => String(item.id));
 
   const availableDiscountRolls = allProducts.filter((product) => {
     const category = product.category?.toLowerCase?.() || "";
     const isRoll = category === "rolls" || category === "роллы";
     const isEligible = product.discountOfferEligible === true;
-    const isNotInCart = !rollsInCartIds.includes(product.id);
+    const isNotInCart = !rollsInCartIds.includes(String(product.id));
 
     return isRoll && isEligible && isNotInCart;
   });
@@ -195,6 +200,25 @@ export default function CartDrawer() {
       setDiscountOfferProduct(null);
     }
   }, [shouldTriggerDiscountOffer, allProducts, cartItems]);
+
+  useEffect(() => {
+    // если подарок активен или уже в корзине — убиваем оффер
+    if (!shouldGiftRollBeActive && !giftRollInCart) return;
+  
+    const hasDiscountItem = cartItems.some((item) => item.isDiscountOffer);
+  
+    if (!hasDiscountItem) return;
+  
+    cartItems.forEach((item) => {
+      if (item.isDiscountOffer) {
+        removeFromCart(item.id);
+      }
+    });
+  
+    setDiscountOfferAccepted(false);
+    setDiscountOfferDismissed(false);
+    setDiscountOfferProduct(null);
+  }, [shouldGiftRollBeActive, giftRollInCart]);
 
   useEffect(() => {
     const triggerSum = Number(promotionSettings.triggerSum || 0);
@@ -318,6 +342,20 @@ export default function CartDrawer() {
       console.error("Upsell load error:", error);
     }
   }
+
+  async function loadPromoProducts() {
+    try {
+      const res = await fetch("/products?admin=1");
+      const data = await res.json();
+  
+      console.log("PROMO LOAD:", data);
+  
+      setPromoProducts(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Promo load error:", error);
+    }
+  }
+  console.log("gift settings:", giftRollSettings);
 
   async function loadPromotionSettings() {
     try {
@@ -1421,3 +1459,5 @@ export default function CartDrawer() {
     </>
   );
 }
+
+
