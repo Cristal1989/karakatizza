@@ -63,17 +63,24 @@ export function CartProvider({ children }) {
 
   const addToCart = (product, quantity = 1) => {
     const safePaidQuantity = Number(quantity) || 1;
-
+  
+    const getKey = (item) =>
+      item.cartKey ?? `${item.id}-${item.isGiftRoll ? "gift" : "normal"}`;
+  
+    const productKey =
+      product.cartKey ?? `${product.id}-${product.isGiftRoll ? "gift" : "normal"}`;
+  
     setCartItems((prev) => {
+      console.log("ADD TO CART PRODUCT", product);
       if (product.category === "sets") {
-        setSoySauceCount((prev) => prev + (product.freeSoySauce || 0));
-        setGingerCount((prev) => prev + (product.freeGinger || 0));
-        setWasabiCount((prev) => prev + (product.freeWasabi || 0));
+        setSoySauceCount((prevCount) => prevCount + (product.freeSoySauce || 0));
+        setGingerCount((prevCount) => prevCount + (product.freeGinger || 0));
+        setWasabiCount((prevCount) => prevCount + (product.freeWasabi || 0));
       }
-
+  
       const hasDiscountOfferAlready = prev.some((item) => {
-        if (item.id === product.id) return false;
-
+        if (getKey(item) === productKey) return false;
+  
         return (
           item.isDiscountOffer === true ||
           Number(item.freeQuantity ?? 0) > 0 ||
@@ -81,24 +88,28 @@ export function CartProvider({ children }) {
           (item.promoType && item.promoType !== "none")
         );
       });
-
-      const existingItem = prev.find((item) => item.id === product.id);
-
+  
+      const existingItem = prev.find((item) => getKey(item) === productKey);
+  
       if (existingItem) {
+        if (product.isGiftRoll) {
+          return prev;
+        }
+  
         const currentPaidQuantity = Number(
           existingItem.paidQuantity ?? existingItem.quantity ?? 0
         );
-
+  
         const newPaidQuantity = currentPaidQuantity + safePaidQuantity;
-
+  
         const effectivePromoType = hasDiscountOfferAlready
           ? "none"
           : existingItem.promoType ?? product.promoType;
-
+  
         const promo = calculatePromo(newPaidQuantity, effectivePromoType);
-
+  
         return prev.map((item) =>
-          item.id === product.id
+          getKey(item) === productKey
             ? {
                 ...item,
                 quantity: promo.totalQuantity,
@@ -112,13 +123,24 @@ export function CartProvider({ children }) {
             : item
         );
       }
-
-      const effectivePromoType = hasDiscountOfferAlready
-        ? "none"
-        : product.promoType;
-
+  
+      if (product.isGiftRoll) {
+        return [
+          ...prev,
+          {
+            ...product,
+            quantity: 1,
+            paidQuantity: 0,
+            freeQuantity: 0,
+            isGiftRoll: true,
+            cartKey: productKey,
+          },
+        ];
+      }
+  
+      const effectivePromoType = hasDiscountOfferAlready ? "none" : product.promoType;
       const promo = calculatePromo(safePaidQuantity, effectivePromoType);
-
+  
       return [
         ...prev,
         {
@@ -128,15 +150,10 @@ export function CartProvider({ children }) {
           freeQuantity: promo.freeQuantity,
           isDiscountOffer: product.isDiscountOffer ?? false,
           discountLabel: product.discountLabel ?? "",
+          cartKey: productKey,
         },
       ];
     });
-
-    window.dispatchEvent(
-      new CustomEvent("cart:toast", {
-        detail: `Додано: ${product.name}`,
-      })
-    );
   };
 
   const decreaseCartItem = (productId) => {
@@ -172,10 +189,11 @@ export function CartProvider({ children }) {
     });
   };
 
-  const removeFromCart = (productId) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== productId));
+  const removeFromCart = (targetKey) => {
+    setCartItems((prev) =>
+      prev.filter((item) => (item.cartKey ?? item.id) !== targetKey)
+    );
   };
-
   const clearCart = () => {
     setCartItems([]);
   };
