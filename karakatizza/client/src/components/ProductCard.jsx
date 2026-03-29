@@ -165,7 +165,6 @@ function ProductCard({ product }) {
           padding: "8px 14px 8px",
           display: "flex",
           flexDirection: "column",
-          flex: 1,
         }}
       >
         <div
@@ -183,7 +182,7 @@ function ProductCard({ product }) {
               fontWeight: 800,
               color: "#222",
               lineHeight: 1.2,
-              flex: 1,
+              margin: "2px 0 0 0",
             }}
           >
             {product.name}
@@ -209,6 +208,7 @@ function ProductCard({ product }) {
             lineHeight: 1.35,
             height: "42px",
             overflow: "hidden",
+            margin: 0,
           }}
         >
           {product.description || ""}
@@ -221,6 +221,7 @@ function ProductCard({ product }) {
             justifyContent: "space-between",
             gap: "12px",
             minHeight: "44px",
+            marginTop: "6px",
           }}
         >
           <div
