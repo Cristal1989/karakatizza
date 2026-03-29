@@ -70,6 +70,7 @@ const legacyRedirects = {
 
 Object.entries(legacyRedirects).forEach(([oldPath, newPath]) => {
   app.get(oldPath, (req, res) => {
+    console.log("REDIRECT HIT:", oldPath);
     return res.redirect(301, newPath);
   });
 });
