@@ -310,6 +310,25 @@ export default function MobileMenu({ isOpen, onClose }) {
 
           <div
             style={{
+              flex: "0 0 40px",
+              minHeight: "40px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#9c978f",
+              fontSize: "12px",
+              fontWeight: 700,
+              letterSpacing: "1.2px",
+              textTransform: "uppercase",
+              background: "#f7f5f0",
+              boxSizing: "border-box",
+              marginBottom: "8px",
+            }}
+          >
+            Працюємо 3 10.00 до 22.00
+          </div>
+          <div
+            style={{
               flex: "0 0 70px",
               minHeight: "70px",
               borderTop: "1px solid #ebe6dc",
