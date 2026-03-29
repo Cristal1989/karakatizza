@@ -61,7 +61,8 @@ export default function Header() {
           >
             <img
               src="/images/logo-min.png"
-              alt="Karakatizza"
+              alt="Karakatizza — доставка суші у Миколаєві"
+              loading="lazy"
               style={{
                 width: isMobile ? "72px" : "130px",
                 height: "auto",
@@ -169,7 +170,8 @@ export default function Header() {
             >
               <img
                 src="/images/geo1.png"
-                alt="Карта"
+                alt="Карта— доставка суші Каракатица"
+                loading="lazy"
                 style={{
                   width: "38px",
                   height: "38px",

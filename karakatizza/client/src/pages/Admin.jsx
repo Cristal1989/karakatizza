@@ -1326,7 +1326,8 @@ export default function Admin() {
                       >
                         <img
                           src={imagePreview}
-                          alt="preview"
+                          alt="preview— доставка суші Каракатица"
+                          loading="lazy"
                           style={{
                             width: "100%",
                             height: "100%",
@@ -1496,7 +1497,8 @@ export default function Admin() {
                             {product.image ? (
                               <img
                                 src={imageSrc}
-                                alt={product.name}
+                                alt={`${product.name}— доставка суші Каракатица`}
+                                loading="lazy"
                                 style={{
                                   width: "90px",
                                   height: "90px",
@@ -1804,7 +1806,8 @@ export default function Admin() {
                         {bannerPreview ? (
                           <img
                             src={bannerPreview}
-                            alt="desktop preview"
+                            alt="desktop preview— доставка суші Каракатица"
+                            loading="lazy"
                             style={{
                               width: "100%",
                               height: "140px",
@@ -1838,7 +1841,8 @@ export default function Admin() {
                         {bannerMobilePreview ? (
                           <img
                             src={bannerMobilePreview}
-                            alt="mobile preview"
+                            alt="mobile preview— доставка суші Каракатица"
+                            loading="lazy"
                             style={{
                               width: "100%",
                               height: "140px",
@@ -1967,7 +1971,8 @@ export default function Admin() {
                         >
                           <img
                             src={getImageUrl(banner.image)}
-                            alt={banner.title || "banner"}
+                            alt={`${banner.title}— доставка суші Каракатица`}
+                            loading="lazy"
                             style={{
                               width: "220px",
                               height: "110px",
@@ -1979,7 +1984,8 @@ export default function Admin() {
                           {banner.mobileImage ? (
                             <img
                               src={getImageUrl(banner.mobileImage)}
-                              alt="mobile banner"
+                              alt="mobile banner— доставка суші Каракатица"
+                              loading="lazy"
                               style={{
                                 width: "140px",
                                 height: "110px",

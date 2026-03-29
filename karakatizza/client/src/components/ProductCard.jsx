@@ -145,7 +145,7 @@ function ProductCard({ product }) {
         <img
           ref={imageRef}
           src={imageSrc}
-          alt={product.name}
+          alt={`${product.name}— доставка суші Каракатица`}
           loading="lazy"
           decoding="async"
           style={{
@@ -160,7 +160,7 @@ function ProductCard({ product }) {
         />
       </div>
 
-      <div
+      <article
         style={{
           padding: "8px 14px 8px",
           display: "flex",
@@ -177,7 +177,7 @@ function ProductCard({ product }) {
             marginBottom: "6px",
           }}
         >
-          <div
+          <h3
             style={{
               fontSize: isMobile ? "20px" : "18px",
               fontWeight: 800,
@@ -187,7 +187,7 @@ function ProductCard({ product }) {
             }}
           >
             {product.name}
-          </div>
+          </h3>
 
           <div
             style={{
@@ -202,18 +202,18 @@ function ProductCard({ product }) {
           </div>
         </div>
 
-        <div
+        <p
           style={{
             fontSize: "15px",
             color: "#666",
             lineHeight: 1.35,
             height: "42px",
             overflow: "hidden",
-            marginBottom: "10px",
+            marginBottom: "0px",
           }}
         >
           {product.description || ""}
-        </div>
+        </p>
 
         <div
           style={{
@@ -221,7 +221,6 @@ function ProductCard({ product }) {
             alignItems: "center",
             justifyContent: "space-between",
             gap: "12px",
-            marginTop: "auto",
             minHeight: "44px",
           }}
         >
@@ -354,7 +353,7 @@ function ProductCard({ product }) {
             )}
           </div>
         </div>
-      </div>
+      </article>
     </div>
   );
 }

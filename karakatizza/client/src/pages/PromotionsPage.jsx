@@ -56,6 +56,9 @@ export default function PromotionsPage() {
         background: "#f5f5f5",
       }}
     >
+      <h1 style={{ display: "none" }}>
+  Доставка суші та ролів у Миколаєві
+</h1>
       <div
         style={{
           maxWidth: "900px",
@@ -91,7 +94,7 @@ export default function PromotionsPage() {
             Акції Karakatizza
           </div>
 
-          <h1
+          <h2
             style={{
               margin: 0,
               fontSize: "34px",
@@ -101,7 +104,7 @@ export default function PromotionsPage() {
             }}
           >
             Акції
-          </h1>
+          </h2>
 
           <p
             style={{

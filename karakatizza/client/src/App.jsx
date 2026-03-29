@@ -9,6 +9,8 @@ import DeliveryPage from "./pages/DeliveryPage";
 import ContactsPage from "./pages/ContactsPage";
 import UserAgreementPage from "./pages/UserAgreementPage";
 import ReturnPolicyPage from "./pages/ReturnPolicyPage";
+import NotFound from "./pages/NotFound";
+import CategoryPage from "./pages/CategoryPage";
 
 export default function App() {
   return (
@@ -23,6 +25,11 @@ export default function App() {
       <Route path="/checkout" element={<Checkout />} />
       <Route path="/success" element={<Success />} />
       <Route path="/admin" element={<Admin />} />
+      <Route path="/rolls" element={<CategoryPage />} />
+      <Route path="/sets" element={<CategoryPage />} />
+      <Route path="/baked-rolls" element={<CategoryPage />} />
+      <Route path="/drinks" element={<CategoryPage />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

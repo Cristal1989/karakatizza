@@ -32,7 +32,8 @@ export default function MobileCallButton({ isCartOpen }) {
     >
       <img
         src="/images/tel.png"
-        alt="call"
+        alt="call— доставка суші Каракатица"
+        loading="lazy"
         style={{
           width: "100%",
           height: "100%",

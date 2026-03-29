@@ -9,6 +9,9 @@ export default function UserAgreementPage() {
         background: "#f5f5f5",
       }}
     >
+      <h1 style={{ display: "none" }}>
+  Доставка суші та ролів у Миколаєві
+</h1>
       <div
         style={{
           maxWidth: "980px",
@@ -44,7 +47,7 @@ export default function UserAgreementPage() {
             Karakatizza • Миколаїв
           </div>
 
-          <h1
+          <h2
             style={{
               margin: 0,
               fontSize: "34px",
@@ -54,7 +57,7 @@ export default function UserAgreementPage() {
             }}
           >
             Користувацька угода
-          </h1>
+          </h2>
 
           <p
             style={{

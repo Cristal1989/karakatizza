@@ -176,7 +176,8 @@ export default function MobileMenu({ isOpen, onClose }) {
           >
             <img
               src="/images/logo-min.png"
-              alt="Karakatizza"
+              alt="Karakatizza— доставка суші Каракатица"
+              loading="lazy"
               style={{
                 width: "52px",
                 height: "52px",
@@ -276,7 +277,8 @@ export default function MobileMenu({ isOpen, onClose }) {
                 >
                   <img
                     src={item.icon}
-                    alt={item.label}
+                    alt={`${item.label}— доставка суші Каракатица`}
+                    loading="lazy"
                     style={{
                       width: "28px",
                       height: "28px",

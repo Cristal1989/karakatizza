@@ -878,7 +878,8 @@ export default function CartDrawer() {
                       >
                         <img
                           src={getImageUrl(item.image)}
-                          alt={item.name}
+                          alt={`${item.name}— доставка суші Каракатица`}
+                          loading="lazy"
                           style={{
                             width: "100%",
                             height: "100%",
@@ -1118,7 +1119,9 @@ export default function CartDrawer() {
                   >
                     <img
                       src={getImageUrl(discountOfferProduct.image)}
-                      alt={discountOfferProduct.name}
+                      alt={`${discountOfferProduct.name}— доставка суші Каракатица`}
+                      loading="lazy"
+
                       style={{
                         width: "64px",
                         height: "64px",
@@ -1293,7 +1296,8 @@ export default function CartDrawer() {
                           >
                             <img
                               src={getImageUrl(product.image)}
-                              alt={product.name}
+                              alt={`${product.name}— доставка суші Каракатица`}
+                              loading="lazy"
                               style={{
                                 width: "100%",
                                 height: "100%",

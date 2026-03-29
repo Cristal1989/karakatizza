@@ -163,7 +163,8 @@ export default function CategoryTabs({ activeCategory, onChange }) {
               >
                 <img
                   src={category.icon}
-                  alt={category.label}
+                  alt={`${category.label}— доставка суші Каракатица`}
+                  loading="lazy"
                   className="categoryIcon"
                   style={{
                     width: isMobile ? "30px" : "38px",

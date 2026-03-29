@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import Seo from "../components/Seo";
 
 export default function AboutPage() {
   const isMobile = window.matchMedia("(max-width: 768px)").matches;
@@ -13,6 +14,14 @@ export default function AboutPage() {
         boxSizing: "border-box",
       }}
     >
+      <Seo
+        title="Доставка та самовивіз — Каракатица Миколаїв"
+        description="Умови доставки та самовивозу Каракатица у Миколаєві. Дізнайтесь поріг безкоштовної доставки, графік роботи та зони обслуговування."
+        url="https://karakatizza.com/delivery"
+      />
+      <h1 style={{ display: "none" }}>
+  Доставка суші та ролів у Миколаєві
+</h1>
       <div
         style={{
           maxWidth: "980px",
@@ -47,7 +56,7 @@ export default function AboutPage() {
             Karakatizza • Миколаїв
           </div>
 
-          <h1
+          <h2
             style={{
               margin: 0,
               fontSize: isMobile ? "32px" : "46px",
@@ -57,7 +66,7 @@ export default function AboutPage() {
             }}
           >
             Про нас
-          </h1>
+          </h2>
 
           <p
             style={{
@@ -194,7 +203,7 @@ export default function AboutPage() {
               marginBottom: "10px",
             }}
           >
-            Karakatizza — коли хочеться дійсно смачні роли в Миколаєві.
+            Karakatizza — коли хочеться дійсно смачні суші та роли в Миколаєві.
           </div>
 
           <div
@@ -208,6 +217,67 @@ export default function AboutPage() {
             домашніх вечерь і моментів, коли просто хочеться порадувати себе
             чимось смачним. І хочемо, щоб у такі моменти ти згадував саме нас.
           </div>
+        </section>
+        <section
+          style={{
+            background: "#fff",
+            borderRadius: isMobile ? "20px" : "24px",
+            padding: isMobile ? "22px 18px" : "28px 24px",
+            border: "1px solid #f1f1f1",
+            boxShadow: "0 10px 24px rgba(0,0,0,0.05)",
+            marginBottom: isMobile ? "18px" : "24px",
+            marginTop: isMobile ? "18px" : "24px",
+          }}
+        >
+          <h2
+            style={{
+              margin: 0,
+              fontSize: isMobile ? "24px" : "30px",
+              lineHeight: 1.1,
+              fontWeight: 900,
+              color: "#222",
+              marginBottom: "14px",
+            }}
+          >
+            Доставка суші та ролів у Миколаєві
+          </h2>
+
+          <p
+            style={{
+              margin: 0,
+              fontSize: isMobile ? "15px" : "17px",
+              lineHeight: 1.75,
+              color: "#5f5f5f",
+            }}
+          >
+            Якщо шукаєш доставку суші у Миколаєві, де важливий не тільки час, 
+    а й смак — ти за адресою. У Karakatizza ми готуємо роли та сети 
+    зі свіжих інгредієнтів і уважно ставимося до кожного замовлення.
+          </p>
+          <p
+            style={{
+              margin: 0,
+              fontSize: isMobile ? "15px" : "17px",
+              lineHeight: 1.75,
+              color: "#5f5f5f",
+            }}
+          >
+             У меню є класичні роли, Філадельфія, запечені роли та сети для компанії. 
+    Ми працюємо по всьому місту, включаючи район Намив, і пропонуємо 
+    як доставку, так і самовивіз.
+          </p>
+          <p
+            style={{
+              margin: 0,
+              fontSize: isMobile ? "15px" : "17px",
+              lineHeight: 1.75,
+              color: "#5f5f5f",
+            }}
+          >
+             Замовити суші в Миколаєві можна онлайн за кілька хвилин. 
+    Ми зробили сайт максимально простим, щоб ти витрачав час 
+    не на оформлення, а на очікування смачної їжі. Karakatizza — це зручна доставка суші у Миколаєві, які хочеться замовляти знову.
+          </p>
         </section>
         <button
           onClick={() => navigate("/")}

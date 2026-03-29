@@ -81,8 +81,8 @@ export default function HeroSlider({ banners = [] }) {
       >
         <img
           src={bannerImageUrl}
-          alt={currentBanner.title || "Банер"}
-          loading="eager"
+          alt={`${currentBanner.title} —Акційний банер доставки суші Каракатица`}
+          loading="lazy"
           decoding="async"
           style={{
             width: "100%",

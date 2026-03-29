@@ -13,6 +13,9 @@ export default function Success() {
         fontFamily: "Arial, sans-serif",
       }}
     >
+      <h1 style={{ display: "none" }}>
+  Доставка суші та ролів у Миколаєві
+</h1>
       <div
         style={{
           backgroundColor: "#fff",
@@ -26,7 +29,7 @@ export default function Success() {
       >
         <div style={{ fontSize: "56px", marginBottom: "12px" }}>🎉</div>
 
-        <h1
+        <h2
           style={{
             margin: "0 0 12px 0",
             fontSize: "32px",
@@ -34,7 +37,7 @@ export default function Success() {
           }}
         >
           Змовлення прийнято
-        </h1>
+        </h2>
 
         <p
           style={{

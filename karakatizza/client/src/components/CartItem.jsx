@@ -9,7 +9,9 @@ export default function CartItem({ item }) {
       <div className="flex gap-3">
         <img
           src={item.image}
-          alt={item.name}
+          alt={`${item.name}— доставка суші Каракатица`}
+          loading="lazy"
+
           className="h-16 w-16 rounded-xl object-cover"
         />
 

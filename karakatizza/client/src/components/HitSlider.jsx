@@ -79,7 +79,7 @@ export default function HitSlider({ products = [] }) {
             fontWeight: 800,
           }}
         >
-          🔥 Хіти продажу
+          🔥 Гарячі пропозиції
         </div>
 
         {popularProducts.length > 1 && (
@@ -124,6 +124,10 @@ export default function HitSlider({ products = [] }) {
           }}
         >
           {/* BADGES */}
+          {(product.isHit ||
+          product.isNew ||
+          product.isWeeklyOffer ||
+          product.promoType === "2plus1") && (
           <div
             style={{
               position: "absolute",
@@ -131,7 +135,8 @@ export default function HitSlider({ products = [] }) {
               left: "10px",
               display: "flex",
               gap: "6px",
-              zIndex: 2,
+              zIndex: 3,
+              flexWrap: "wrap",
             }}
           >
             {product.isHit && (
@@ -140,12 +145,45 @@ export default function HitSlider({ products = [] }) {
                   background: "#f08a4b",
                   color: "#fff",
                   fontSize: "11px",
+                  fontWeight: 700,
                   padding: "4px 8px",
                   borderRadius: "999px",
-                  fontWeight: 700,
+                  lineHeight: 1,
                 }}
               >
-                ХІТ
+                HIT
+              </span>
+            )}
+
+            {product.isNew && (
+              <span
+                style={{
+                  background: "#1b8904",
+                  color: "#fff",
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  padding: "4px 8px",
+                  borderRadius: "999px",
+                  lineHeight: 1,
+                }}
+              >
+                NEW
+              </span>
+            )}
+
+            {product.isWeeklyOffer && (
+              <span
+                style={{
+                  background: "#e85d3f",
+                  color: "#fff",
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  padding: "4px 8px",
+                  borderRadius: "999px",
+                  lineHeight: 1,
+                }}
+              >
+                АКЦІЯ
               </span>
             )}
 
@@ -155,20 +193,23 @@ export default function HitSlider({ products = [] }) {
                   background: "#2563eb",
                   color: "#fff",
                   fontSize: "11px",
+                  fontWeight: 700,
                   padding: "4px 8px",
                   borderRadius: "999px",
-                  fontWeight: 700,
+                  lineHeight: 1,
                 }}
               >
                 2+1
               </span>
             )}
           </div>
+        )}
 
           <img
             id={`hit-image-${product.id}`}
             src={imageSrc}
-            alt={product.name}
+            alt={`${product.name}— доставка суші Каракатица`}
+            loading="lazy"
             style={{
               width: "100%",
               height: "100%",

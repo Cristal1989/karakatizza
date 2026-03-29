@@ -1,4 +1,5 @@
 import React from "react";
+import Seo from "../components/Seo";
 import { Link, useNavigate } from "react-router-dom";
 
 export default function ContactsPage() {
@@ -10,6 +11,14 @@ export default function ContactsPage() {
         background: "#f5f5f5",
       }}
     >
+      <Seo
+        title="Доставка та самовивіз — Каракатица Миколаїв"
+        description="Умови доставки та самовивозу Каракатица у Миколаєві. Дізнайтесь поріг безкоштовної доставки, графік роботи та зони обслуговування."
+        url="https://karakatizza.com/delivery"
+      />
+      <h1 style={{ display: "none" }}>
+  Доставка суші та ролів у Миколаєві
+</h1>
       <div
         style={{
           maxWidth: "900px",
@@ -45,7 +54,7 @@ export default function ContactsPage() {
             Karakatizza • Миколаїв
           </div>
 
-          <h1
+          <h2
             style={{
               margin: 0,
               fontSize: "34px",
@@ -55,7 +64,7 @@ export default function ContactsPage() {
             }}
           >
             Контакти
-          </h1>
+          </h2>
 
           <p
             style={{

@@ -11,6 +11,7 @@ import CartToast from "../components/CartToast";
 import UpsellSection from "../components/UpsellSection";
 import DesktopCartBar from "../components/DesktopCartBar";
 import MobileCallButton from "../components/MobileCallButton";
+import Seo from "../components/Seo";
 import { useCart } from "../context/CartContext";
 import { getProducts } from "../api/productsApi";
 import { getBanners } from "../api/bannersApi";
@@ -39,6 +40,21 @@ export default function Home() {
     { id: "drinks", title: "Напої" },
     { id: "extras", title: "Додатково" },
   ];
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Restaurant",
+    name: "Каракатица",
+    image: "https://karakatizza.com/og-image.jpg",
+    url: "https://karakatizza.com",
+    telephone: "+380965881010",
+    servesCuisine: ["Sushi", "Japanese"],
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: "Миколаїв",
+      addressCountry: "UA",
+    },
+    areaServed: "Миколаїв",
+  };
 
   useEffect(() => {
     loadProducts();
@@ -195,12 +211,19 @@ export default function Home() {
   }
 
   return (
+    
     <div
       style={{
         minHeight: "100vh",
         background: "#fafafa",
       }}
     >
+      <Seo
+        title="Доставка суші та ролів у Миколаєві — Каракатица"
+        description="Замовляйте суші, роли та сети у Миколаєві. Свіжі інгредієнти, швидка доставка, самовивіз та вигідні акції від Каракатица."
+        url="https://karakatizza.com/"
+        jsonLd={jsonLd}
+      />
       <Header />
       {/* <CartToast /> */}
 
@@ -213,6 +236,9 @@ export default function Home() {
           boxSizing: "border-box",
         }}
       >
+        <h1 style={{ display: "none" }}>
+  Доставка суші та ролів у Миколаєві
+</h1>
         <div
           id="menu"
           style={{

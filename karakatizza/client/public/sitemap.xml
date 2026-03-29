@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <!-- Главная -->
+  <url>
+    <loc>https://karakatizza.com/</loc>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Категории -->
+  <url>
+    <loc>https://karakatizza.com/rolls</loc>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://karakatizza.com/sets</loc>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://karakatizza.com/baked-rolls</loc>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://karakatizza.com/drinks</loc>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Инфо страницы -->
+  <url>
+    <loc>https://karakatizza.com/about</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://karakatizza.com/delivery</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://karakatizza.com/contacts</loc>
+    <priority>0.5</priority>
+  </url>
+
+</urlset>

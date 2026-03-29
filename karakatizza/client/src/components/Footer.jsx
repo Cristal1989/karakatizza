@@ -38,8 +38,9 @@ export default function Footer() {
             justifyContent: "center",
           }}
         >
-          <FooterLink to="/delivery">Оплата і доставка</FooterLink>
+          <FooterLink to="/about">Про нас</FooterLink>
           <FooterLink to="/return-policy">Умови повернення</FooterLink>
+          <FooterLink to="/delivery">Оплата і доставка</FooterLink>
           <FooterLink to="/user-agreement">Користувацька угода</FooterLink>
         </div>
 
