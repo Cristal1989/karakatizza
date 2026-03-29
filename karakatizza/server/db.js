@@ -189,6 +189,7 @@ ADD COLUMN IF NOT EXISTS roll_type TEXT DEFAULT '';
     id INTEGER PRIMARY KEY DEFAULT 1,
     opening_time TEXT NOT NULL DEFAULT '10:00',
     closing_time TEXT NOT NULL DEFAULT '22:00',
+    allow_orders_after_hours BOOLEAN NOT NULL DEFAULT true,
     enable_after_hours_popup BOOLEAN NOT NULL DEFAULT true,
     closed_all_day BOOLEAN NOT NULL DEFAULT false,
     closed_all_day_date TEXT DEFAULT '',
@@ -198,11 +199,17 @@ ADD COLUMN IF NOT EXISTS roll_type TEXT DEFAULT '';
   );
 `);
 
+await pool.query(`
+  ALTER TABLE site_settings
+  ADD COLUMN IF NOT EXISTS allow_orders_after_hours BOOLEAN NOT NULL DEFAULT true;
+`);
+
   await pool.query(`
   INSERT INTO site_settings (
     id,
     opening_time,
     closing_time,
+    allow_orders_after_hours,
     enable_after_hours_popup,
     closed_all_day,
     closed_all_day_date,
@@ -214,6 +221,7 @@ ADD COLUMN IF NOT EXISTS roll_type TEXT DEFAULT '';
     '10:00',
     '22:00',
     true,
+    true,
     false,
     '',
     'Ми зараз не працюємо, але ви можете оформити замовлення, і ми зв’яжемося з вами в робочий час.',
@@ -222,4 +230,6 @@ ADD COLUMN IF NOT EXISTS roll_type TEXT DEFAULT '';
     SELECT 1 FROM site_settings WHERE id = 1
   );
 `);
+
+
 }

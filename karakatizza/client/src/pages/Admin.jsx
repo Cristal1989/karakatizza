@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { getSiteSettings, updateWorkingHours } from "../api/siteSettingsApi";
 import {
   getProducts,
   createProduct,
@@ -91,6 +92,12 @@ export default function Admin() {
   const [bannerMobilePreview, setBannerMobilePreview] = useState("");
   const [dragBannerId, setDragBannerId] = useState(null);
 
+  const [promotionMessage, setPromotionMessage] = useState("");
+  const [promotionError, setPromotionError] = useState("");
+  
+  const [giftRollMessage, setGiftRollMessage] = useState("");
+  const [giftRollError, setGiftRollError] = useState("");
+
   const [bannerForm, setBannerForm] = useState({
     title: "",
     link: "#menu",
@@ -129,6 +136,18 @@ export default function Admin() {
       "Сьогодні ми тимчасово не працюємо, але ви можете залишити замовлення і ми зв’яжемося з вами пізніше.",
   });
 
+  const [workingHoursSettings, setWorkingHoursSettings] = useState({
+    openTime: "10:00",
+    closeTime: "22:00",
+    closedToday: false,
+    allowOrdersAfterHours: true,
+  });
+  
+  const [workingHoursSaving, setWorkingHoursSaving] = useState(false);
+  const [workingHoursLoading, setWorkingHoursLoading] = useState(false);
+  const [workingHoursMessage, setWorkingHoursMessage] = useState("");
+  const [workingHoursError, setWorkingHoursError] = useState("");
+
   const inputStyle = {
     width: "100%",
     padding: "10px",
@@ -153,6 +172,28 @@ export default function Admin() {
     marginTop: 10,
   };
 
+  const settingsCardStyle = {
+    background: "#fff",
+    borderRadius: "24px",
+    padding: "24px",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
+  };
+  
+  const settingsTitleStyle = {
+    marginTop: 0,
+    marginBottom: "8px",
+    fontSize: "28px",
+    fontWeight: 800,
+    color: "#111",
+  };
+  
+  const settingsDescStyle = {
+    margin: 0,
+    color: "#666",
+    fontSize: "15px",
+    lineHeight: 1.5,
+  };
+
   useEffect(() => {
     loadProducts();
     loadBanners();
@@ -174,6 +215,34 @@ export default function Admin() {
     }
 
     loadSettings();
+  }, []);
+
+  useEffect(() => {
+    const loadWorkingHoursSettings = async () => {
+      try {
+        setWorkingHoursLoading(true);
+        setWorkingHoursError("");
+  
+        const settings = await getSiteSettings();
+  
+        if (settings?.workingHours) {
+          setWorkingHoursSettings({
+            openTime: settings.workingHours.openTime || "10:00",
+            closeTime: settings.workingHours.closeTime || "22:00",
+            closedToday: settings.workingHours.closedToday === true,
+            allowOrdersAfterHours:
+              settings.workingHours.allowOrdersAfterHours === true,
+          });
+        }
+      } catch (error) {
+        console.error("LOAD WORKING HOURS ERROR:", error);
+        setWorkingHoursError("Не вдалося завантажити робочі години");
+      } finally {
+        setWorkingHoursLoading(false);
+      }
+    };
+  
+    loadWorkingHoursSettings();
   }, []);
 
   async function saveSettings() {
@@ -301,6 +370,50 @@ export default function Admin() {
     }));
   };
 
+  const handleWorkingHoursChange = (e) => {
+    const { name, value, type, checked } = e.target;
+  
+    setWorkingHoursSettings((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleSaveWorkingHours = async () => {
+    try {
+      setWorkingHoursSaving(true);
+      setWorkingHoursMessage("");
+      setWorkingHoursError("");
+  
+      const payload = {
+        openTime: workingHoursSettings.openTime,
+        closeTime: workingHoursSettings.closeTime,
+        closedToday: workingHoursSettings.closedToday === true,
+        allowOrdersAfterHours:
+          workingHoursSettings.allowOrdersAfterHours === true,
+      };
+  
+      const result = await updateWorkingHours(payload);
+  
+      setWorkingHoursSettings({
+        openTime: result.workingHours?.openTime || payload.openTime,
+        closeTime: result.workingHours?.closeTime || payload.closeTime,
+        closedToday: result.workingHours?.closedToday === true,
+        allowOrdersAfterHours:
+          result.workingHours?.allowOrdersAfterHours === true,
+      });
+  
+      setWorkingHoursMessage("✅ Налаштування робочих годин збережено");
+    } catch (error) {
+      console.error("SAVE WORKING HOURS ERROR:", error);
+      setWorkingHoursError(
+        error.message || "Помилка збереження робочих годин"
+      );
+    } finally {
+      setWorkingHoursSaving(false);
+    }
+  };
+
   const handleImageChange = (e) => {
     const file = e.target.files[0] || null;
     setImage(file);
@@ -325,6 +438,8 @@ export default function Admin() {
   const handleSaveGiftRollSettings = async () => {
     try {
       setGiftRollSaving(true);
+      setGiftRollMessage("");
+      setGiftRollError("");
 
       await updateGiftRollSettings({
         triggerSum: Number(giftRollSettings.triggerSum) || 1000,
@@ -333,10 +448,10 @@ export default function Admin() {
         weekdaysOnly: giftRollSettings.weekdaysOnly === true,
       });
 
-      setMessage("✅ Налаштування подарункового ролу збережено");
+      setGiftRollMessage("✅ Налаштування подарункового ролу збережено");
     } catch (error) {
       console.error("SAVE GIFT ROLL SETTINGS ERROR:", error);
-      setError(
+      setGiftRollError(
         error.message || "Помилка збереження налаштувань подарункового ролу"
       );
     } finally {
@@ -468,8 +583,8 @@ export default function Admin() {
 
     try {
       setPromotionSaving(true);
-      setMessage("");
-      setError("");
+      setPromotionMessage("");
+      setPromotionError("");
 
       const payload = {
         discountPercent: Number(promotionSettings.discountPercent) || 25,
@@ -485,10 +600,10 @@ export default function Admin() {
         isActive: result.isActive === true,
       });
 
-      setMessage("✅ Налаштування акції оновлено");
+      setPromotionMessage("✅ Налаштування акції оновлено");
     } catch (error) {
       console.error("SAVE PROMOTION SETTINGS ERROR:", error);
-      setError(error.message || "Помилка збереження налаштувань акції");
+      setPromotionError(error.message || "Помилка збереження налаштувань акції");
     } finally {
       setPromotionSaving(false);
     }
@@ -2196,6 +2311,37 @@ export default function Admin() {
                   {promotionSaving ? "Зберігаємо..." : "Зберегти налаштування"}
                 </button>
               </form>
+              {promotionMessage && (
+  <div
+    style={{
+      marginTop: "12px",
+      padding: "12px 14px",
+      borderRadius: "12px",
+      background: "#ecfdf3",
+      color: "#166534",
+      fontWeight: 600,
+      fontSize: "14px",
+    }}
+  >
+    {promotionMessage}
+  </div>
+)}
+
+{promotionError && (
+  <div
+    style={{
+      marginTop: "12px",
+      padding: "12px 14px",
+      borderRadius: "12px",
+      background: "#fef2f2",
+      color: "#b91c1c",
+      fontWeight: 600,
+      fontSize: "14px",
+    }}
+  >
+    {promotionError}
+  </div>
+)}
               <div
                 style={{
                   background: "#fff",
@@ -2312,6 +2458,37 @@ export default function Admin() {
                   {giftRollSaving ? "Збереження..." : "Зберегти налаштування"}
                 </button>
               </div>
+              {giftRollMessage && (
+  <div
+    style={{
+      marginTop: "12px",
+      padding: "12px 14px",
+      borderRadius: "12px",
+      background: "#ecfdf3",
+      color: "#166534",
+      fontWeight: 600,
+      fontSize: "14px",
+    }}
+  >
+    {giftRollMessage}
+  </div>
+)}
+
+{giftRollError && (
+  <div
+    style={{
+      marginTop: "12px",
+      padding: "12px 14px",
+      borderRadius: "12px",
+      background: "#fef2f2",
+      color: "#b91c1c",
+      fontWeight: 600,
+      fontSize: "14px",
+    }}
+  >
+    {giftRollError}
+  </div>
+)}
             </section>
           )}
 
@@ -2449,6 +2626,186 @@ export default function Admin() {
               </button>
             </div>
           )}
+          {activeSection === "settings" && (
+  <div
+    style={{
+      display: "grid",
+      gap: "20px",
+      maxWidth: "900px",
+    }}
+  >
+    <section style={settingsCardStyle}>
+  <h2 style={settingsTitleStyle}>Робочі години</h2>
+  <p style={settingsDescStyle}>
+    Керування графіком роботи сайту та прийомом замовлень.
+  </p>
+
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "1fr 1fr",
+      gap: "16px",
+      marginTop: "20px",
+      marginBottom: "18px",
+    }}
+  >
+    <div>
+      <label
+        style={{
+          display: "block",
+          marginBottom: "8px",
+          fontWeight: 600,
+          color: "#222",
+        }}
+      >
+        Відкриття
+      </label>
+      <input
+        type="time"
+        name="openTime"
+        value={workingHoursSettings.openTime}
+        onChange={handleWorkingHoursChange}
+        style={inputStyle}
+      />
+    </div>
+
+    <div>
+      <label
+        style={{
+          display: "block",
+          marginBottom: "8px",
+          fontWeight: 600,
+          color: "#222",
+        }}
+      >
+        Закриття
+      </label>
+      <input
+        type="time"
+        name="closeTime"
+        value={workingHoursSettings.closeTime}
+        onChange={handleWorkingHoursChange}
+        style={inputStyle}
+      />
+    </div>
+  </div>
+
+  <label
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: "10px",
+      marginBottom: "14px",
+      fontWeight: 600,
+      color: "#222",
+    }}
+  >
+    <input
+      type="checkbox"
+      name="closedToday"
+      checked={workingHoursSettings.closedToday}
+      onChange={handleWorkingHoursChange}
+    />
+    Закрито сьогодні
+  </label>
+
+  <label
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: "10px",
+      marginBottom: "20px",
+      fontWeight: 600,
+      color: "#222",
+    }}
+  >
+    <input
+      type="checkbox"
+      name="allowOrdersAfterHours"
+      checked={workingHoursSettings.allowOrdersAfterHours}
+      onChange={handleWorkingHoursChange}
+    />
+    Приймати замовлення поза графіком
+  </label>
+
+  <button
+    type="button"
+    onClick={handleSaveWorkingHours}
+    disabled={workingHoursSaving}
+    style={{
+      border: "none",
+      background: "#e56a45",
+      color: "#fff",
+      borderRadius: "14px",
+      padding: "14px 22px",
+      fontSize: "16px",
+      fontWeight: 700,
+      cursor: "pointer",
+      opacity: workingHoursSaving ? 0.7 : 1,
+    }}
+  >
+    {workingHoursSaving ? "Збереження..." : "Зберегти налаштування"}
+  </button>
+
+  {workingHoursMessage && (
+    <div
+      style={{
+        marginTop: "12px",
+        padding: "12px 14px",
+        borderRadius: "12px",
+        background: "#ecfdf3",
+        color: "#166534",
+        fontWeight: 600,
+        fontSize: "14px",
+      }}
+    >
+      {workingHoursMessage}
+    </div>
+  )}
+
+  {workingHoursError && (
+    <div
+      style={{
+        marginTop: "12px",
+        padding: "12px 14px",
+        borderRadius: "12px",
+        background: "#fef2f2",
+        color: "#b91c1c",
+        fontWeight: 600,
+        fontSize: "14px",
+      }}
+    >
+      {workingHoursError}
+    </div>
+  )}
+</section>
+
+    <section style={settingsCardStyle}>
+      <h2 style={settingsTitleStyle}>Попап</h2>
+      <p style={settingsDescStyle}>Повідомлення для клієнта поза робочим часом або коли заклад зачинений.</p>
+    </section>
+
+    <section style={settingsCardStyle}>
+      <h2 style={settingsTitleStyle}>Контакти</h2>
+      <p style={settingsDescStyle}>Телефони, адреса самовивозу та посилання на соцмережі.</p>
+    </section>
+
+    <section style={settingsCardStyle}>
+      <h2 style={settingsTitleStyle}>Доставка та самовивіз</h2>
+      <p style={settingsDescStyle}>Базові параметри доставки, самовивозу та мінімального замовлення.</p>
+    </section>
+
+    <section style={settingsCardStyle}>
+      <h2 style={settingsTitleStyle}>Оплата</h2>
+      <p style={settingsDescStyle}>Увімкнення способів оплати та режим “переказ на карту”.</p>
+    </section>
+
+    <section style={settingsCardStyle}>
+      <h2 style={settingsTitleStyle}>Тексти сайту</h2>
+      <p style={settingsDescStyle}>Системні тексти для кошика, оформлення та службових повідомлень.</p>
+    </section>
+  </div>
+)}
         </main>
       </div>
     </div>

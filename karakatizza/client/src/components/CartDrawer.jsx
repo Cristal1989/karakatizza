@@ -148,23 +148,6 @@ export default function CartDrawer() {
 
   const hasAvailableDiscountRoll = availableDiscountRolls.length > 0;
 
-  const pickupDiscountBase = cartItems.reduce((sum, item) => {
-    if (item.isGiftRoll || item.isDiscountOffer) return sum;
-
-    const category = item.category?.toLowerCase?.() || "";
-    const isDrink =
-      category === "drinks" || category === "напої" || category === "напитки";
-    const isExtra =
-      category === "extras" ||
-      category === "додатково" ||
-      category === "дополнительно";
-
-    if (isDrink || isExtra) return sum;
-
-    const paidQty = item.paidQuantity ?? item.quantity ?? 0;
-    return sum + item.price * paidQty;
-  }, 0);
-
   const shouldTriggerDiscountOffer =
     promotionSettings.isActive &&
     rollsSum >= Number(promotionSettings.triggerSum || 0) &&
@@ -404,8 +387,6 @@ export default function CartDrawer() {
         console.error("NOT JSON:", text);
         return;
       }
-  
-      console.log("PROMO LOAD:", data);
   
       setPromoProducts(Array.isArray(data) ? data : []);
     } catch (error) {

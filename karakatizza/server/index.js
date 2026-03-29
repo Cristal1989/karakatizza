@@ -99,6 +99,9 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({ storage });
 
+const siteSettingsRoutes = require("./routes/siteSettings");
+app.use("/api/settings", siteSettingsRoutes);
+
 function readProducts() {
   try {
     const data = fs.readFileSync(productsFilePath, "utf-8");

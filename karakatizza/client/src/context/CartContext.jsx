@@ -294,47 +294,57 @@ export function CartProvider({ children }) {
   // есть ли вообще акции в корзине
   const hasAnyPromoInCart = cartItems.some((item) => {
     if (item.isGiftRoll === true) return true;
-
-    const hasGift = Number(item.freeQuantity ?? 0) > 0;
-    const hasDiscount = item.isDiscountOffer === true;
-    const hasPromoType = item.promoType && item.promoType !== "none";
-    const hasWeeklyOffer = item.isWeeklyOffer === true;
-    const hasOldPrice =
-      Number(item.oldPrice ?? item.originalPrice ?? 0) >
-      Number(item.price ?? 0);
-
-    return (
-      hasGift || hasDiscount || hasPromoType || hasWeeklyOffer || hasOldPrice
-    );
+  
+    const freeQty = Number(item.freeQuantity ?? 0);
+    if (freeQty > 0) return true;
+  
+    const discountAmount = Number(item.discountAmount ?? 0);
+    if (discountAmount > 0) return true;
+  
+    const oldPrice = Number(item.oldPrice ?? item.originalPrice ?? 0);
+    const price = Number(item.price ?? 0);
+    if (oldPrice > price) return true;
+  
+    return false;
   });
 
   const pickupDiscountBase = cartItems.reduce((sum, item) => {
-    if (item.isGiftRoll || item.isDiscountOffer) return sum;
-
+    if (item.isGiftRoll) return sum;
+  
     const category = item.category?.toLowerCase?.() || "";
-
+  
     const isDrink =
-      category === "drinks" || category === "напої" || category === "напитки";
-
+      category === "drinks" ||
+      category === "напої" ||
+      category === "напитки";
+  
     const isExtra =
       category === "extras" ||
       category === "додатково" ||
       category === "дополнительно";
-
+  
     if (isDrink || isExtra) return sum;
-
-    const paidQty = item.paidQuantity ?? item.quantity ?? 0;
-
-    return sum + item.price * paidQty;
+  
+    const oldPrice = Number(item.oldPrice ?? item.originalPrice ?? 0);
+    const price = Number(item.price ?? 0);
+    const hasOldPriceDiscount = oldPrice > price;
+  
+    const hasDiscountAmount = Number(item.discountAmount ?? 0) > 0;
+    const isAlreadyDiscounted = hasOldPriceDiscount || hasDiscountAmount || item.isDiscountOffer === true;
+  
+    if (isAlreadyDiscounted) return sum;
+  
+    const paidQty = Number(item.paidQuantity ?? item.quantity ?? 0);
+    return sum + price * paidQty;
   }, 0);
 
   const pickupDiscount =
-    checkoutMode === "pickup" && !hasAnyPromoInCart
-      ? Math.round(pickupDiscountBase * 0.05)
-      : 0;
+  checkoutMode === "pickup" && !hasAnyPromoInCart
+    ? Math.round(pickupDiscountBase * 0.05)
+    : 0;
 
-      const finalTotal = Math.max(0, totalPrice - pickupDiscount);
-  const checkoutTotalPrice = finalTotal + sticksExtraPrice;
+    const finalTotal = Math.max(0, totalPrice - pickupDiscount);
+    const checkoutTotalPrice = finalTotal + sticksExtraPrice;
 
   const openCart = () => setIsCartOpen(true);
   const closeCart = () => setIsCartOpen(false);
