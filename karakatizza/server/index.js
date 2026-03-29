@@ -1094,7 +1094,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // путь к фронту (ВАЖНО проверить!)
-const clientDistPath = path.join(__dirname, "data", "products.json");
+const clientDistPath = path.join(__dirname, "../client/dist");
 
 // раздача статики
 app.use(express.static(clientDistPath));
