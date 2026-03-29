@@ -209,7 +209,6 @@ function ProductCard({ product }) {
             lineHeight: 1.35,
             height: "42px",
             overflow: "hidden",
-            marginBottom: "0px",
           }}
         >
           {product.description || ""}

@@ -16,11 +16,6 @@ import giftRollRoutes from "./routes/giftRoll.js";
 
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const productsFilePath = path.join(__dirname, "data", "products.json");
-
 const app = express();
 app.use(compression());
 
@@ -36,6 +31,53 @@ app.use(
 
 app.options("*", cors());
 app.use(express.json());
+
+// ===== LEGACY REDIRECTS =====
+const legacyRedirects = {
+  "/контакты": "/contacts",
+  "/контакты/": "/contacts",
+
+  "/обратный-звонок": "/contacts",
+  "/обратный-звонок/": "/contacts",
+
+  "/menu/roll": "/rolls",
+  "/menu/roll/": "/rolls",
+
+  "/menu/maki": "/rolls",
+  "/menu/maki/": "/rolls",
+
+  "/menu/set": "/sets",
+  "/menu/set/": "/sets",
+
+  "/menu/salad": "/snacks",
+  "/menu/salad/": "/snacks",
+
+  "/menu/sushi-burger": "/snacks",
+  "/menu/sushi-burger/": "/snacks",
+
+  "/menu/sushi-boli": "/bowls",
+  "/menu/sushi-boli/": "/bowls",
+
+  "/menu/додатково": "/extras",
+  "/menu/додатково/": "/extras",
+
+  "/menu/napoi": "/drinks",
+  "/menu/napoi/": "/drinks",
+
+  "/menu/напої": "/drinks",
+  "/menu/напої/": "/drinks",
+};
+
+Object.entries(legacyRedirects).forEach(([oldPath, newPath]) => {
+  app.get(oldPath, (req, res) => {
+    return res.redirect(301, newPath);
+  });
+});
+
+app.get("/", (req, res) => {
+  res.send("Server running");
+});
+
 app.use("/api/delivery", deliveryRoutes);
 app.use("/promotions", promotionsRoutes(pool));
 app.use("/gift-roll", giftRollRoutes(pool));
@@ -77,9 +119,6 @@ const PORT = process.env.PORT || 5000;
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const CHAT_ID = process.env.CHAT_ID;
 
-app.get("/", (req, res) => {
-  res.send("Server running");
-});
 
 app.get("/products", async (req, res) => {
   try {
@@ -1049,6 +1088,20 @@ app.use((err, req, res, next) => {
     message: "Внутрішня помилка сервера",
     error: err?.message || "Unknown error",
   });
+});
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// путь к фронту (ВАЖНО проверить!)
+const clientDistPath = path.join(__dirname, "data", "products.json");
+
+// раздача статики
+app.use(express.static(clientDistPath));
+
+// fallback — самое важное
+app.get("*", (req, res) => {
+  res.sendFile(path.join(clientDistPath, "index.html"));
 });
 
 initDb()
