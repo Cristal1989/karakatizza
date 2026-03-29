@@ -13,6 +13,7 @@ import { pool, initDb } from "./db.js";
 import deliveryRoutes from "./routes/delivery.js";
 import promotionsRoutes from "./routes/promotions.js";
 import giftRollRoutes from "./routes/giftRoll.js";
+import siteSettingsRoutes from "./routes/siteSettings.js";
 
 dotenv.config();
 
@@ -99,7 +100,6 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({ storage });
 
-const siteSettingsRoutes = require("./routes/siteSettings");
 app.use("/api/settings", siteSettingsRoutes);
 
 function readProducts() {

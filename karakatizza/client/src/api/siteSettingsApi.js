@@ -2,12 +2,13 @@ const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export async function getSiteSettings() {
   const response = await fetch(`${API_BASE}/api/settings`);
+  const data = await response.json();
 
   if (!response.ok) {
-    throw new Error("Не вдалося завантажити налаштування сайту");
+    throw new Error(data?.message || "Не вдалося завантажити налаштування");
   }
 
-  return response.json();
+  return data;
 }
 
 export async function updateWorkingHours(payload) {
