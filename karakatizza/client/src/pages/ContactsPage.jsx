@@ -1,9 +1,16 @@
 import React from "react";
 import Seo from "../components/Seo";
 import { Link, useNavigate } from "react-router-dom";
+import { useSiteSettings } from "../context/SiteSettingsContext";
+import { getWorkingHoursLabel } from "../utils/workingHours";
 
 export default function ContactsPage() {
   const navigate = useNavigate();
+
+  const { siteSettings } = useSiteSettings();
+const workingHours = siteSettings?.workingHours;
+
+const workingHoursLabel = getWorkingHoursLabel(workingHours);
   return (
     <div
       style={{
@@ -141,7 +148,7 @@ export default function ContactsPage() {
             </a>
           </Card>
 
-          <Card title="Графік роботи">Щодня з 10:00 до 22:00</Card>
+          <Card title="Графік роботи">Щодня з {workingHoursLabel}</Card>
 
           <Card title="Instagram">
             <a

@@ -16,6 +16,7 @@ import { useCart } from "../context/CartContext";
 import { getProducts } from "../api/productsApi";
 import { getBanners } from "../api/bannersApi";
 import { getRouteDistanceKm } from "../services/deliveryService";
+import { getSiteSettings } from "../api/siteSettingsApi";
 
 export default function Home() {
   const [products, setProducts] = useState([]);
@@ -28,6 +29,7 @@ export default function Home() {
   const { isCartOpen } = useCart();
   const [showPopup, setShowPopup] = useState(false);
   const [popupText, setPopupText] = useState("");
+  const [siteSettings, setSiteSettings] = useState(null);
 
   const categorySections = [
     { id: "rolls", title: "Роли" },
@@ -209,6 +211,66 @@ export default function Home() {
 
     return sorted.filter((product) => product.rollType === rollFilter);
   }
+
+  function isOutsideWorkingHours(openTime, closeTime) {
+    if (!openTime || !closeTime) return false;
+  
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  
+    const [openHours, openMinutes] = openTime.split(":").map(Number);
+    const [closeHours, closeMinutes] = closeTime.split(":").map(Number);
+  
+    const openTotal = openHours * 60 + openMinutes;
+    const closeTotal = closeHours * 60 + closeMinutes;
+  
+    return currentMinutes < openTotal || currentMinutes >= closeTotal;
+  }
+
+  useEffect(() => {
+    const loadSiteSettings = async () => {
+      try {
+        const settings = await getSiteSettings();
+        setSiteSettings(settings);
+      } catch (error) {
+        console.error("LOAD SITE SETTINGS ERROR:", error);
+      }
+    };
+  
+    loadSiteSettings();
+  }, []);
+
+  useEffect(() => {
+    if (!siteSettings) return;
+  
+    const workingHours = siteSettings.workingHours;
+    const popup = siteSettings.popup;
+  
+    if (workingHours?.closedToday) {
+      setPopupText(
+        popup?.closedTodayText ||
+          "Сьогодні ми тимчасово не працюємо, але ви можете залишити замовлення."
+      );
+      setShowPopup(true);
+      return;
+    }
+  
+    const outsideHours = isOutsideWorkingHours(
+      workingHours?.openTime,
+      workingHours?.closeTime
+    );
+  
+    if (outsideHours && popup?.showOutsideWorkingHours) {
+      setPopupText(
+        popup?.outsideHoursText ||
+          "Ми зараз не працюємо, але ви можете оформити замовлення."
+      );
+      setShowPopup(true);
+      return;
+    }
+  
+    setShowPopup(false);
+  }, [siteSettings]);
 
   return (
     

@@ -132,7 +132,7 @@ export default function Admin() {
   });
   
   const [popupSaving, setPopupSaving] = useState(false);
-  const [popupMessage, setPopupMessage] = useState("Ми працюємо з 10.00, але ви можете оформити замовлення, і ми зв’яжемося з вами в робочий час.");
+  const [popupMessage, setPopupMessage] = useState("");
   const [popupError, setPopupError] = useState("");
 
 
@@ -2730,24 +2730,6 @@ export default function Admin() {
       Показувати поза робочим часом
     </label>
 
-    <label
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "10px",
-        marginBottom: "14px",
-        fontWeight: 600,
-        color: "#222",
-      }}
-    >
-      <input
-        type="checkbox"
-        name="closedToday"
-        checked={workingHoursSettings.closedToday}
-        onChange={handleWorkingHoursChange}
-      />
-      Закрито сьогодні
-    </label>
 
     <textarea
       name="outsideHoursText"

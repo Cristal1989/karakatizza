@@ -1,9 +1,16 @@
 import React from "react";
 import Seo from "../components/Seo";
 import { Link, useNavigate } from "react-router-dom";
+import { useSiteSettings } from "../context/SiteSettingsContext";
+import { getWorkingHoursLabel } from "../utils/workingHours";
 
 export default function DeliveryPage() {
   const navigate = useNavigate();
+
+  const { siteSettings } = useSiteSettings();
+const workingHours = siteSettings?.workingHours;
+
+const workingHoursLabel = getWorkingHoursLabel(workingHours);
   return (
     <div
       style={{
@@ -102,7 +109,7 @@ export default function DeliveryPage() {
             При замовленні від певної суми доставка може бути безкоштовною.
           </Item>
 
-          <Item title="Час роботи">Щодня з 10:00 до 22:00.</Item>
+          <Item title="Час роботи">Щодня з {workingHoursLabel}.</Item>
         </Section>
 
         {/* PAYMENT */}

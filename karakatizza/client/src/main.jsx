@@ -5,13 +5,16 @@ import { HelmetProvider } from "react-helmet-async"
 import App from "./App";
 import "./index.css";
 import { CartProvider } from "./context/CartContext";
+import { SiteSettingsProvider } from "./context/SiteSettingsContext";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <HelmetProvider>
       <BrowserRouter>
         <CartProvider>
+        <SiteSettingsProvider>
           <App />
+          </SiteSettingsProvider>
         </CartProvider>
       </BrowserRouter>
     </HelmetProvider>

@@ -179,24 +179,30 @@ export async function initDb() {
   ADD COLUMN IF NOT EXISTS old_price NUMERIC;
 `);
 
-  await pool.query(`
-ALTER TABLE products
-ADD COLUMN IF NOT EXISTS roll_type TEXT DEFAULT '';
-`);
+await pool.query(`
+CREATE TABLE IF NOT EXISTS site_settings (
+  id INTEGER PRIMARY KEY DEFAULT 1,
 
-  await pool.query(`
-  CREATE TABLE IF NOT EXISTS site_settings (
-    id INTEGER PRIMARY KEY DEFAULT 1,
-    opening_time TEXT NOT NULL DEFAULT '10:00',
-    closing_time TEXT NOT NULL DEFAULT '22:00',
-    allow_orders_after_hours BOOLEAN NOT NULL DEFAULT true,
-    enable_after_hours_popup BOOLEAN NOT NULL DEFAULT true,
-    closed_all_day BOOLEAN NOT NULL DEFAULT false,
-    closed_all_day_date TEXT DEFAULT '',
-    popup_message TEXT NOT NULL DEFAULT 'Ми зараз не працюємо, але ви можете оформити замовлення, і ми зв’яжемося з вами в робочий час.',
-    closed_all_day_message TEXT NOT NULL DEFAULT 'Сьогодні ми тимчасово не працюємо, але ви можете залишити замовлення і ми зв’яжемося з вами пізніше.',
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-  );
+  opening_time TEXT NOT NULL DEFAULT '10:00',
+  closing_time TEXT NOT NULL DEFAULT '22:00',
+  allow_orders_after_hours BOOLEAN NOT NULL DEFAULT true,
+
+  enable_after_hours_popup BOOLEAN NOT NULL DEFAULT true,
+  closed_all_day BOOLEAN NOT NULL DEFAULT false,
+  closed_all_day_date TEXT NOT NULL DEFAULT '',
+  popup_message TEXT NOT NULL DEFAULT '',
+  closed_all_day_message TEXT NOT NULL DEFAULT '',
+
+  phone_primary TEXT NOT NULL DEFAULT '',
+  phone_secondary TEXT NOT NULL DEFAULT '',
+  pickup_address TEXT NOT NULL DEFAULT '',
+  map_link TEXT NOT NULL DEFAULT '',
+  instagram_link TEXT NOT NULL DEFAULT '',
+  telegram_link TEXT NOT NULL DEFAULT '',
+  viber_link TEXT NOT NULL DEFAULT '',
+
+  updated_at TIMESTAMP DEFAULT NOW()
+);
 `);
 
 await pool.query(`
@@ -204,31 +210,80 @@ await pool.query(`
   ADD COLUMN IF NOT EXISTS allow_orders_after_hours BOOLEAN NOT NULL DEFAULT true;
 `);
 
-  await pool.query(`
-  INSERT INTO site_settings (
-    id,
-    opening_time,
-    closing_time,
-    allow_orders_after_hours,
-    enable_after_hours_popup,
-    closed_all_day,
-    closed_all_day_date,
-    popup_message,
-    closed_all_day_message
-  )
-  SELECT
-    1,
-    '10:00',
-    '22:00',
-    true,
-    true,
-    false,
-    '',
-    'Ми зараз не працюємо, але ви можете оформити замовлення, і ми зв’яжемося з вами в робочий час.',
-    'Сьогодні ми тимчасово не працюємо, але ви можете залишити замовлення і ми зв’яжемося з вами пізніше.'
-  WHERE NOT EXISTS (
-    SELECT 1 FROM site_settings WHERE id = 1
-  );
+await pool.query(`
+  ALTER TABLE site_settings
+  ADD COLUMN IF NOT EXISTS phone_primary TEXT NOT NULL DEFAULT '';
+`);
+
+await pool.query(`
+  ALTER TABLE site_settings
+  ADD COLUMN IF NOT EXISTS phone_secondary TEXT NOT NULL DEFAULT '';
+`);
+
+await pool.query(`
+  ALTER TABLE site_settings
+  ADD COLUMN IF NOT EXISTS pickup_address TEXT NOT NULL DEFAULT '';
+`);
+
+await pool.query(`
+  ALTER TABLE site_settings
+  ADD COLUMN IF NOT EXISTS map_link TEXT NOT NULL DEFAULT '';
+`);
+
+await pool.query(`
+  ALTER TABLE site_settings
+  ADD COLUMN IF NOT EXISTS instagram_link TEXT NOT NULL DEFAULT '';
+`);
+
+await pool.query(`
+  ALTER TABLE site_settings
+  ADD COLUMN IF NOT EXISTS telegram_link TEXT NOT NULL DEFAULT '';
+`);
+
+await pool.query(`
+  ALTER TABLE site_settings
+  ADD COLUMN IF NOT EXISTS viber_link TEXT NOT NULL DEFAULT '';
+`);
+
+await pool.query(`
+INSERT INTO site_settings (
+  id,
+  opening_time,
+  closing_time,
+  allow_orders_after_hours,
+  enable_after_hours_popup,
+  closed_all_day,
+  closed_all_day_date,
+  popup_message,
+  closed_all_day_message,
+  phone_primary,
+  phone_secondary,
+  pickup_address,
+  map_link,
+  instagram_link,
+  telegram_link,
+  viber_link
+)
+SELECT
+  1,
+  '10:00',
+  '22:00',
+  true,
+  true,
+  false,
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  ''
+WHERE NOT EXISTS (
+  SELECT 1 FROM site_settings WHERE id = 1
+);
 `);
 
 

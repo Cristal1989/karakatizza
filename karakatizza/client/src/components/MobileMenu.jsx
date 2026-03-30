@@ -1,5 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useSiteSettings } from "../context/SiteSettingsContext";
+import {
+  getWorkingHoursLabel,
+  getWorkingStatusLabel,
+} from "../utils/workingHours";
 
 const menuItems = [
   {
@@ -45,6 +50,11 @@ export default function MobileMenu({ isOpen, onClose }) {
   const [pressedItem, setPressedItem] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const { siteSettings } = useSiteSettings();
+const workingHours = siteSettings?.workingHours;
+
+const workingHoursLabel = getWorkingHoursLabel(workingHours);
+const workingStatusLabel = getWorkingStatusLabel(workingHours);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -325,7 +335,7 @@ export default function MobileMenu({ isOpen, onClose }) {
               marginBottom: "8px",
             }}
           >
-            Працюємо 3 10.00 до 22.00
+            Працюємо з {workingHoursLabel}
           </div>
           <div
             style={{

@@ -1,10 +1,21 @@
 import React, { useState } from "react";
 import { SHOP_LOCATION } from "../config/deliveryConfig";
 import MobileMenu from "./MobileMenu";
+import { useSiteSettings } from "../context/SiteSettingsContext";
+import {
+  getWorkingHoursLabel,
+  getWorkingStatusLabel,
+} from "../utils/workingHours";
 
 export default function Header() {
   const isMobile = window.matchMedia("(max-width: 768px)").matches;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const { siteSettings } = useSiteSettings();
+const workingHours = siteSettings?.workingHours;
+
+const workingHoursLabel = getWorkingHoursLabel(workingHours);
+const workingStatusLabel = getWorkingStatusLabel(workingHours);
 
   const openMap = () => {
     window.open(
@@ -139,7 +150,7 @@ export default function Header() {
               fontWeight: 600,
             }}
           >
-            Щодня з 10:00 до 22:00
+            Щодня з {workingHoursLabel}
           </div>
         </div>
         {isMobile && (
