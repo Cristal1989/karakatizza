@@ -101,4 +101,50 @@ router.put("/working-hours", async (req, res) => {
   }
 });
 
+router.put("/popup", async (req, res) => {
+  try {
+    const {
+      showOutsideWorkingHours,
+      outsideHoursText,
+      closedTodayText,
+    } = req.body;
+
+    const result = await pool.query(
+      `
+      UPDATE site_settings
+      SET
+        enable_after_hours_popup = $1,
+        popup_message = $2,
+        closed_all_day_message = $3,
+        updated_at = NOW()
+      WHERE id = 1
+      RETURNING
+        enable_after_hours_popup,
+        popup_message,
+        closed_all_day_message
+      `,
+      [
+        showOutsideWorkingHours === true,
+        outsideHoursText || "",
+        closedTodayText || "",
+      ]
+    );
+
+    const row = result.rows[0];
+
+    res.json({
+      success: true,
+      message: "Налаштування попапа оновлено",
+      popup: {
+        showOutsideWorkingHours: row.enable_after_hours_popup === true,
+        outsideHoursText: row.popup_message || "",
+        closedTodayText: row.closed_all_day_message || "",
+      },
+    });
+  } catch (error) {
+    console.error("UPDATE POPUP SETTINGS ERROR:", error);
+    res.status(500).json({ message: "Помилка збереження налаштувань попапа" });
+  }
+});
+
 export default router;

@@ -28,3 +28,21 @@ export async function updateWorkingHours(payload) {
 
   return data;
 }
+
+export async function updatePopupSettings(payload) {
+  const response = await fetch(`${API_BASE}/api/settings/popup`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data?.message || "Не вдалося зберегти налаштування попапа");
+  }
+
+  return data;
+}

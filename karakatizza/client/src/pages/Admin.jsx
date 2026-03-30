@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getSiteSettings, updateWorkingHours } from "../api/siteSettingsApi";
+import { getSiteSettings, updateWorkingHours, updatePopupSettings } from "../api/siteSettingsApi";
 import {
   getProducts,
   createProduct,
@@ -124,17 +124,17 @@ export default function Admin() {
   const [giftRollLoading, setGiftRollLoading] = useState(false);
   const [giftRollSaving, setGiftRollSaving] = useState(false);
 
-  const [settings, setSettings] = useState({
-    openingTime: "10:00",
-    closingTime: "22:00",
-    enableAfterHoursPopup: true,
-    closedAllDay: false,
-    closedAllDayDate: "",
-    popupMessage:
-      "Ми працюємо з 10.00, але ви можете оформити замовлення, і ми зв’яжемося з вами в робочий час.",
-    closedAllDayMessage:
-      "Сьогодні ми тимчасово не працюємо, але ви можете залишити замовлення і ми зв’яжемося з вами пізніше.",
+  const [popupSettings, setPopupSettings] = useState({
+    showOutsideWorkingHours: true,
+    closedToday: false,
+    outsideHoursText: "",
+    closedTodayText: "",
   });
+  
+  const [popupSaving, setPopupSaving] = useState(false);
+  const [popupMessage, setPopupMessage] = useState("Ми працюємо з 10.00, але ви можете оформити замовлення, і ми зв’яжемося з вами в робочий час.");
+  const [popupError, setPopupError] = useState("");
+
 
   const [workingHoursSettings, setWorkingHoursSettings] = useState({
     openTime: "10:00",
@@ -232,6 +232,14 @@ export default function Admin() {
             closedToday: settings.workingHours.closedToday === true,
             allowOrdersAfterHours:
               settings.workingHours.allowOrdersAfterHours === true,
+          });
+        }
+        if (settings?.popup) {
+          setPopupSettings({
+            showOutsideWorkingHours: settings.popup.showOutsideWorkingHours === true,
+            closedToday: settings?.workingHours?.closedToday === true,
+            outsideHoursText: settings.popup.outsideHoursText || "",
+            closedTodayText: settings.popup.closedTodayText || "",
           });
         }
       } catch (error) {
@@ -411,6 +419,55 @@ export default function Admin() {
       );
     } finally {
       setWorkingHoursSaving(false);
+    }
+  };
+
+  const handlePopupChange = (e) => {
+    const { name, value, type, checked } = e.target;
+  
+    setPopupError("");
+    setPopupMessage("");
+  
+    setPopupSettings((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleSavePopupSettings = async () => {
+    try {
+      setPopupSaving(true);
+      setPopupMessage("");
+      setPopupError("");
+  
+      const payload = {
+        showOutsideWorkingHours: popupSettings.showOutsideWorkingHours === true,
+        outsideHoursText: popupSettings.outsideHoursText,
+        closedTodayText: popupSettings.closedTodayText,
+      };
+  
+      const result = await updatePopupSettings(payload);
+  
+      setPopupSettings((prev) => ({
+        ...prev,
+        showOutsideWorkingHours:
+          result.popup?.showOutsideWorkingHours === true,
+        outsideHoursText: result.popup?.outsideHoursText || "",
+        closedTodayText: result.popup?.closedTodayText || "",
+      }));
+  
+      setPopupMessage("✅ Налаштування попапа збережено");
+  
+      setTimeout(() => {
+        setPopupMessage("");
+      }, 2500);
+    } catch (error) {
+      console.error("SAVE POPUP SETTINGS ERROR:", error);
+      setPopupError(
+        error.message || "Помилка збереження налаштувань попапа"
+      );
+    } finally {
+      setPopupSaving(false);
     }
   };
 
@@ -2493,140 +2550,6 @@ export default function Admin() {
           )}
 
           {activeSection === "settings" && (
-            <div
-              style={{
-                maxWidth: 600,
-                marginTop: 20,
-                display: "flex",
-                flexDirection: "column",
-                gap: "16px",
-              }}
-            >
-              {/* Карточка */}
-              <div
-                style={{
-                  background: "#fff",
-                  padding: 20,
-                  borderRadius: 16,
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
-                }}
-              >
-                <h3 style={{ marginBottom: 16 }}>Робочі години</h3>
-
-                <div style={{ display: "flex", gap: 10 }}>
-                  <div style={{ flex: 1 }}>
-                    <label>Відкриття</label>
-                    <input
-                      type="time"
-                      value={settings.openingTime}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          openingTime: e.target.value,
-                        })
-                      }
-                      style={inputStyle}
-                    />
-                  </div>
-
-                  <div style={{ flex: 1 }}>
-                    <label>Закриття</label>
-                    <input
-                      type="time"
-                      value={settings.closingTime}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          closingTime: e.target.value,
-                        })
-                      }
-                      style={inputStyle}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Попап */}
-              <div
-                style={{
-                  background: "#fff",
-                  padding: 20,
-                  borderRadius: 16,
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
-                }}
-              >
-                <h3 style={{ marginBottom: 12 }}>Попап</h3>
-
-                <label style={checkboxStyle}>
-                  <input
-                    type="checkbox"
-                    checked={settings.enableAfterHoursPopup}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        enableAfterHoursPopup: e.target.checked,
-                      })
-                    }
-                  />
-                  Показувати поза робочим часом
-                </label>
-
-                <label style={checkboxStyle}>
-                  <input
-                    type="checkbox"
-                    checked={settings.closedAllDay}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        closedAllDay: e.target.checked,
-                        closedAllDayDate: e.target.checked
-                          ? new Date().toISOString().slice(0, 10)
-                          : "",
-                      })
-                    }
-                  />
-                  Закрито сьогодні
-                </label>
-
-                <textarea
-                  value={settings.popupMessage}
-                  onChange={(e) =>
-                    setSettings({ ...settings, popupMessage: e.target.value })
-                  }
-                  placeholder="Текст попапа"
-                  style={textareaStyle}
-                />
-
-                <textarea
-                  value={settings.closedAllDayMessage}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      closedAllDayMessage: e.target.value,
-                    })
-                  }
-                  placeholder="Текст при закритті"
-                  style={textareaStyle}
-                />
-              </div>
-
-              <button
-                onClick={saveSettings}
-                style={{
-                  padding: "14px",
-                  borderRadius: 12,
-                  background: "#ff6b3d",
-                  color: "#fff",
-                  border: "none",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                Зберегти
-              </button>
-            </div>
-          )}
-          {activeSection === "settings" && (
   <div
     style={{
       display: "grid",
@@ -2781,8 +2704,129 @@ export default function Admin() {
 </section>
 
     <section style={settingsCardStyle}>
-      <h2 style={settingsTitleStyle}>Попап</h2>
-      <p style={settingsDescStyle}>Повідомлення для клієнта поза робочим часом або коли заклад зачинений.</p>
+    <section style={settingsCardStyle}>
+  <h2 style={settingsTitleStyle}>Попап</h2>
+  <p style={settingsDescStyle}>
+    Повідомлення для клієнта поза робочим часом або коли заклад зачинений.
+  </p>
+
+  <div style={{ marginTop: "20px" }}>
+    <label
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "10px",
+        marginBottom: "12px",
+        fontWeight: 600,
+        color: "#222",
+      }}
+    >
+      <input
+        type="checkbox"
+        name="showOutsideWorkingHours"
+        checked={popupSettings.showOutsideWorkingHours}
+        onChange={handlePopupChange}
+      />
+      Показувати поза робочим часом
+    </label>
+
+    <label
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "10px",
+        marginBottom: "14px",
+        fontWeight: 600,
+        color: "#222",
+      }}
+    >
+      <input
+        type="checkbox"
+        name="closedToday"
+        checked={workingHoursSettings.closedToday}
+        onChange={handleWorkingHoursChange}
+      />
+      Закрито сьогодні
+    </label>
+
+    <textarea
+      name="outsideHoursText"
+      value={popupSettings.outsideHoursText}
+      onChange={handlePopupChange}
+      placeholder="Текст для повідомлення поза робочим часом"
+      style={{
+        ...inputStyle,
+        minHeight: "90px",
+        resize: "vertical",
+        marginBottom: "14px",
+      }}
+    />
+
+    <textarea
+      name="closedTodayText"
+      value={popupSettings.closedTodayText}
+      onChange={handlePopupChange}
+      placeholder="Текст для повідомлення коли сьогодні зачинено"
+      style={{
+        ...inputStyle,
+        minHeight: "90px",
+        resize: "vertical",
+        marginBottom: "18px",
+      }}
+    />
+
+    <button
+      type="button"
+      onClick={handleSavePopupSettings}
+      disabled={popupSaving}
+      style={{
+        border: "none",
+        background: "#e56a45",
+        color: "#fff",
+        borderRadius: "14px",
+        padding: "14px 22px",
+        fontSize: "16px",
+        fontWeight: 700,
+        cursor: "pointer",
+        opacity: popupSaving ? 0.7 : 1,
+      }}
+    >
+      {popupSaving ? "Збереження..." : "Зберегти налаштування"}
+    </button>
+
+    {popupMessage && (
+      <div
+        style={{
+          marginTop: "12px",
+          padding: "12px 14px",
+          borderRadius: "12px",
+          background: "#ecfdf3",
+          color: "#166534",
+          fontWeight: 600,
+          fontSize: "14px",
+        }}
+      >
+        {popupMessage}
+      </div>
+    )}
+
+    {popupError && (
+      <div
+        style={{
+          marginTop: "12px",
+          padding: "12px 14px",
+          borderRadius: "12px",
+          background: "#fef2f2",
+          color: "#b91c1c",
+          fontWeight: 600,
+          fontSize: "14px",
+        }}
+      >
+        {popupError}
+      </div>
+    )}
+  </div>
+</section>
     </section>
 
     <section style={settingsCardStyle}>
