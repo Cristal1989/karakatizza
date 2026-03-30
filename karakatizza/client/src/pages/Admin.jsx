@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getSiteSettings, updateWorkingHours, updatePopupSettings } from "../api/siteSettingsApi";
+import { getSiteSettings, updateWorkingHours, updatePopupSettings, updateContactsSettings, updateDeliverySettings } from "../api/siteSettingsApi";
 import {
   getProducts,
   createProduct,
@@ -148,6 +148,45 @@ export default function Admin() {
   const [workingHoursMessage, setWorkingHoursMessage] = useState("");
   const [workingHoursError, setWorkingHoursError] = useState("");
 
+  const [contactsSettings, setContactsSettings] = useState({
+    phonePrimary: "",
+    phoneSecondary: "",
+    pickupAddress: "",
+    mapLink: "",
+    instagramLink: "",
+    telegramLink: "",
+    viberLink: "",
+  });
+  
+  const [contactsSaving, setContactsSaving] = useState(false);
+  const [contactsMessage, setContactsMessage] = useState("");
+  const [contactsError, setContactsError] = useState("");
+
+  const [deliverySettings, setDeliverySettings] = useState({
+    deliveryEnabled: true,
+    pickupEnabled: true,
+    pickupDiscountPercent: 5,
+    showFreeDeliveryProgress: true,
+    deliveryText: "",
+    pickupText: "",
+    shopAddress: "Мала Морська 108",
+    shopLat: 46.953807,
+    shopLng: 31.994199,
+    deliveryZones: [
+      { maxKm: 2.5, minOrder: 400 },
+      { maxKm: 4, minOrder: 500 },
+      { maxKm: 5, minOrder: 600 },
+      { maxKm: 6, minOrder: 700 },
+      { maxKm: 8, minOrder: 800 },
+      { maxKm: 10, minOrder: 1100 },
+      { maxKm: 14, minOrder: 1300 },
+    ],
+  });
+  
+  const [deliverySaving, setDeliverySaving] = useState(false);
+  const [deliveryMessage, setDeliveryMessage] = useState("");
+  const [deliveryError, setDeliveryError] = useState("");
+
   const inputStyle = {
     width: "100%",
     padding: "10px",
@@ -240,6 +279,34 @@ export default function Admin() {
             closedToday: settings?.workingHours?.closedToday === true,
             outsideHoursText: settings.popup.outsideHoursText || "",
             closedTodayText: settings.popup.closedTodayText || "",
+          });
+        }
+        if (settings?.contacts) {
+          setContactsSettings({
+            phonePrimary: settings.contacts.phonePrimary || "",
+            phoneSecondary: settings.contacts.phoneSecondary || "",
+            pickupAddress: settings.contacts.pickupAddress || "",
+            mapLink: settings.contacts.mapLink || "",
+            instagramLink: settings.contacts.instagramLink || "",
+            telegramLink: settings.contacts.telegramLink || "",
+            viberLink: settings.contacts.viberLink || "",
+          });
+        }
+        if (settings?.delivery) {
+          setDeliverySettings({
+            deliveryEnabled: settings.delivery.deliveryEnabled === true,
+            pickupEnabled: settings.delivery.pickupEnabled === true,
+            pickupDiscountPercent: Number(settings.delivery.pickupDiscountPercent ?? 5),
+            showFreeDeliveryProgress:
+              settings.delivery.showFreeDeliveryProgress === true,
+            deliveryText: settings.delivery.deliveryText || "",
+            pickupText: settings.delivery.pickupText || "",
+            shopAddress: settings.delivery.shopAddress || "Мала Морська 108",
+            shopLat: Number(settings.delivery.shopLat ?? 46.953807),
+            shopLng: Number(settings.delivery.shopLng ?? 31.994199),
+            deliveryZones: Array.isArray(settings.delivery.deliveryZones)
+              ? settings.delivery.deliveryZones
+              : [],
           });
         }
       } catch (error) {
@@ -419,6 +486,158 @@ export default function Admin() {
       );
     } finally {
       setWorkingHoursSaving(false);
+    }
+  };
+
+  const handleDeliveryChange = (e) => {
+    const { name, value, type, checked } = e.target;
+  
+    setDeliveryError("");
+    setDeliveryMessage("");
+  
+    setDeliverySettings((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+  
+  const handleZoneChange = (index, field, value) => {
+    setDeliveryError("");
+    setDeliveryMessage("");
+  
+    setDeliverySettings((prev) => ({
+      ...prev,
+      deliveryZones: prev.deliveryZones.map((zone, zoneIndex) =>
+        zoneIndex === index
+          ? {
+              ...zone,
+              [field]: value,
+            }
+          : zone
+      ),
+    }));
+  };
+  
+  const handleAddZone = () => {
+    setDeliverySettings((prev) => ({
+      ...prev,
+      deliveryZones: [...prev.deliveryZones, { maxKm: "", minOrder: "" }],
+    }));
+  };
+  
+  const handleRemoveZone = (index) => {
+    setDeliverySettings((prev) => ({
+      ...prev,
+      deliveryZones: prev.deliveryZones.filter((_, zoneIndex) => zoneIndex !== index),
+    }));
+  };
+
+  const handleContactsChange = (e) => {
+    const { name, value } = e.target;
+  
+    setContactsError("");
+    setContactsMessage("");
+  
+    setContactsSettings((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSaveDeliverySettings = async () => {
+    try {
+      setDeliverySaving(true);
+      setDeliveryMessage("");
+      setDeliveryError("");
+  
+      const payload = {
+        deliveryEnabled: deliverySettings.deliveryEnabled === true,
+        pickupEnabled: deliverySettings.pickupEnabled === true,
+        pickupDiscountPercent: Number(deliverySettings.pickupDiscountPercent ?? 5),
+        showFreeDeliveryProgress:
+          deliverySettings.showFreeDeliveryProgress === true,
+        deliveryText: deliverySettings.deliveryText,
+        pickupText: deliverySettings.pickupText,
+        shopAddress: deliverySettings.shopAddress,
+        shopLat: Number(deliverySettings.shopLat ?? 0),
+        shopLng: Number(deliverySettings.shopLng ?? 0),
+        deliveryZones: deliverySettings.deliveryZones.map((zone) => ({
+          maxKm: Number(zone.maxKm),
+          minOrder: Number(zone.minOrder),
+        })),
+      };
+  
+      const result = await updateDeliverySettings(payload);
+  
+      setDeliverySettings({
+        deliveryEnabled: result.delivery?.deliveryEnabled === true,
+        pickupEnabled: result.delivery?.pickupEnabled === true,
+        pickupDiscountPercent: Number(result.delivery?.pickupDiscountPercent ?? 5),
+        showFreeDeliveryProgress:
+          result.delivery?.showFreeDeliveryProgress === true,
+        deliveryText: result.delivery?.deliveryText || "",
+        pickupText: result.delivery?.pickupText || "",
+        shopAddress: result.delivery?.shopAddress || "",
+        shopLat: Number(result.delivery?.shopLat ?? 0),
+        shopLng: Number(result.delivery?.shopLng ?? 0),
+        deliveryZones: Array.isArray(result.delivery?.deliveryZones)
+          ? result.delivery.deliveryZones
+          : [],
+      });
+  
+      setDeliveryMessage("✅ Налаштування доставки збережено");
+  
+      setTimeout(() => {
+        setDeliveryMessage("");
+      }, 2500);
+    } catch (error) {
+      console.error("SAVE DELIVERY SETTINGS ERROR:", error);
+      setDeliveryError(
+        error.message || "Помилка збереження налаштувань доставки"
+      );
+    } finally {
+      setDeliverySaving(false);
+    }
+  };
+
+  const handleSaveContactsSettings = async () => {
+    try {
+      setContactsSaving(true);
+      setContactsMessage("");
+      setContactsError("");
+  
+      const payload = {
+        phonePrimary: contactsSettings.phonePrimary,
+        phoneSecondary: contactsSettings.phoneSecondary,
+        pickupAddress: contactsSettings.pickupAddress,
+        mapLink: contactsSettings.mapLink,
+        instagramLink: contactsSettings.instagramLink,
+        telegramLink: contactsSettings.telegramLink,
+        viberLink: contactsSettings.viberLink,
+      };
+  
+      const result = await updateContactsSettings(payload);
+  
+      setContactsSettings({
+        phonePrimary: result.contacts?.phonePrimary || "",
+        phoneSecondary: result.contacts?.phoneSecondary || "",
+        pickupAddress: result.contacts?.pickupAddress || "",
+        mapLink: result.contacts?.mapLink || "",
+        instagramLink: result.contacts?.instagramLink || "",
+        telegramLink: result.contacts?.telegramLink || "",
+        viberLink: result.contacts?.viberLink || "",
+      });
+  
+      setContactsMessage("✅ Контакти збережено");
+  
+      setTimeout(() => {
+        setContactsMessage("");
+      }, 2500);
+    } catch (error) {
+      console.error("SAVE CONTACTS ERROR:", error);
+      setContactsError(error.message || "Помилка збереження контактів");
+    } finally {
+      setContactsSaving(false);
     }
   };
 
@@ -2812,13 +3031,425 @@ export default function Admin() {
     </section>
 
     <section style={settingsCardStyle}>
-      <h2 style={settingsTitleStyle}>Контакти</h2>
-      <p style={settingsDescStyle}>Телефони, адреса самовивозу та посилання на соцмережі.</p>
+    <section style={settingsCardStyle}>
+  <h2 style={settingsTitleStyle}>Контакти</h2>
+  <p style={settingsDescStyle}>
+    Телефони, адреса самовивозу та посилання на соцмережі.
+  </p>
+
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "1fr 1fr",
+      gap: "16px",
+      marginTop: "20px",
+      marginBottom: "16px",
+    }}
+  >
+    <input
+      type="text"
+      name="phonePrimary"
+      placeholder="Основний телефон"
+      value={contactsSettings.phonePrimary}
+      onChange={handleContactsChange}
+      style={inputStyle}
+    />
+
+    <input
+      type="text"
+      name="phoneSecondary"
+      placeholder="Другий телефон"
+      value={contactsSettings.phoneSecondary}
+      onChange={handleContactsChange}
+      style={inputStyle}
+    />
+  </div>
+
+  <div style={{ marginBottom: "16px" }}>
+    <input
+      type="text"
+      name="pickupAddress"
+      placeholder="Адреса самовивозу"
+      value={contactsSettings.pickupAddress}
+      onChange={handleContactsChange}
+      style={inputStyle}
+    />
+  </div>
+
+  <div style={{ marginBottom: "16px" }}>
+    <input
+      type="text"
+      name="mapLink"
+      placeholder="Посилання на гео"
+      value={contactsSettings.mapLink}
+      onChange={handleContactsChange}
+      style={inputStyle}
+    />
+  </div>
+
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "1fr 1fr 1fr",
+      gap: "16px",
+      marginBottom: "18px",
+    }}
+  >
+    <input
+      type="text"
+      name="instagramLink"
+      placeholder="Instagram"
+      value={contactsSettings.instagramLink}
+      onChange={handleContactsChange}
+      style={inputStyle}
+    />
+
+    <input
+      type="text"
+      name="telegramLink"
+      placeholder="Telegram"
+      value={contactsSettings.telegramLink}
+      onChange={handleContactsChange}
+      style={inputStyle}
+    />
+
+    <input
+      type="text"
+      name="viberLink"
+      placeholder="Viber"
+      value={contactsSettings.viberLink}
+      onChange={handleContactsChange}
+      style={inputStyle}
+    />
+  </div>
+
+  <button
+    type="button"
+    onClick={handleSaveContactsSettings}
+    disabled={contactsSaving}
+    style={{
+      border: "none",
+      background: "#e56a45",
+      color: "#fff",
+      borderRadius: "14px",
+      padding: "14px 22px",
+      fontSize: "16px",
+      fontWeight: 700,
+      cursor: "pointer",
+      opacity: contactsSaving ? 0.7 : 1,
+    }}
+  >
+    {contactsSaving ? "Збереження..." : "Зберегти контакти"}
+  </button>
+
+  {contactsMessage && (
+    <div
+      style={{
+        marginTop: "12px",
+        padding: "12px 14px",
+        borderRadius: "12px",
+        background: "#ecfdf3",
+        color: "#166534",
+        fontWeight: 600,
+        fontSize: "14px",
+      }}
+    >
+      {contactsMessage}
+    </div>
+  )}
+
+  {contactsError && (
+    <div
+      style={{
+        marginTop: "12px",
+        padding: "12px 14px",
+        borderRadius: "12px",
+        background: "#fef2f2",
+        color: "#b91c1c",
+        fontWeight: 600,
+        fontSize: "14px",
+      }}
+    >
+      {contactsError}
+    </div>
+  )}
+</section>
     </section>
 
     <section style={settingsCardStyle}>
-      <h2 style={settingsTitleStyle}>Доставка та самовивіз</h2>
-      <p style={settingsDescStyle}>Базові параметри доставки, самовивозу та мінімального замовлення.</p>
+    <section style={settingsCardStyle}>
+  <h2 style={settingsTitleStyle}>Доставка та самовивіз</h2>
+  <p style={settingsDescStyle}>
+    Основні параметри доставки, самовивозу та зон обслуговування.
+  </p>
+
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "1fr 1fr",
+      gap: "16px",
+      marginTop: "20px",
+      marginBottom: "18px",
+    }}
+  >
+    <label
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "10px",
+        fontWeight: 600,
+      }}
+    >
+      <input
+        type="checkbox"
+        name="deliveryEnabled"
+        checked={deliverySettings.deliveryEnabled}
+        onChange={handleDeliveryChange}
+      />
+      Доставка активна
+    </label>
+
+    <label
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "10px",
+        fontWeight: 600,
+      }}
+    >
+      <input
+        type="checkbox"
+        name="pickupEnabled"
+        checked={deliverySettings.pickupEnabled}
+        onChange={handleDeliveryChange}
+      />
+      Самовивіз активний
+    </label>
+  </div>
+
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "1fr 1fr",
+      gap: "16px",
+      marginBottom: "16px",
+    }}
+  >
+    <input
+      type="number"
+      name="pickupDiscountPercent"
+      placeholder="Знижка на самовивіз %"
+      value={deliverySettings.pickupDiscountPercent}
+      onChange={handleDeliveryChange}
+      style={inputStyle}
+    />
+
+    <label
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "10px",
+        fontWeight: 600,
+        paddingTop: "12px",
+      }}
+    >
+      <input
+        type="checkbox"
+        name="showFreeDeliveryProgress"
+        checked={deliverySettings.showFreeDeliveryProgress}
+        onChange={handleDeliveryChange}
+      />
+      Показувати шкалу безкоштовної доставки
+    </label>
+  </div>
+
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "1fr 1fr 1fr",
+      gap: "16px",
+      marginBottom: "16px",
+    }}
+  >
+    <input
+      type="text"
+      name="shopAddress"
+      placeholder="Адреса магазину"
+      value={deliverySettings.shopAddress}
+      onChange={handleDeliveryChange}
+      style={inputStyle}
+    />
+
+    <input
+      type="number"
+      step="any"
+      name="shopLat"
+      placeholder="Широта"
+      value={deliverySettings.shopLat}
+      onChange={handleDeliveryChange}
+      style={inputStyle}
+    />
+
+    <input
+      type="number"
+      step="any"
+      name="shopLng"
+      placeholder="Довгота"
+      value={deliverySettings.shopLng}
+      onChange={handleDeliveryChange}
+      style={inputStyle}
+    />
+  </div>
+
+  <div style={{ marginBottom: "16px" }}>
+    <textarea
+      name="deliveryText"
+      value={deliverySettings.deliveryText}
+      onChange={handleDeliveryChange}
+      placeholder="Текст для доставки"
+      style={{
+        ...inputStyle,
+        minHeight: "80px",
+        resize: "vertical",
+      }}
+    />
+  </div>
+
+  <div style={{ marginBottom: "20px" }}>
+    <textarea
+      name="pickupText"
+      value={deliverySettings.pickupText}
+      onChange={handleDeliveryChange}
+      placeholder="Текст для самовивозу"
+      style={{
+        ...inputStyle,
+        minHeight: "80px",
+        resize: "vertical",
+      }}
+    />
+  </div>
+
+  <div style={{ marginBottom: "14px", fontWeight: 700, fontSize: "18px" }}>
+    Зони доставки
+  </div>
+
+  <div style={{ display: "grid", gap: "12px", marginBottom: "16px" }}>
+    {deliverySettings.deliveryZones.map((zone, index) => (
+      <div
+        key={index}
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr auto",
+          gap: "12px",
+          alignItems: "center",
+        }}
+      >
+        <input
+          type="number"
+          step="any"
+          placeholder="Макс. км"
+          value={zone.maxKm}
+          onChange={(e) => handleZoneChange(index, "maxKm", e.target.value)}
+          style={inputStyle}
+        />
+
+        <input
+          type="number"
+          placeholder="Мін. сума замовлення"
+          value={zone.minOrder}
+          onChange={(e) => handleZoneChange(index, "minOrder", e.target.value)}
+          style={inputStyle}
+        />
+
+        <button
+          type="button"
+          onClick={() => handleRemoveZone(index)}
+          style={{
+            border: "none",
+            background: "#f3f4f6",
+            color: "#b91c1c",
+            borderRadius: "12px",
+            padding: "12px 14px",
+            fontWeight: 700,
+            cursor: "pointer",
+          }}
+        >
+          Видалити
+        </button>
+      </div>
+    ))}
+  </div>
+
+  <button
+    type="button"
+    onClick={handleAddZone}
+    style={{
+      border: "1px solid #ddd",
+      background: "#fff",
+      color: "#222",
+      borderRadius: "12px",
+      padding: "12px 16px",
+      fontWeight: 700,
+      cursor: "pointer",
+      marginBottom: "20px",
+    }}
+  >
+    + Додати зону
+  </button>
+
+  <div>
+    <button
+      type="button"
+      onClick={handleSaveDeliverySettings}
+      disabled={deliverySaving}
+      style={{
+        border: "none",
+        background: "#e56a45",
+        color: "#fff",
+        borderRadius: "14px",
+        padding: "14px 22px",
+        fontSize: "16px",
+        fontWeight: 700,
+        cursor: "pointer",
+        opacity: deliverySaving ? 0.7 : 1,
+      }}
+    >
+      {deliverySaving ? "Збереження..." : "Зберегти налаштування"}
+    </button>
+  </div>
+
+  {deliveryMessage && (
+    <div
+      style={{
+        marginTop: "12px",
+        padding: "12px 14px",
+        borderRadius: "12px",
+        background: "#ecfdf3",
+        color: "#166534",
+        fontWeight: 600,
+        fontSize: "14px",
+      }}
+    >
+      {deliveryMessage}
+    </div>
+  )}
+
+  {deliveryError && (
+    <div
+      style={{
+        marginTop: "12px",
+        padding: "12px 14px",
+        borderRadius: "12px",
+        background: "#fef2f2",
+        color: "#b91c1c",
+        fontWeight: 600,
+        fontSize: "14px",
+      }}
+    >
+      {deliveryError}
+    </div>
+  )}
+</section>
     </section>
 
     <section style={settingsCardStyle}>

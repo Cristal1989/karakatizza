@@ -1,11 +1,19 @@
+import { useSiteSettings } from "../context/SiteSettingsContext";
+
 export default function MobileCallButton({ isCartOpen }) {
   const isMobile = window.matchMedia("(max-width: 768px)").matches;
+
+  const { siteSettings } = useSiteSettings();
+const contacts = siteSettings?.contacts;
+
+const phonePrimary = contacts?.phonePrimary || "";
 
   if (!isMobile || isCartOpen) return null;
 
   return (
     <a
-      href="tel:0965881010"
+      href={`tel:${phonePrimary.replace(/\s+/g, "")}`}
+    
       style={{
         position: "fixed",
         right: "16px",

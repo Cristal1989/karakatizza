@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { promotionsConfig } from "../config/promotions";
+import { useSiteSettings } from "../context/SiteSettingsContext";
 
 export default function PromotionsPage() {
   const navigate = useNavigate();
@@ -16,6 +17,9 @@ export default function PromotionsPage() {
   ];
 
   const activePromos = [];
+  const { siteSettings } = useSiteSettings();
+const contacts = siteSettings?.contacts;
+const instagramLink = contacts?.instagramLink || "";
 
   // 1+1
   if (promotionsConfig.onePlusOne.enabled) {
@@ -144,7 +148,7 @@ export default function PromotionsPage() {
             </Link>
 
             <a
-              href="https://www.instagram.com/karakatizza_niko?igsh=aXA4Y3M1a3J6NDFn"
+              href={instagramLink}
               target="_blank"
               rel="noreferrer"
               style={{

@@ -1,8 +1,15 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { useSiteSettings } from "../context/SiteSettingsContext";
 
 export default function Footer() {
   const isMobile = window.matchMedia("(max-width: 768px)").matches;
+
+  const { siteSettings } = useSiteSettings();
+const contacts = siteSettings?.contacts;
+const pickupAddress = contacts?.pickupAddress || "";
+
+const phonePrimary = contacts?.phonePrimary || "";
   return (
     <footer
       style={{
@@ -45,7 +52,7 @@ export default function Footer() {
         </div>
 
         {/* Правая часть */}
-        <div style={{ opacity: 0.7 }}>вул. Мала Морська 108, ТЦ Портал</div>
+        <div style={{ opacity: 0.7 }}>{pickupAddress}</div>
       </div>
     </footer>
   );

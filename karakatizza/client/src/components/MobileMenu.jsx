@@ -47,14 +47,16 @@ const menuItems = [
 ];
 
 export default function MobileMenu({ isOpen, onClose }) {
+
   const [pressedItem, setPressedItem] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { siteSettings } = useSiteSettings();
 const workingHours = siteSettings?.workingHours;
-
+const contacts = siteSettings?.contacts;
 const workingHoursLabel = getWorkingHoursLabel(workingHours);
 const workingStatusLabel = getWorkingStatusLabel(workingHours);
+const instagramLink = contacts?.instagramLink || "";
 
   useEffect(() => {
     if (!isOpen) return;

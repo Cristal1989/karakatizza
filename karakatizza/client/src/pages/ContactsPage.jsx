@@ -9,8 +9,11 @@ export default function ContactsPage() {
 
   const { siteSettings } = useSiteSettings();
 const workingHours = siteSettings?.workingHours;
-
 const workingHoursLabel = getWorkingHoursLabel(workingHours);
+const contacts = siteSettings?.contacts;
+const phonePrimary = contacts?.phonePrimary || "";
+const pickupAddress = contacts?.pickupAddress || "";
+const instagramLink = contacts?.instagramLink || "";
   return (
     <div
       style={{
@@ -95,7 +98,7 @@ const workingHoursLabel = getWorkingHoursLabel(workingHours);
             }}
           >
             <a
-              href="tel:0965881010"
+              href={`tel:${phonePrimary.replace(/\s+/g, "")}`}
               style={{
                 textDecoration: "none",
                 background: "#e85d3f",
@@ -136,7 +139,7 @@ const workingHoursLabel = getWorkingHoursLabel(workingHours);
         >
           <Card title="Телефон">
             <a
-              href="tel:0965881010"
+              href={`tel:${phonePrimary.replace(/\s+/g, "")}`}
               style={{
                 color: "#e85d3f",
                 textDecoration: "none",
@@ -144,7 +147,7 @@ const workingHoursLabel = getWorkingHoursLabel(workingHours);
                 fontSize: "24px",
               }}
             >
-              096 588 10 10
+              {phonePrimary}
             </a>
           </Card>
 
@@ -152,7 +155,7 @@ const workingHoursLabel = getWorkingHoursLabel(workingHours);
 
           <Card title="Instagram">
             <a
-              href="https://www.instagram.com/karakatizza_niko?igsh=aXA4Y3M1a3J6NDFn"
+              href={instagramLink}
               target="_blank"
               rel="noreferrer"
               style={{
@@ -166,7 +169,7 @@ const workingHoursLabel = getWorkingHoursLabel(workingHours);
           </Card>
 
           <Card title="Адреса">
-            Миколаїв, вул. Мала морська 108/5, ТЦ Портал 2 поверх
+            Миколаїв, {pickupAddress} 2 поверх
           </Card>
         </div>
 

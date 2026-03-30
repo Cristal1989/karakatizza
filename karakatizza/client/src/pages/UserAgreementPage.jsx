@@ -1,7 +1,11 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { useSiteSettings } from "../context/SiteSettingsContext";
 
 export default function UserAgreementPage() {
+  const { siteSettings } = useSiteSettings();
+const contacts = siteSettings?.contacts;
+const pickupAddress = contacts?.pickupAddress || "";
   return (
     <div
       style={{
@@ -289,7 +293,7 @@ export default function UserAgreementPage() {
           </NumberItem>
 
           <NumberItem>
-            7.2. Адреса доставки / самовивозу: вул. Мала Морська 108, ТЦ Портал.
+            7.2. Адреса доставки / самовивозу: {pickupAddress}.
           </NumberItem>
 
           <div

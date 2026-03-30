@@ -46,3 +46,39 @@ export async function updatePopupSettings(payload) {
 
   return data;
 }
+
+export async function updateContactsSettings(payload) {
+  const response = await fetch(`${API_BASE}/api/settings/contacts`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data?.message || "Не вдалося зберегти контакти");
+  }
+
+  return data;
+}
+
+export async function updateDeliverySettings(payload) {
+  const response = await fetch(`${API_BASE}/api/settings/delivery`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data?.message || "Не вдалося зберегти налаштування доставки");
+  }
+
+  return data;
+}

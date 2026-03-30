@@ -6,8 +6,13 @@ import {
   getRouteDistanceKm,
   getDeliveryInfo,
 } from "../services/deliveryService";
+import { useSiteSettings } from "../context/SiteSettingsContext";
 
 export default function Checkout() {
+  const { siteSettings } = useSiteSettings();
+  const contacts = siteSettings?.contacts;
+  const pickupAddress = contacts?.pickupAddress || "";
+
   const navigate = useNavigate();
   const { cartItems, clearCart, totalPrice } = useCart();
   const {
@@ -595,7 +600,7 @@ export default function Checkout() {
         mode: checkoutMode,
         address:
           checkoutMode === "pickup"
-            ? "Самовивіз: Миколаїв, вул. Мала Морська 108 ТЦ Портал"
+            ? `Самовивіз: Миколаїв, ${pickupAddress}`
             : form.address.trim(),
         resolvedAddress:
           checkoutMode === "delivery"
@@ -934,7 +939,7 @@ export default function Checkout() {
                 </>
               ) : (
                 <div style={successStatusStyle}>
-                  Самовивіз: Миколаїв, вул. Мала Морська 108 ТЦ Портал
+                  Самовивіз: Миколаїв, {pickupAddress}
                 </div>
               )}
             </div>

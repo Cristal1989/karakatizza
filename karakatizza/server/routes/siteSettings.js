@@ -20,7 +20,17 @@ router.get("/", async (req, res) => {
     map_link,
     instagram_link,
     telegram_link,
-    viber_link
+    viber_link,
+    delivery_enabled,
+    pickup_enabled,
+    pickup_discount_percent,
+    show_free_delivery_progress,
+    delivery_text,
+    pickup_text,
+    shop_address,
+    shop_lat,
+    shop_lng,
+    delivery_zones
   FROM site_settings
   WHERE id = 1
   LIMIT 1
@@ -52,6 +62,18 @@ router.get("/", async (req, res) => {
         instagramLink: row.instagram_link || "",
         telegramLink: row.telegram_link || "",
         viberLink: row.viber_link || "",
+      },
+      delivery: {
+        deliveryEnabled: row.delivery_enabled === true,
+        pickupEnabled: row.pickup_enabled === true,
+        pickupDiscountPercent: Number(row.pickup_discount_percent ?? 5),
+        showFreeDeliveryProgress: row.show_free_delivery_progress === true,
+        deliveryText: row.delivery_text || "",
+        pickupText: row.pickup_text || "",
+        shopAddress: row.shop_address || "Мала Морська 108",
+        shopLat: Number(row.shop_lat ?? 46.953807),
+        shopLng: Number(row.shop_lng ?? 31.994199),
+        deliveryZones: Array.isArray(row.delivery_zones) ? row.delivery_zones : [],
       },
     });
   } catch (error) {
@@ -180,6 +202,102 @@ router.put("/contacts", async (req, res) => {
   } catch (error) {
     console.error("UPDATE CONTACTS ERROR:", error);
     res.status(500).json({ message: "Помилка збереження контактів" });
+  }
+});
+
+router.put("/delivery", async (req, res) => {
+  try {
+    const {
+      deliveryEnabled,
+      pickupEnabled,
+      pickupDiscountPercent,
+      showFreeDeliveryProgress,
+      deliveryText,
+      pickupText,
+      shopAddress,
+      shopLat,
+      shopLng,
+      deliveryZones,
+    } = req.body;
+
+    const safeZones = Array.isArray(deliveryZones)
+      ? deliveryZones
+          .map((zone) => ({
+            maxKm: Number(zone.maxKm),
+            minOrder: Number(zone.minOrder),
+          }))
+          .filter(
+            (zone) =>
+              Number.isFinite(zone.maxKm) &&
+              zone.maxKm > 0 &&
+              Number.isFinite(zone.minOrder) &&
+              zone.minOrder >= 0
+          )
+      : [];
+
+    const result = await pool.query(
+      `
+      UPDATE site_settings
+      SET
+        delivery_enabled = $1,
+        pickup_enabled = $2,
+        pickup_discount_percent = $3,
+        show_free_delivery_progress = $4,
+        delivery_text = $5,
+        pickup_text = $6,
+        shop_address = $7,
+        shop_lat = $8,
+        shop_lng = $9,
+        delivery_zones = $10::jsonb,
+        updated_at = NOW()
+      WHERE id = 1
+      RETURNING
+        delivery_enabled,
+        pickup_enabled,
+        pickup_discount_percent,
+        show_free_delivery_progress,
+        delivery_text,
+        pickup_text,
+        shop_address,
+        shop_lat,
+        shop_lng,
+        delivery_zones
+      `,
+      [
+        deliveryEnabled === true,
+        pickupEnabled === true,
+        Number(pickupDiscountPercent ?? 5),
+        showFreeDeliveryProgress === true,
+        deliveryText || "",
+        pickupText || "",
+        shopAddress || "",
+        Number(shopLat ?? 0),
+        Number(shopLng ?? 0),
+        JSON.stringify(safeZones),
+      ]
+    );
+
+    const row = result.rows[0];
+
+    res.json({
+      success: true,
+      message: "Налаштування доставки оновлено",
+      delivery: {
+        deliveryEnabled: row.delivery_enabled === true,
+        pickupEnabled: row.pickup_enabled === true,
+        pickupDiscountPercent: Number(row.pickup_discount_percent ?? 5),
+        showFreeDeliveryProgress: row.show_free_delivery_progress === true,
+        deliveryText: row.delivery_text || "",
+        pickupText: row.pickup_text || "",
+        shopAddress: row.shop_address || "",
+        shopLat: Number(row.shop_lat ?? 0),
+        shopLng: Number(row.shop_lng ?? 0),
+        deliveryZones: Array.isArray(row.delivery_zones) ? row.delivery_zones : [],
+      },
+    });
+  } catch (error) {
+    console.error("UPDATE DELIVERY SETTINGS ERROR:", error);
+    res.status(500).json({ message: "Помилка збереження налаштувань доставки" });
   }
 });
 

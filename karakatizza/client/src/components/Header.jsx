@@ -16,6 +16,8 @@ const workingHours = siteSettings?.workingHours;
 
 const workingHoursLabel = getWorkingHoursLabel(workingHours);
 const workingStatusLabel = getWorkingStatusLabel(workingHours);
+const contacts = siteSettings?.contacts;
+const phonePrimary = contacts?.phonePrimary || "";
 
   const openMap = () => {
     window.open(
@@ -129,8 +131,9 @@ const workingStatusLabel = getWorkingStatusLabel(workingHours);
             marginLeft: isMobile ? "0" : "none",
           }}
         >
+          {phonePrimary && 
           <a
-            href="tel:0965881010"
+          href={`tel:${phonePrimary.replace(/\s+/g, "")}`}
             style={{
               color: "#ffd54a",
               textDecoration: "none",
@@ -139,10 +142,10 @@ const workingStatusLabel = getWorkingStatusLabel(workingHours);
               fontWeight: 800,
               lineHeight: 1,
             }}
-          >
-            096 588 10 10
+        >
+            {phonePrimary}
           </a>
-
+}
           <div
             style={{
               fontSize: isMobile ? "13px" : "15px",
