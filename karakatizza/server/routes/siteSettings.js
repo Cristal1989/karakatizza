@@ -6,18 +6,25 @@ const router = express.Router();
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT
-        opening_time,
-        closing_time,
-        closed_all_day,
-        allow_orders_after_hours,
-        enable_after_hours_popup,
-        popup_message,
-        closed_all_day_message
-      FROM site_settings
-      WHERE id = 1
-      LIMIT 1
-    `);
+  SELECT
+    opening_time,
+    closing_time,
+    closed_all_day,
+    allow_orders_after_hours,
+    enable_after_hours_popup,
+    popup_message,
+    closed_all_day_message,
+    phone_primary,
+    phone_secondary,
+    pickup_address,
+    map_link,
+    instagram_link,
+    telegram_link,
+    viber_link
+  FROM site_settings
+  WHERE id = 1
+  LIMIT 1
+`);
 
     if (!result.rows.length) {
       return res.status(404).json({ message: "Налаштування не знайдено" });
@@ -36,6 +43,15 @@ router.get("/", async (req, res) => {
         showOutsideWorkingHours: row.enable_after_hours_popup === true,
         outsideHoursText: row.popup_message || "",
         closedTodayText: row.closed_all_day_message || "",
+      },
+      contacts: {
+        phonePrimary: row.phone_primary || "",
+        phoneSecondary: row.phone_secondary || "",
+        pickupAddress: row.pickup_address || "",
+        mapLink: row.map_link || "",
+        instagramLink: row.instagram_link || "",
+        telegramLink: row.telegram_link || "",
+        viberLink: row.viber_link || "",
       },
     });
   } catch (error) {
@@ -98,6 +114,72 @@ router.put("/working-hours", async (req, res) => {
   } catch (error) {
     console.error("UPDATE WORKING HOURS ERROR:", error);
     res.status(500).json({ message: "Помилка збереження робочих годин" });
+  }
+});
+
+router.put("/contacts", async (req, res) => {
+  try {
+    const {
+      phonePrimary,
+      phoneSecondary,
+      pickupAddress,
+      mapLink,
+      instagramLink,
+      telegramLink,
+      viberLink,
+    } = req.body;
+
+    const result = await pool.query(
+      `
+      UPDATE site_settings
+      SET
+        phone_primary = $1,
+        phone_secondary = $2,
+        pickup_address = $3,
+        map_link = $4,
+        instagram_link = $5,
+        telegram_link = $6,
+        viber_link = $7,
+        updated_at = NOW()
+      WHERE id = 1
+      RETURNING
+        phone_primary,
+        phone_secondary,
+        pickup_address,
+        map_link,
+        instagram_link,
+        telegram_link,
+        viber_link
+      `,
+      [
+        phonePrimary || "",
+        phoneSecondary || "",
+        pickupAddress || "",
+        mapLink || "",
+        instagramLink || "",
+        telegramLink || "",
+        viberLink || "",
+      ]
+    );
+
+    const row = result.rows[0];
+
+    res.json({
+      success: true,
+      message: "Контакти оновлено",
+      contacts: {
+        phonePrimary: row.phone_primary || "",
+        phoneSecondary: row.phone_secondary || "",
+        pickupAddress: row.pickup_address || "",
+        mapLink: row.map_link || "",
+        instagramLink: row.instagram_link || "",
+        telegramLink: row.telegram_link || "",
+        viberLink: row.viber_link || "",
+      },
+    });
+  } catch (error) {
+    console.error("UPDATE CONTACTS ERROR:", error);
+    res.status(500).json({ message: "Помилка збереження контактів" });
   }
 });
 
