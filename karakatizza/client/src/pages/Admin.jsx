@@ -3235,6 +3235,8 @@ export default function Admin() {
       marginBottom: "16px",
     }}
   >
+    <label>
+      <p>Знижка самовивозу</p>
     <input
       type="number"
       name="pickupDiscountPercent"
@@ -3243,7 +3245,7 @@ export default function Admin() {
       onChange={handleDeliveryChange}
       style={inputStyle}
     />
-
+</label>
     <label
       style={{
         display: "flex",
