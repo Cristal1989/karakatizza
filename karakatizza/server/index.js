@@ -14,6 +14,8 @@ import deliveryRoutes from "./routes/delivery.js";
 import promotionsRoutes from "./routes/promotions.js";
 import giftRollRoutes from "./routes/giftRoll.js";
 import siteSettingsRoutes from "./routes/siteSettings.js";
+import { isValidUaPhone } from "./utils/phone.js";
+import { saveOrderToCrm } from "./services/crmService.js";
 
 dotenv.config();
 
@@ -950,6 +952,12 @@ app.post("/order", async (req, res) => {
         return sum + item.price * paidQuantity;
       }, 0) + (sticksExtraPrice ?? 0);
 
+      if (!isValidUaPhone(phone)) {
+        return res.status(400).json({
+          message: "Вкажіть коректний номер телефону України",
+        });
+      }
+
     if ((regularSticksCount ?? 0) > 0 || (trainingSticksCount ?? 0) > 0) {
       sticksText = `🥢 Паличкu: звичайні: ${
         regularSticksCount ?? 0
@@ -1082,6 +1090,29 @@ app.post("/order", async (req, res) => {
     });
   } catch (error) {
     console.error("Order error:", error);
+
+    try {
+      await saveOrderToCrm(pool, {
+        name,
+        phone,
+        mode: req.body.mode || "delivery",
+        address,
+        resolvedAddress: req.body.resolvedAddress || "",
+        entrance,
+        comment,
+        paymentMethod,
+        needExactTime,
+        exactTime,
+        totalPrice,
+        items,
+        condiments,
+        regularSticksCount,
+        trainingSticksCount,
+        sticksExtraPrice,
+      });
+    } catch (crmError) {
+      console.error("CRM SAVE ERROR:", crmError);
+    }
 
     res.json({
       success: true,

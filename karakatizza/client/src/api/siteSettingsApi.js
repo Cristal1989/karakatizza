@@ -100,3 +100,21 @@ export async function updatePaymentSettings(payload) {
 
   return data;
 }
+
+export async function updateSiteTexts(payload) {
+  const response = await fetch(`${API_BASE}/api/settings/texts`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data?.message || "Не вдалося зберегти тексти сайту");
+  }
+
+  return data;
+}

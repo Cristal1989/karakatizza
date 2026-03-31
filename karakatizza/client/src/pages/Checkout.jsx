@@ -45,6 +45,18 @@ export default function Checkout() {
   const bankTransferBankName = paymentSettings?.bankTransferBankName || "";
   const bankTransferHint = paymentSettings?.bankTransferHint || "";
 
+  const texts = siteSettings?.texts;
+
+const checkoutCommentPlaceholder =
+  texts?.checkoutCommentPlaceholder || "Коментар до замовлення";
+
+const checkoutExactTimeLabel =
+  texts?.checkoutExactTimeLabel || "Потрібно на певний час";
+
+const checkoutSuccessHint =
+  texts?.checkoutSuccessHint ||
+  "Дякуємо за замовлення! Ми скоро зв’яжемося з вами.";
+
   const navigate = useNavigate();
   const { cartItems, clearCart, totalPrice } = useCart();
   const {
@@ -1231,7 +1243,7 @@ export default function Checkout() {
                   }))
                 }
               />
-              Потрібно на певний час
+              {checkoutExactTimeLabel}
             </label>
 
             {form.needExactTime && (
@@ -1699,7 +1711,7 @@ export default function Checkout() {
           </div>
 
           <div style={sectionCardStyle}>
-            <div style={sectionTitleStyle}>Коментар до замовлення</div>
+            <div style={sectionTitleStyle}>{checkoutCommentPlaceholder}</div>
 
             <textarea
               value={form.comment}

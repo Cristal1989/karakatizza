@@ -76,6 +76,23 @@ export default function CartDrawer() {
   const deliveryText = deliverySettings?.deliveryText || "";
   const pickupText = deliverySettings?.pickupText || "";
 
+  const texts = siteSettings?.texts;
+
+  const pickupSelectedText =
+    texts?.pickupSelectedText ||
+    "Самовивіз обрано — адресу вводити не потрібно";
+
+  const deliveryAddressHint =
+    texts?.deliveryAddressHint ||
+    "Введіть адресу для уточнення безкоштовної доставки";
+
+  const deliveryAddressNotFoundText =
+    texts?.deliveryAddressNotFoundText || "Уточніть адресу у оператора";
+
+    const orderDisabledText =
+    texts?.orderDisabledText ||
+    "Наразі оформлення замовлення тимчасово недоступне";
+
   const isMobile = window.matchMedia("(max-width: 768px)").matches;
   const API_URL = "https://karakatizza-production.up.railway.app";
 
@@ -346,12 +363,8 @@ export default function CartDrawer() {
         location.lng,
         shopLocation
       );
-      
-      const info = getDeliveryInfo(
-        distanceKm,
-        totalPrice,
-        deliveryZones
-      );
+
+      const info = getDeliveryInfo(distanceKm, totalPrice, deliveryZones);
 
       setDeliveryInfo({
         distanceKm,
@@ -445,9 +458,9 @@ export default function CartDrawer() {
   const defaultMinOrder = deliveryZones?.[0]?.minOrder ?? 400;
 
   const calculatedDeliveryInfo =
-  deliveryInfo?.distanceKm != null
-    ? getDeliveryInfo(deliveryInfo.distanceKm, totalPrice, deliveryZones)
-    : null;
+    deliveryInfo?.distanceKm != null
+      ? getDeliveryInfo(deliveryInfo.distanceKm, totalPrice, deliveryZones)
+      : null;
 
   const currentMinOrder = calculatedDeliveryInfo?.minOrder ?? defaultMinOrder;
   const progressPercent = Math.min((totalPrice / currentMinOrder) * 100, 100);
@@ -464,12 +477,12 @@ export default function CartDrawer() {
     deliveryTitle = "У вас безкоштовна доставка";
     deliveryHint = deliveryInfo
       ? ""
-      : "Введіть адресу для уточнення безкоштовної доставки";
+      : deliveryAddressHint;
   }
 
   if (deliveryInfo && deliveryInfo.addressFound === false) {
     deliveryTitle = "Не можу знайти адресу";
-    deliveryHint = "Уточніть адресу у оператора";
+    deliveryHint = deliveryAddressNotFoundText;
   }
 
   if (
@@ -862,7 +875,7 @@ export default function CartDrawer() {
                 lineHeight: 1.4,
               }}
             >
-              {pickupText || "Самовивіз обрано — адресу вводити не потрібно"}
+              {pickupText || pickupSelectedText}
             </div>
           )}
         </div>
@@ -1502,7 +1515,7 @@ export default function CartDrawer() {
                 pointerEvents: cartItems.length ? "auto" : "none",
               }}
             >
-              {orderDisabled ? "Оформлення недоступне" : "Оформити замовлення"}
+              {orderDisabled ? orderDisabledText : "Оформити замовлення"}
             </Link>
 
             <button

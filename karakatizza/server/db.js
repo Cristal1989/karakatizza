@@ -493,4 +493,109 @@ checkout_success_hint
     SELECT 1 FROM site_settings WHERE id = 1
   );
 `);
+
+await pool.query(`
+  CREATE TABLE IF NOT EXISTS customers (
+    id SERIAL PRIMARY KEY,
+    phone TEXT NOT NULL,
+    phone_normalized TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL DEFAULT '',
+    telegram_user_id TEXT DEFAULT '',
+    telegram_username TEXT DEFAULT '',
+    telegram_first_name TEXT DEFAULT '',
+    is_telegram_subscribed BOOLEAN NOT NULL DEFAULT false,
+    is_phone_confirmed BOOLEAN NOT NULL DEFAULT false,
+    first_order_at TIMESTAMP,
+    last_order_at TIMESTAMP,
+    orders_count INTEGER NOT NULL DEFAULT 0,
+    total_spent NUMERIC NOT NULL DEFAULT 0,
+    last_order_amount NUMERIC NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+  );
+`);
+
+await pool.query(`
+  CREATE TABLE IF NOT EXISTS orders (
+    id SERIAL PRIMARY KEY,
+    customer_id INTEGER REFERENCES customers(id) ON DELETE SET NULL,
+    phone TEXT NOT NULL,
+    phone_normalized TEXT NOT NULL,
+    name TEXT NOT NULL DEFAULT '',
+    mode TEXT NOT NULL DEFAULT 'delivery',
+    address TEXT DEFAULT '',
+    resolved_address TEXT DEFAULT '',
+    entrance TEXT DEFAULT '',
+    comment TEXT DEFAULT '',
+    payment_method TEXT NOT NULL DEFAULT 'cash',
+    need_exact_time BOOLEAN NOT NULL DEFAULT false,
+    exact_time TEXT DEFAULT '',
+    total_amount NUMERIC NOT NULL DEFAULT 0,
+    items_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+    items_summary TEXT NOT NULL DEFAULT '',
+    condiments_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+    regular_sticks_count INTEGER NOT NULL DEFAULT 0,
+    training_sticks_count INTEGER NOT NULL DEFAULT 0,
+    sticks_extra_price NUMERIC NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'new',
+    source TEXT NOT NULL DEFAULT 'site',
+    gift_roll_applied BOOLEAN NOT NULL DEFAULT false,
+    gift_roll_id TEXT DEFAULT '',
+    gift_roll_title TEXT DEFAULT '',
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+  );
+`);
+
+await pool.query(`
+  CREATE TABLE IF NOT EXISTS customer_rewards (
+    id SERIAL PRIMARY KEY,
+    customer_id INTEGER NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+    type TEXT NOT NULL,
+    reward_code TEXT NOT NULL DEFAULT '',
+    gift_roll_id TEXT DEFAULT '',
+    gift_roll_title TEXT DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'available',
+    issued_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    used_at TIMESTAMP,
+    expires_at TIMESTAMP,
+    issued_order_id INTEGER REFERENCES orders(id) ON DELETE SET NULL,
+    used_order_id INTEGER REFERENCES orders(id) ON DELETE SET NULL,
+    notes TEXT DEFAULT ''
+  );
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_customers_phone_normalized
+  ON customers(phone_normalized);
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_customers_last_order_at
+  ON customers(last_order_at);
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_orders_customer_id
+  ON orders(customer_id);
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_orders_phone_normalized
+  ON orders(phone_normalized);
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_orders_created_at
+  ON orders(created_at);
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_customer_rewards_customer_id
+  ON customer_rewards(customer_id);
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_customer_rewards_status
+  ON customer_rewards(status);
+`);
 }

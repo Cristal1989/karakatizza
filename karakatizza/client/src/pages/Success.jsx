@@ -1,6 +1,13 @@
 import { Link } from "react-router-dom";
+import { useSiteSettings } from "../context/SiteSettingsContext";
 
 export default function Success() {
+  const { siteSettings } = useSiteSettings();
+
+  const checkoutSuccessHint =
+    siteSettings?.texts?.checkoutSuccessHint ||
+    "Дякуємо за замовлення! Ми вже отримали його і незабаром почнемо готувати. Зателефонуйте нам будь ласка якщо з вами не звʼяжуться протягом 15 хвилин.";
+
   return (
     <div
       style={{
@@ -14,8 +21,9 @@ export default function Success() {
       }}
     >
       <h1 style={{ display: "none" }}>
-  Доставка суші та ролів у Миколаєві
-</h1>
+        Доставка суші та ролів у Миколаєві
+      </h1>
+
       <div
         style={{
           backgroundColor: "#fff",
@@ -36,7 +44,7 @@ export default function Success() {
             color: "#222",
           }}
         >
-          Змовлення прийнято
+          Замовлення прийнято
         </h2>
 
         <p
@@ -47,9 +55,7 @@ export default function Success() {
             lineHeight: 1.6,
           }}
         >
-          Дякую за замовлення. Ми вже отримали його і незабаром почнемо
-          готувати. Зателефонуйте нам будь ласка якщо з вамии не зв&apos;язались
-          протягом 15 хвилин.
+          {checkoutSuccessHint}
         </p>
 
         <Link

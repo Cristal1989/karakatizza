@@ -6,6 +6,7 @@ import {
   updateContactsSettings,
   updateDeliverySettings,
   updatePaymentSettings,
+  updateSiteTexts,
 } from "../api/siteSettingsApi";
 import {
   getProducts,
@@ -206,6 +207,20 @@ export default function Admin() {
   const [paymentMessage, setPaymentMessage] = useState("");
   const [paymentError, setPaymentError] = useState("");
 
+  const [siteTexts, setSiteTexts] = useState({
+    pickupSelectedText: "",
+    deliveryAddressHint: "",
+    deliveryAddressNotFoundText: "",
+    orderDisabledText: "",
+    checkoutCommentPlaceholder: "",
+    checkoutExactTimeLabel: "",
+    checkoutSuccessHint: "",
+  });
+
+  const [siteTextsSaving, setSiteTextsSaving] = useState(false);
+  const [siteTextsMessage, setSiteTextsMessage] = useState("");
+  const [siteTextsError, setSiteTextsError] = useState("");
+
   const inputStyle = {
     width: "100%",
     padding: "10px",
@@ -340,6 +355,19 @@ export default function Admin() {
             bankTransferRecipient: settings.payment.bankTransferRecipient || "",
             bankTransferBankName: settings.payment.bankTransferBankName || "",
             bankTransferHint: settings.payment.bankTransferHint || "",
+          });
+        }
+        if (settings?.texts) {
+          setSiteTexts({
+            pickupSelectedText: settings.texts.pickupSelectedText || "",
+            deliveryAddressHint: settings.texts.deliveryAddressHint || "",
+            deliveryAddressNotFoundText:
+              settings.texts.deliveryAddressNotFoundText || "",
+            orderDisabledText: settings.texts.orderDisabledText || "",
+            checkoutCommentPlaceholder:
+              settings.texts.checkoutCommentPlaceholder || "",
+            checkoutExactTimeLabel: settings.texts.checkoutExactTimeLabel || "",
+            checkoutSuccessHint: settings.texts.checkoutSuccessHint || "",
           });
         }
       } catch (error) {
@@ -724,6 +752,51 @@ export default function Admin() {
       setPaymentError(error.message || "Помилка збереження налаштувань оплати");
     } finally {
       setPaymentSaving(false);
+    }
+  };
+
+  const handleSiteTextsChange = (e) => {
+    const { name, value } = e.target;
+
+    setSiteTextsError("");
+    setSiteTextsMessage("");
+
+    setSiteTexts((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSaveSiteTexts = async () => {
+    try {
+      setSiteTextsSaving(true);
+      setSiteTextsMessage("");
+      setSiteTextsError("");
+
+      const result = await updateSiteTexts(siteTexts);
+
+      setSiteTexts({
+        pickupSelectedText: result.texts?.pickupSelectedText || "",
+        deliveryAddressHint: result.texts?.deliveryAddressHint || "",
+        deliveryAddressNotFoundText:
+          result.texts?.deliveryAddressNotFoundText || "",
+        orderDisabledText: result.texts?.orderDisabledText || "",
+        checkoutCommentPlaceholder:
+          result.texts?.checkoutCommentPlaceholder || "",
+        checkoutExactTimeLabel: result.texts?.checkoutExactTimeLabel || "",
+        checkoutSuccessHint: result.texts?.checkoutSuccessHint || "",
+      });
+
+      setSiteTextsMessage("✅ Тексти сайту збережено");
+
+      setTimeout(() => {
+        setSiteTextsMessage("");
+      }, 2500);
+    } catch (error) {
+      console.error("SAVE SITE TEXTS ERROR:", error);
+      setSiteTextsError(error.message || "Помилка збереження текстів сайту");
+    } finally {
+      setSiteTextsSaving(false);
     }
   };
 
@@ -3712,11 +3785,151 @@ export default function Admin() {
               </section>
 
               <section style={settingsCardStyle}>
-                <h2 style={settingsTitleStyle}>Тексти сайту</h2>
-                <p style={settingsDescStyle}>
-                  Системні тексти для кошика, оформлення та службових
-                  повідомлень.
-                </p>
+                <section style={settingsCardStyle}>
+                  <h2 style={settingsTitleStyle}>Тексти сайту</h2>
+                  <p style={settingsDescStyle}>
+                    Системні тексти для кошика, оформлення та службових
+                    повідомлень.
+                  </p>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gap: "14px",
+                      marginTop: "20px",
+                      marginBottom: "20px",
+                    }}
+                  >
+                    <textarea
+                      name="pickupSelectedText"
+                      placeholder="Текст для самовивозу"
+                      value={siteTexts.pickupSelectedText}
+                      onChange={handleSiteTextsChange}
+                      style={{
+                        ...inputStyle,
+                        minHeight: "80px",
+                        resize: "vertical",
+                      }}
+                    />
+
+                    <textarea
+                      name="deliveryAddressHint"
+                      placeholder="Підказка для введення адреси"
+                      value={siteTexts.deliveryAddressHint}
+                      onChange={handleSiteTextsChange}
+                      style={{
+                        ...inputStyle,
+                        minHeight: "80px",
+                        resize: "vertical",
+                      }}
+                    />
+
+                    <textarea
+                      name="deliveryAddressNotFoundText"
+                      placeholder="Текст коли адресу не знайдено"
+                      value={siteTexts.deliveryAddressNotFoundText}
+                      onChange={handleSiteTextsChange}
+                      style={{
+                        ...inputStyle,
+                        minHeight: "80px",
+                        resize: "vertical",
+                      }}
+                    />
+
+                    <textarea
+                      name="orderDisabledText"
+                      placeholder="Текст коли оформлення недоступне"
+                      value={siteTexts.orderDisabledText}
+                      onChange={handleSiteTextsChange}
+                      style={{
+                        ...inputStyle,
+                        minHeight: "80px",
+                        resize: "vertical",
+                      }}
+                    />
+
+                    <input
+                      type="text"
+                      name="checkoutCommentPlaceholder"
+                      placeholder="Плейсхолдер коментаря"
+                      value={siteTexts.checkoutCommentPlaceholder}
+                      onChange={handleSiteTextsChange}
+                      style={inputStyle}
+                    />
+
+                    <input
+                      type="text"
+                      name="checkoutExactTimeLabel"
+                      placeholder="Підпис для точного часу"
+                      value={siteTexts.checkoutExactTimeLabel}
+                      onChange={handleSiteTextsChange}
+                      style={inputStyle}
+                    />
+
+                    <textarea
+                      name="checkoutSuccessHint"
+                      placeholder="Текст після оформлення замовлення"
+                      value={siteTexts.checkoutSuccessHint}
+                      onChange={handleSiteTextsChange}
+                      style={{
+                        ...inputStyle,
+                        minHeight: "80px",
+                        resize: "vertical",
+                      }}
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleSaveSiteTexts}
+                    disabled={siteTextsSaving}
+                    style={{
+                      border: "none",
+                      background: "#e56a45",
+                      color: "#fff",
+                      borderRadius: "14px",
+                      padding: "14px 22px",
+                      fontSize: "16px",
+                      fontWeight: 700,
+                      cursor: siteTextsSaving ? "default" : "pointer",
+                      opacity: siteTextsSaving ? 0.7 : 1,
+                    }}
+                  >
+                    {siteTextsSaving ? "Збереження..." : "Зберегти тексти"}
+                  </button>
+
+                  {siteTextsMessage && (
+                    <div
+                      style={{
+                        marginTop: "12px",
+                        padding: "12px 14px",
+                        borderRadius: "12px",
+                        background: "#ecfdf3",
+                        color: "#166534",
+                        fontWeight: 600,
+                        fontSize: "14px",
+                      }}
+                    >
+                      {siteTextsMessage}
+                    </div>
+                  )}
+
+                  {siteTextsError && (
+                    <div
+                      style={{
+                        marginTop: "12px",
+                        padding: "12px 14px",
+                        borderRadius: "12px",
+                        background: "#fef2f2",
+                        color: "#b91c1c",
+                        fontWeight: 600,
+                        fontSize: "14px",
+                      }}
+                    >
+                      {siteTextsError}
+                    </div>
+                  )}
+                </section>
               </section>
             </div>
           )}
