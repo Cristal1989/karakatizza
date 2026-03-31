@@ -1092,7 +1092,14 @@ app.post("/order", async (req, res) => {
     console.error("Order error:", error);
 
     try {
-      await saveOrderToCrm(pool, {
+      console.log("CRM SAVE START", {
+        phone,
+        totalPrice,
+        paymentMethod,
+        itemsCount: Array.isArray(items) ? items.length : 0,
+      });
+    
+      const crmResult = await saveOrderToCrm(pool, {
         name,
         phone,
         mode: req.body.mode || "delivery",
@@ -1110,8 +1117,14 @@ app.post("/order", async (req, res) => {
         trainingSticksCount,
         sticksExtraPrice,
       });
+    
+      console.log("CRM SAVE SUCCESS", {
+        customerId: crmResult.customer?.id,
+        orderId: crmResult.order?.id,
+      });
     } catch (crmError) {
       console.error("CRM SAVE ERROR:", crmError);
+      console.error("CRM SAVE ERROR MESSAGE:", crmError?.message);
     }
 
     res.json({
