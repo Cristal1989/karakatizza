@@ -188,3 +188,229 @@ export async function saveOrderToCrm(pool, orderData) {
     order: result.rows[0],
   };
 }
+
+export async function getActiveTelegramGiftByPhone(pool, phone) {
+  const phoneNormalized = normalizeUaPhone(phone);
+
+  if (!phoneNormalized) {
+    return null;
+  }
+
+  const result = await pool.query(
+    `
+      SELECT
+        tg.id,
+        tg.customer_id,
+        tg.phone_normalized,
+        tg.gift_roll_id,
+        tg.gift_roll_title,
+        tg.status,
+        tg.source,
+        tg.comment,
+        tg.issued_at,
+        tg.used_at,
+        tg.created_at,
+        tg.updated_at
+      FROM telegram_gifts tg
+      WHERE tg.phone_normalized = $1
+        AND tg.status IN ('issued', 'reserved')
+      ORDER BY tg.created_at DESC, tg.id DESC
+      LIMIT 1
+    `,
+    [phoneNormalized]
+  );
+
+  return result.rows[0] || null;
+}
+
+export async function issueTelegramGift(
+  pool,
+  { customerId = null, phone, giftRollId = "", giftRollTitle = "", comment = "" }
+) {
+  const phoneNormalized = normalizeUaPhone(phone);
+
+  if (!phoneNormalized) {
+    throw new Error("Некоректний номер телефону для telegram gift");
+  }
+
+  const existingGift = await getActiveTelegramGiftByPhone(pool, phoneNormalized);
+
+  if (existingGift) {
+    return {
+      created: false,
+      gift: existingGift,
+      reason: "active_gift_exists",
+    };
+  }
+
+  const insertResult = await pool.query(
+    `
+      INSERT INTO telegram_gifts (
+        customer_id,
+        phone_normalized,
+        gift_roll_id,
+        gift_roll_title,
+        status,
+        source,
+        comment
+      )
+      VALUES ($1, $2, $3, $4, 'issued', 'telegram', $5)
+      RETURNING
+        id,
+        customer_id,
+        phone_normalized,
+        gift_roll_id,
+        gift_roll_title,
+        status,
+        source,
+        comment,
+        issued_at,
+        used_at,
+        created_at,
+        updated_at
+    `,
+    [
+      customerId || null,
+      phoneNormalized,
+      giftRollId || "",
+      giftRollTitle || "",
+      comment || "",
+    ]
+  );
+
+  return {
+    created: true,
+    gift: insertResult.rows[0],
+    reason: "created",
+  };
+}
+
+export async function markTelegramGiftUsed(pool, giftId) {
+  const result = await pool.query(
+    `
+      UPDATE telegram_gifts
+      SET
+        status = 'used',
+        used_at = NOW(),
+        updated_at = NOW()
+      WHERE id = $1
+        AND status IN ('issued', 'reserved')
+      RETURNING
+        id,
+        customer_id,
+        phone_normalized,
+        gift_roll_id,
+        gift_roll_title,
+        status,
+        source,
+        comment,
+        issued_at,
+        used_at,
+        created_at,
+        updated_at
+    `,
+    [giftId]
+  );
+
+  return result.rows[0] || null;
+}
+
+export async function linkTelegramToCustomerByPhone(
+  pool,
+  {
+    phone,
+    telegramUserId,
+    telegramUsername = "",
+    telegramFirstName = "",
+  }
+) {
+  const phoneNormalized = normalizeUaPhone(phone);
+
+  if (!phoneNormalized) {
+    throw new Error("Некоректний номер телефону");
+  }
+
+  if (!telegramUserId) {
+    throw new Error("Відсутній telegramUserId");
+  }
+
+  const customerResult = await pool.query(
+    `
+      SELECT
+        id,
+        phone,
+        phone_normalized,
+        name,
+        telegram_user_id,
+        telegram_username,
+        telegram_first_name,
+        is_telegram_subscribed,
+        is_phone_confirmed,
+        first_order_at,
+        last_order_at,
+        orders_count,
+        total_spent,
+        last_order_amount,
+        created_at,
+        updated_at
+      FROM customers
+      WHERE phone_normalized = $1
+      ORDER BY id DESC
+      LIMIT 1
+    `,
+    [phoneNormalized]
+  );
+
+  const customer = customerResult.rows[0] || null;
+
+  if (!customer) {
+    return {
+      linked: false,
+      reason: "customer_not_found",
+      customer: null,
+    };
+  }
+
+  const updatedResult = await pool.query(
+    `
+      UPDATE customers
+      SET
+        telegram_user_id = $1,
+        telegram_username = $2,
+        telegram_first_name = $3,
+        is_telegram_subscribed = TRUE,
+        is_phone_confirmed = TRUE,
+        updated_at = NOW()
+      WHERE id = $4
+      RETURNING
+        id,
+        phone,
+        phone_normalized,
+        name,
+        telegram_user_id,
+        telegram_username,
+        telegram_first_name,
+        is_telegram_subscribed,
+        is_phone_confirmed,
+        first_order_at,
+        last_order_at,
+        orders_count,
+        total_spent,
+        last_order_amount,
+        created_at,
+        updated_at
+    `,
+    [
+      String(telegramUserId),
+      telegramUsername || "",
+      telegramFirstName || "",
+      customer.id,
+    ]
+  );
+
+  return {
+    linked: true,
+    reason: "linked",
+    customer: updatedResult.rows[0] || customer,
+  };
+}

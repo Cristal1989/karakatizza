@@ -1,5 +1,11 @@
 import express from "express";
 import { pool } from "../db.js";
+import {
+  issueTelegramGift,
+  getActiveTelegramGiftByPhone,
+  markTelegramGiftUsed,
+  linkTelegramToCustomerByPhone,
+} from "../services/crmService.js";
 
 const router = express.Router();
 
@@ -200,6 +206,156 @@ router.get("/customers/:id/orders", async (req, res) => {
     res.
       status(500).json({
       message: "Помилка завантаження замовлень клієнта",
+    });
+  }
+});
+
+router.get("/telegram-gifts/active/:phone", async (req, res) => {
+  try {
+    const { phone } = req.params;
+
+    const gift = await getActiveTelegramGiftByPhone(pool, phone);
+
+    return res.json({
+      success: true,
+      gift: gift || null,
+    });
+  } catch (error) {
+    console.error("CRM TELEGRAM GIFT ACTIVE ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Не вдалося отримати активний подарунок",
+      error: error?.message || "Unknown error",
+    });
+  }
+});
+
+router.post("/telegram-gifts/issue", async (req, res) => {
+  try {
+    const {
+      customerId = null,
+      phone,
+      giftRollId = "",
+      giftRollTitle = "",
+      comment = "",
+    } = req.body || {};
+
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        message: "Потрібен номер телефону",
+      });
+    }
+
+    const result = await issueTelegramGift(pool, {
+      customerId,
+      phone,
+      giftRollId,
+      giftRollTitle,
+      comment,
+    });
+
+    return res.json({
+      success: true,
+      created: result.created,
+      reason: result.reason,
+      gift: result.gift || null,
+    });
+  } catch (error) {
+    console.error("CRM TELEGRAM GIFT ISSUE ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Не вдалося видати telegram-подарунок",
+      error: error?.message || "Unknown error",
+    });
+  }
+});
+
+router.post("/telegram-gifts/use", async (req, res) => {
+  try {
+    const { giftId } = req.body || {};
+
+    if (!giftId) {
+      return res.status(400).json({
+        success: false,
+        message: "Потрібен giftId",
+      });
+    }
+
+    const gift = await markTelegramGiftUsed(pool, giftId);
+
+    if (!gift) {
+      return res.status(404).json({
+        success: false,
+        message: "Активний подарунок не знайдено або вже використаний",
+      });
+    }
+
+    return res.json({
+      success: true,
+      gift,
+    });
+  } catch (error) {
+    console.error("CRM TELEGRAM GIFT USE ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Не вдалося списати telegram-подарунок",
+      error: error?.message || "Unknown error",
+    });
+  }
+});
+
+router.post("/telegram/link", async (req, res) => {
+  try {
+    const {
+      phone,
+      telegramUserId,
+      telegramUsername = "",
+      telegramFirstName = "",
+    } = req.body || {};
+
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        message: "Потрібен номер телефону",
+      });
+    }
+
+    if (!telegramUserId) {
+      return res.status(400).json({
+        success: false,
+        message: "Потрібен telegramUserId",
+      });
+    }
+
+    const result = await linkTelegramToCustomerByPhone(pool, {
+      phone,
+      telegramUserId,
+      telegramUsername,
+      telegramFirstName,
+    });
+
+    if (!result.linked) {
+      return res.status(404).json({
+        success: false,
+        reason: result.reason,
+        message: "Клієнта з таким номером не знайдено",
+        customer: null,
+      });
+    }
+
+    return res.json({
+      success: true,
+      linked: true,
+      reason: result.reason,
+      customer: result.customer,
+    });
+  } catch (error) {
+    console.error("CRM TELEGRAM LINK ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Не вдалося прив'язати Telegram до клієнта",
+      error: error?.message || "Unknown error",
     });
   }
 });
