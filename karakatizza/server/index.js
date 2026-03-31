@@ -928,6 +928,8 @@ app.put("/banners/reorder", async (req, res) => {
 
 app.post("/order", async (req, res) => {
   try {
+    console.log("ORDER ROUTE HIT");
+    console.log("STEP 1: BODY PARSED");
     const {
       name,
       phone,
@@ -1068,7 +1070,7 @@ app.post("/order", async (req, res) => {
     message += `💰 Разом: ${totalPrice} грн`;
 
     const telegramUrl = `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`;
-
+    console.log("STEP 2: BEFORE TELEGRAM");
     try {
       await fetch(telegramUrl, {
         method: "POST",
@@ -1083,14 +1085,7 @@ app.post("/order", async (req, res) => {
     } catch (telegramError) {
       console.log("⚠️ Telegram error:", telegramError.message);
     }
-
-    res.json({
-      success: true,
-      message: "Замовлення прийнято",
-    });
-  } catch (error) {
-    console.error("Order error:", error);
-
+    
     try {
       console.log("CRM SAVE START", {
         phone,
@@ -1126,12 +1121,18 @@ app.post("/order", async (req, res) => {
       console.error("CRM SAVE ERROR:", crmError);
       console.error("CRM SAVE ERROR MESSAGE:", crmError?.message);
     }
-
-    res.json({
+    
+    return res.json({
       success: true,
       message: "Замовлення прийнято",
     });
-  }
+    } catch (error) {
+      console.error("Order error:", error);
+    
+      return res.status(500).json({
+        message: "Помилка при оформленні замовлення",
+      });
+    }
 });
 
 app.use((err, req, res, next) => {
