@@ -262,13 +262,19 @@ Telegram успішно прив'язаний до профілю.
       return;
     }
 
-    if (issueResult?.created === false && issueResult?.reason === "active_gift_exists") {
+    if (
+      issueResult?.created === false &&
+      (
+        issueResult?.reason === "active_gift_exists" ||
+        issueResult?.reason === "welcome_gift_already_issued"
+      )
+    ) {
       await bot.sendMessage(
         chatId,
         `Номер підтверджено ✅
-
-Telegram уже прив'язаний до твого профілю.
-🎁 Бонус за підписку вже був нарахований раніше і закріплений за твоїм номером.`,
+    
+    Telegram уже прив'язаний до твого профілю.
+    🎁 Бонус за підписку вже був нарахований раніше. Повторно ця акція не надається.`,
         {
           reply_markup: buildMainKeyboard(),
         }

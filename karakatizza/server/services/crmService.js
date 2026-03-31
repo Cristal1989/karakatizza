@@ -225,21 +225,52 @@ export async function getActiveTelegramGiftByPhone(pool, phone) {
 
 export async function issueTelegramGift(
   pool,
-  { customerId = null, phone, giftRollId = "", giftRollTitle = "", comment = "" }
+  {
+    customerId = null,
+    phone,
+    giftRollId = "",
+    giftRollTitle = "",
+    comment = "",
+  }
 ) {
   const phoneNormalized = normalizeUaPhone(phone);
 
   if (!phoneNormalized) {
-    throw new Error("Некоректний номер телефону для telegram gift");
+    throw new Error("Некоректний номер телефону");
   }
 
-  const existingGift = await getActiveTelegramGiftByPhone(pool, phoneNormalized);
+  const existingAnyGiftResult = await pool.query(
+    `
+      SELECT
+        id,
+        customer_id,
+        phone_normalized,
+        gift_roll_id,
+        gift_roll_title,
+        status,
+        source,
+        comment,
+        issued_at,
+        used_at,
+        created_at,
+        updated_at
+      FROM telegram_gifts
+      WHERE phone_normalized = $1
+        AND source = 'telegram'
+      ORDER BY created_at DESC, id DESC
+      LIMIT 1
+    `,
+    [phoneNormalized]
+  );
 
-  if (existingGift) {
+  const existingAnyGift = existingAnyGiftResult.rows[0] || null;
+
+  if (existingAnyGift) {
     return {
+      success: true,
       created: false,
-      gift: existingGift,
-      reason: "active_gift_exists",
+      reason: "welcome_gift_already_issued",
+      gift: existingAnyGift,
     };
   }
 
@@ -252,9 +283,25 @@ export async function issueTelegramGift(
         gift_roll_title,
         status,
         source,
-        comment
+        comment,
+        issued_at,
+        used_at,
+        created_at,
+        updated_at
       )
-      VALUES ($1, $2, $3, $4, 'issued', 'telegram', $5)
+      VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        'issued',
+        'telegram',
+        $5,
+        NOW(),
+        NULL,
+        NOW(),
+        NOW()
+      )
       RETURNING
         id,
         customer_id,
@@ -270,7 +317,7 @@ export async function issueTelegramGift(
         updated_at
     `,
     [
-      customerId || null,
+      customerId ? Number(customerId) : null,
       phoneNormalized,
       giftRollId || "",
       giftRollTitle || "",
@@ -279,9 +326,10 @@ export async function issueTelegramGift(
   );
 
   return {
+    success: true,
     created: true,
-    gift: insertResult.rows[0],
     reason: "created",
+    gift: insertResult.rows[0],
   };
 }
 
