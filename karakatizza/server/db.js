@@ -598,4 +598,36 @@ await pool.query(`
   CREATE INDEX IF NOT EXISTS idx_customer_rewards_status
   ON customer_rewards(status);
 `);
+
+await pool.query(`
+  CREATE TABLE IF NOT EXISTS telegram_gifts (
+    id SERIAL PRIMARY KEY,
+    customer_id INTEGER REFERENCES customers(id) ON DELETE CASCADE,
+    phone_normalized VARCHAR(32) NOT NULL,
+    gift_roll_id VARCHAR(128),
+    gift_roll_title VARCHAR(255),
+    status VARCHAR(32) NOT NULL DEFAULT 'issued',
+    source VARCHAR(32) NOT NULL DEFAULT 'telegram',
+    comment TEXT DEFAULT '',
+    issued_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    used_at TIMESTAMP NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+  );
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_telegram_gifts_customer_id
+  ON telegram_gifts(customer_id);
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_telegram_gifts_phone_normalized
+  ON telegram_gifts(phone_normalized);
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_telegram_gifts_status
+  ON telegram_gifts(status);
+`);
 }

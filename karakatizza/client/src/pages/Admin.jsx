@@ -30,12 +30,18 @@ import {
   getGiftRollSettings,
   updateGiftRollSettings,
 } from "../api/giftRollApi";
+import CustomersPage from "./CustomersPage";
 
 const sidebarItems = [
   { key: "products", label: "Товари", icon: "🍣" },
   { key: "hero", label: "Банер на головній", icon: "🖼️" },
   { key: "promos", label: "Акції", icon: "🔥" },
   { key: "settings", label: "Налаштування", icon: "⚙️" },
+  {
+    key: "customers",
+    label: "Клієнти",
+    icon: "👥",
+  },
 ];
 
 const categoryOptions = [
@@ -3933,6 +3939,7 @@ export default function Admin() {
               </section>
             </div>
           )}
+          {activeSection === "customers" && <CustomersPage />}
         </main>
       </div>
     </div>

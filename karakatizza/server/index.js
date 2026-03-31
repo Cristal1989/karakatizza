@@ -16,6 +16,7 @@ import giftRollRoutes from "./routes/giftRoll.js";
 import siteSettingsRoutes from "./routes/siteSettings.js";
 import { isValidUaPhone } from "./utils/phone.js";
 import { saveOrderToCrm } from "./services/crmService.js";
+import crmRoutes from "./routes/crmRoutes.js";
 
 dotenv.config();
 
@@ -85,6 +86,7 @@ app.get("/", (req, res) => {
 app.use("/api/delivery", deliveryRoutes);
 app.use("/promotions", promotionsRoutes(pool));
 app.use("/gift-roll", giftRollRoutes(pool));
+app.use("/api/crm", crmRoutes);
 
 const storage = new CloudinaryStorage({
   cloudinary,
@@ -928,8 +930,6 @@ app.put("/banners/reorder", async (req, res) => {
 
 app.post("/order", async (req, res) => {
   try {
-    console.log("ORDER ROUTE HIT");
-    console.log("STEP 1: BODY PARSED");
     const {
       name,
       phone,
@@ -1070,7 +1070,7 @@ app.post("/order", async (req, res) => {
     message += `💰 Разом: ${totalPrice} грн`;
 
     const telegramUrl = `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`;
-    console.log("STEP 2: BEFORE TELEGRAM");
+
     try {
       await fetch(telegramUrl, {
         method: "POST",
