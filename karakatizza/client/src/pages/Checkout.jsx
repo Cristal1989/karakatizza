@@ -35,6 +35,16 @@ export default function Checkout() {
       ? deliverySettings.deliveryZones
       : [];
 
+  const paymentSettings = siteSettings?.payment;
+
+  const cardOnlineEnabled = paymentSettings?.cardOnlineEnabled ?? true;
+  const bankTransferEnabled = paymentSettings?.bankTransferEnabled ?? false;
+
+  const bankTransferCardNumber = paymentSettings?.bankTransferCardNumber || "";
+  const bankTransferRecipient = paymentSettings?.bankTransferRecipient || "";
+  const bankTransferBankName = paymentSettings?.bankTransferBankName || "";
+  const bankTransferHint = paymentSettings?.bankTransferHint || "";
+
   const navigate = useNavigate();
   const { cartItems, clearCart, totalPrice } = useCart();
   const {
@@ -483,6 +493,39 @@ export default function Checkout() {
       setCheckoutMode("delivery");
     }
   }, [deliveryEnabled, pickupEnabled, setCheckoutMode]);
+
+  useEffect(() => {
+    if (form.paymentMethod === "card" && !cardOnlineEnabled) {
+      if (bankTransferEnabled) {
+        setForm((prev) => ({
+          ...prev,
+          paymentMethod: "bank_transfer",
+        }));
+      } else {
+        setForm((prev) => ({
+          ...prev,
+          paymentMethod: "cash",
+        }));
+      }
+    }
+  
+    if (
+      form.paymentMethod === "bank_transfer" &&
+      !bankTransferEnabled
+    ) {
+      if (cardOnlineEnabled) {
+        setForm((prev) => ({
+          ...prev,
+          paymentMethod: "card",
+        }));
+      } else {
+        setForm((prev) => ({
+          ...prev,
+          paymentMethod: "cash",
+        }));
+      }
+    }
+  }, [form.paymentMethod, cardOnlineEnabled, bankTransferEnabled]);
 
   useEffect(() => {
     if (!hasSushiItems) {
@@ -1063,23 +1106,116 @@ export default function Checkout() {
                 Готівка
               </button>
 
-              <button
-                type="button"
-                style={
-                  form.paymentMethod === "card"
-                    ? activeTabStyle
-                    : inactiveTabStyle
-                }
-                onClick={() =>
-                  setForm((prev) => ({
-                    ...prev,
-                    paymentMethod: "card",
-                  }))
-                }
-              >
-                Картка
-              </button>
+              {cardOnlineEnabled && (
+                <button
+                  type="button"
+                  style={
+                    form.paymentMethod === "card"
+                      ? activeTabStyle
+                      : inactiveTabStyle
+                  }
+                  onClick={() =>
+                    setForm((prev) => ({
+                      ...prev,
+                      paymentMethod: "card",
+                    }))
+                  }
+                >
+                  Картка онлайн
+                </button>
+              )}
+
+              {bankTransferEnabled && (
+                <button
+                  type="button"
+                  style={
+                    form.paymentMethod === "bank_transfer"
+                      ? activeTabStyle
+                      : inactiveTabStyle
+                  }
+                  onClick={() =>
+                    setForm((prev) => ({
+                      ...prev,
+                      paymentMethod: "bank_transfer",
+                    }))
+                  }
+                >
+                  Переказ на карту
+                </button>
+              )}
             </div>
+
+            {form.paymentMethod === "bank_transfer" && bankTransferEnabled && (
+              <div
+                style={{
+                  marginTop: "14px",
+                  background: "#fff7ed",
+                  border: "1px solid #fdba74",
+                  borderRadius: "16px",
+                  padding: "14px",
+                  display: "grid",
+                  gap: "10px",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "15px",
+                    fontWeight: 700,
+                    color: "#9a3412",
+                  }}
+                >
+                  Реквізити для переказу
+                </div>
+
+                {bankTransferCardNumber && (
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      color: "#7c2d12",
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    <strong>Картка:</strong> {bankTransferCardNumber}
+                  </div>
+                )}
+
+                {bankTransferRecipient && (
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      color: "#7c2d12",
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    <strong>Отримувач:</strong> {bankTransferRecipient}
+                  </div>
+                )}
+
+                {bankTransferBankName && (
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      color: "#7c2d12",
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    <strong>Банк:</strong> {bankTransferBankName}
+                  </div>
+                )}
+
+                {bankTransferHint && (
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      color: "#9a3412",
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {bankTransferHint}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div style={sectionCardStyle}>

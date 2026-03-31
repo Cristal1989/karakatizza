@@ -82,3 +82,21 @@ export async function updateDeliverySettings(payload) {
 
   return data;
 }
+
+export async function updatePaymentSettings(payload) {
+  const response = await fetch(`${API_BASE}/api/settings/payment`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data?.message || "Не вдалося зберегти налаштування оплати");
+  }
+
+  return data;
+}

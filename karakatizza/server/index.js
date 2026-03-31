@@ -965,7 +965,13 @@ app.post("/order", async (req, res) => {
       message += `🏢 Під'їзд: ${entrance}\n`;
     }
     if (paymentMethod) {
-      const paymentText = paymentMethod === "card" ? "Картка" : "Готівка";
+      const paymentText =
+        paymentMethod === "card"
+          ? "Картка онлайн"
+          : paymentMethod === "bank_transfer"
+            ? "Переказ на карту"
+            : "Готівка";
+    
       message += `💳 Оплата: ${paymentText}\n`;
     }
     if (needExactTime && exactTime) {

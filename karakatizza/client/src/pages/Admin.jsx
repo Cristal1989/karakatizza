@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { getSiteSettings, updateWorkingHours, updatePopupSettings, updateContactsSettings, updateDeliverySettings } from "../api/siteSettingsApi";
+import {
+  getSiteSettings,
+  updateWorkingHours,
+  updatePopupSettings,
+  updateContactsSettings,
+  updateDeliverySettings,
+  updatePaymentSettings,
+} from "../api/siteSettingsApi";
 import {
   getProducts,
   createProduct,
@@ -94,7 +101,7 @@ export default function Admin() {
 
   const [promotionMessage, setPromotionMessage] = useState("");
   const [promotionError, setPromotionError] = useState("");
-  
+
   const [giftRollMessage, setGiftRollMessage] = useState("");
   const [giftRollError, setGiftRollError] = useState("");
 
@@ -130,11 +137,10 @@ export default function Admin() {
     outsideHoursText: "",
     closedTodayText: "",
   });
-  
+
   const [popupSaving, setPopupSaving] = useState(false);
   const [popupMessage, setPopupMessage] = useState("");
   const [popupError, setPopupError] = useState("");
-
 
   const [workingHoursSettings, setWorkingHoursSettings] = useState({
     openTime: "10:00",
@@ -142,7 +148,7 @@ export default function Admin() {
     closedToday: false,
     allowOrdersAfterHours: true,
   });
-  
+
   const [workingHoursSaving, setWorkingHoursSaving] = useState(false);
   const [workingHoursLoading, setWorkingHoursLoading] = useState(false);
   const [workingHoursMessage, setWorkingHoursMessage] = useState("");
@@ -157,7 +163,7 @@ export default function Admin() {
     telegramLink: "",
     viberLink: "",
   });
-  
+
   const [contactsSaving, setContactsSaving] = useState(false);
   const [contactsMessage, setContactsMessage] = useState("");
   const [contactsError, setContactsError] = useState("");
@@ -182,10 +188,23 @@ export default function Admin() {
       { maxKm: 14, minOrder: 1300 },
     ],
   });
-  
+
   const [deliverySaving, setDeliverySaving] = useState(false);
   const [deliveryMessage, setDeliveryMessage] = useState("");
   const [deliveryError, setDeliveryError] = useState("");
+
+  const [paymentSettings, setPaymentSettings] = useState({
+    cardOnlineEnabled: true,
+    bankTransferEnabled: false,
+    bankTransferCardNumber: "",
+    bankTransferRecipient: "",
+    bankTransferBankName: "",
+    bankTransferHint: "",
+  });
+
+  const [paymentSaving, setPaymentSaving] = useState(false);
+  const [paymentMessage, setPaymentMessage] = useState("");
+  const [paymentError, setPaymentError] = useState("");
 
   const inputStyle = {
     width: "100%",
@@ -217,7 +236,7 @@ export default function Admin() {
     padding: "24px",
     boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
   };
-  
+
   const settingsTitleStyle = {
     marginTop: 0,
     marginBottom: "8px",
@@ -225,7 +244,7 @@ export default function Admin() {
     fontWeight: 800,
     color: "#111",
   };
-  
+
   const settingsDescStyle = {
     margin: 0,
     color: "#666",
@@ -261,9 +280,9 @@ export default function Admin() {
       try {
         setWorkingHoursLoading(true);
         setWorkingHoursError("");
-  
+
         const settings = await getSiteSettings();
-  
+
         if (settings?.workingHours) {
           setWorkingHoursSettings({
             openTime: settings.workingHours.openTime || "10:00",
@@ -275,7 +294,8 @@ export default function Admin() {
         }
         if (settings?.popup) {
           setPopupSettings({
-            showOutsideWorkingHours: settings.popup.showOutsideWorkingHours === true,
+            showOutsideWorkingHours:
+              settings.popup.showOutsideWorkingHours === true,
             closedToday: settings?.workingHours?.closedToday === true,
             outsideHoursText: settings.popup.outsideHoursText || "",
             closedTodayText: settings.popup.closedTodayText || "",
@@ -296,7 +316,9 @@ export default function Admin() {
           setDeliverySettings({
             deliveryEnabled: settings.delivery.deliveryEnabled === true,
             pickupEnabled: settings.delivery.pickupEnabled === true,
-            pickupDiscountPercent: Number(settings.delivery.pickupDiscountPercent ?? 5),
+            pickupDiscountPercent: Number(
+              settings.delivery.pickupDiscountPercent ?? 5
+            ),
             showFreeDeliveryProgress:
               settings.delivery.showFreeDeliveryProgress === true,
             deliveryText: settings.delivery.deliveryText || "",
@@ -309,6 +331,17 @@ export default function Admin() {
               : [],
           });
         }
+        if (settings?.payment) {
+          setPaymentSettings({
+            cardOnlineEnabled: settings.payment.cardOnlineEnabled === true,
+            bankTransferEnabled: settings.payment.bankTransferEnabled === true,
+            bankTransferCardNumber:
+              settings.payment.bankTransferCardNumber || "",
+            bankTransferRecipient: settings.payment.bankTransferRecipient || "",
+            bankTransferBankName: settings.payment.bankTransferBankName || "",
+            bankTransferHint: settings.payment.bankTransferHint || "",
+          });
+        }
       } catch (error) {
         console.error("LOAD WORKING HOURS ERROR:", error);
         setWorkingHoursError("Не вдалося завантажити робочі години");
@@ -316,7 +349,7 @@ export default function Admin() {
         setWorkingHoursLoading(false);
       }
     };
-  
+
     loadWorkingHoursSettings();
   }, []);
 
@@ -447,7 +480,7 @@ export default function Admin() {
 
   const handleWorkingHoursChange = (e) => {
     const { name, value, type, checked } = e.target;
-  
+
     setWorkingHoursSettings((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
@@ -459,7 +492,7 @@ export default function Admin() {
       setWorkingHoursSaving(true);
       setWorkingHoursMessage("");
       setWorkingHoursError("");
-  
+
       const payload = {
         openTime: workingHoursSettings.openTime,
         closeTime: workingHoursSettings.closeTime,
@@ -467,9 +500,9 @@ export default function Admin() {
         allowOrdersAfterHours:
           workingHoursSettings.allowOrdersAfterHours === true,
       };
-  
+
       const result = await updateWorkingHours(payload);
-  
+
       setWorkingHoursSettings({
         openTime: result.workingHours?.openTime || payload.openTime,
         closeTime: result.workingHours?.closeTime || payload.closeTime,
@@ -477,13 +510,11 @@ export default function Admin() {
         allowOrdersAfterHours:
           result.workingHours?.allowOrdersAfterHours === true,
       });
-  
+
       setWorkingHoursMessage("✅ Налаштування робочих годин збережено");
     } catch (error) {
       console.error("SAVE WORKING HOURS ERROR:", error);
-      setWorkingHoursError(
-        error.message || "Помилка збереження робочих годин"
-      );
+      setWorkingHoursError(error.message || "Помилка збереження робочих годин");
     } finally {
       setWorkingHoursSaving(false);
     }
@@ -491,20 +522,20 @@ export default function Admin() {
 
   const handleDeliveryChange = (e) => {
     const { name, value, type, checked } = e.target;
-  
+
     setDeliveryError("");
     setDeliveryMessage("");
-  
+
     setDeliverySettings((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
   };
-  
+
   const handleZoneChange = (index, field, value) => {
     setDeliveryError("");
     setDeliveryMessage("");
-  
+
     setDeliverySettings((prev) => ({
       ...prev,
       deliveryZones: prev.deliveryZones.map((zone, zoneIndex) =>
@@ -517,27 +548,29 @@ export default function Admin() {
       ),
     }));
   };
-  
+
   const handleAddZone = () => {
     setDeliverySettings((prev) => ({
       ...prev,
       deliveryZones: [...prev.deliveryZones, { maxKm: "", minOrder: "" }],
     }));
   };
-  
+
   const handleRemoveZone = (index) => {
     setDeliverySettings((prev) => ({
       ...prev,
-      deliveryZones: prev.deliveryZones.filter((_, zoneIndex) => zoneIndex !== index),
+      deliveryZones: prev.deliveryZones.filter(
+        (_, zoneIndex) => zoneIndex !== index
+      ),
     }));
   };
 
   const handleContactsChange = (e) => {
     const { name, value } = e.target;
-  
+
     setContactsError("");
     setContactsMessage("");
-  
+
     setContactsSettings((prev) => ({
       ...prev,
       [name]: value,
@@ -549,11 +582,13 @@ export default function Admin() {
       setDeliverySaving(true);
       setDeliveryMessage("");
       setDeliveryError("");
-  
+
       const payload = {
         deliveryEnabled: deliverySettings.deliveryEnabled === true,
         pickupEnabled: deliverySettings.pickupEnabled === true,
-        pickupDiscountPercent: Number(deliverySettings.pickupDiscountPercent ?? 5),
+        pickupDiscountPercent: Number(
+          deliverySettings.pickupDiscountPercent ?? 5
+        ),
         showFreeDeliveryProgress:
           deliverySettings.showFreeDeliveryProgress === true,
         deliveryText: deliverySettings.deliveryText,
@@ -566,13 +601,15 @@ export default function Admin() {
           minOrder: Number(zone.minOrder),
         })),
       };
-  
+
       const result = await updateDeliverySettings(payload);
-  
+
       setDeliverySettings({
         deliveryEnabled: result.delivery?.deliveryEnabled === true,
         pickupEnabled: result.delivery?.pickupEnabled === true,
-        pickupDiscountPercent: Number(result.delivery?.pickupDiscountPercent ?? 5),
+        pickupDiscountPercent: Number(
+          result.delivery?.pickupDiscountPercent ?? 5
+        ),
         showFreeDeliveryProgress:
           result.delivery?.showFreeDeliveryProgress === true,
         deliveryText: result.delivery?.deliveryText || "",
@@ -584,9 +621,9 @@ export default function Admin() {
           ? result.delivery.deliveryZones
           : [],
       });
-  
+
       setDeliveryMessage("✅ Налаштування доставки збережено");
-  
+
       setTimeout(() => {
         setDeliveryMessage("");
       }, 2500);
@@ -605,7 +642,7 @@ export default function Admin() {
       setContactsSaving(true);
       setContactsMessage("");
       setContactsError("");
-  
+
       const payload = {
         phonePrimary: contactsSettings.phonePrimary,
         phoneSecondary: contactsSettings.phoneSecondary,
@@ -615,9 +652,9 @@ export default function Admin() {
         telegramLink: contactsSettings.telegramLink,
         viberLink: contactsSettings.viberLink,
       };
-  
+
       const result = await updateContactsSettings(payload);
-  
+
       setContactsSettings({
         phonePrimary: result.contacts?.phonePrimary || "",
         phoneSecondary: result.contacts?.phoneSecondary || "",
@@ -627,9 +664,9 @@ export default function Admin() {
         telegramLink: result.contacts?.telegramLink || "",
         viberLink: result.contacts?.viberLink || "",
       });
-  
+
       setContactsMessage("✅ Контакти збережено");
-  
+
       setTimeout(() => {
         setContactsMessage("");
       }, 2500);
@@ -641,12 +678,61 @@ export default function Admin() {
     }
   };
 
+  const handlePaymentChange = (e) => {
+    const { name, value, type, checked } = e.target;
+
+    setPaymentError("");
+    setPaymentMessage("");
+
+    setPaymentSettings((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleSavePaymentSettings = async () => {
+    try {
+      setPaymentSaving(true);
+      setPaymentMessage("");
+      setPaymentError("");
+
+      const result = await updatePaymentSettings({
+        cardOnlineEnabled: paymentSettings.cardOnlineEnabled === true,
+        bankTransferEnabled: paymentSettings.bankTransferEnabled === true,
+        bankTransferCardNumber: paymentSettings.bankTransferCardNumber,
+        bankTransferRecipient: paymentSettings.bankTransferRecipient,
+        bankTransferBankName: paymentSettings.bankTransferBankName,
+        bankTransferHint: paymentSettings.bankTransferHint,
+      });
+
+      setPaymentSettings({
+        cardOnlineEnabled: result.payment?.cardOnlineEnabled === true,
+        bankTransferEnabled: result.payment?.bankTransferEnabled === true,
+        bankTransferCardNumber: result.payment?.bankTransferCardNumber || "",
+        bankTransferRecipient: result.payment?.bankTransferRecipient || "",
+        bankTransferBankName: result.payment?.bankTransferBankName || "",
+        bankTransferHint: result.payment?.bankTransferHint || "",
+      });
+
+      setPaymentMessage("✅ Налаштування оплати збережено");
+
+      setTimeout(() => {
+        setPaymentMessage("");
+      }, 2500);
+    } catch (error) {
+      console.error("SAVE PAYMENT SETTINGS ERROR:", error);
+      setPaymentError(error.message || "Помилка збереження налаштувань оплати");
+    } finally {
+      setPaymentSaving(false);
+    }
+  };
+
   const handlePopupChange = (e) => {
     const { name, value, type, checked } = e.target;
-  
+
     setPopupError("");
     setPopupMessage("");
-  
+
     setPopupSettings((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
@@ -658,33 +744,30 @@ export default function Admin() {
       setPopupSaving(true);
       setPopupMessage("");
       setPopupError("");
-  
+
       const payload = {
         showOutsideWorkingHours: popupSettings.showOutsideWorkingHours === true,
         outsideHoursText: popupSettings.outsideHoursText,
         closedTodayText: popupSettings.closedTodayText,
       };
-  
+
       const result = await updatePopupSettings(payload);
-  
+
       setPopupSettings((prev) => ({
         ...prev,
-        showOutsideWorkingHours:
-          result.popup?.showOutsideWorkingHours === true,
+        showOutsideWorkingHours: result.popup?.showOutsideWorkingHours === true,
         outsideHoursText: result.popup?.outsideHoursText || "",
         closedTodayText: result.popup?.closedTodayText || "",
       }));
-  
+
       setPopupMessage("✅ Налаштування попапа збережено");
-  
+
       setTimeout(() => {
         setPopupMessage("");
       }, 2500);
     } catch (error) {
       console.error("SAVE POPUP SETTINGS ERROR:", error);
-      setPopupError(
-        error.message || "Помилка збереження налаштувань попапа"
-      );
+      setPopupError(error.message || "Помилка збереження налаштувань попапа");
     } finally {
       setPopupSaving(false);
     }
@@ -879,7 +962,9 @@ export default function Admin() {
       setPromotionMessage("✅ Налаштування акції оновлено");
     } catch (error) {
       console.error("SAVE PROMOTION SETTINGS ERROR:", error);
-      setPromotionError(error.message || "Помилка збереження налаштувань акції");
+      setPromotionError(
+        error.message || "Помилка збереження налаштувань акції"
+      );
     } finally {
       setPromotionSaving(false);
     }
@@ -2588,36 +2673,36 @@ export default function Admin() {
                 </button>
               </form>
               {promotionMessage && (
-  <div
-    style={{
-      marginTop: "12px",
-      padding: "12px 14px",
-      borderRadius: "12px",
-      background: "#ecfdf3",
-      color: "#166534",
-      fontWeight: 600,
-      fontSize: "14px",
-    }}
-  >
-    {promotionMessage}
-  </div>
-)}
+                <div
+                  style={{
+                    marginTop: "12px",
+                    padding: "12px 14px",
+                    borderRadius: "12px",
+                    background: "#ecfdf3",
+                    color: "#166534",
+                    fontWeight: 600,
+                    fontSize: "14px",
+                  }}
+                >
+                  {promotionMessage}
+                </div>
+              )}
 
-{promotionError && (
-  <div
-    style={{
-      marginTop: "12px",
-      padding: "12px 14px",
-      borderRadius: "12px",
-      background: "#fef2f2",
-      color: "#b91c1c",
-      fontWeight: 600,
-      fontSize: "14px",
-    }}
-  >
-    {promotionError}
-  </div>
-)}
+              {promotionError && (
+                <div
+                  style={{
+                    marginTop: "12px",
+                    padding: "12px 14px",
+                    borderRadius: "12px",
+                    background: "#fef2f2",
+                    color: "#b91c1c",
+                    fontWeight: 600,
+                    fontSize: "14px",
+                  }}
+                >
+                  {promotionError}
+                </div>
+              )}
               <div
                 style={{
                   background: "#fff",
@@ -2735,736 +2820,906 @@ export default function Admin() {
                 </button>
               </div>
               {giftRollMessage && (
-  <div
-    style={{
-      marginTop: "12px",
-      padding: "12px 14px",
-      borderRadius: "12px",
-      background: "#ecfdf3",
-      color: "#166534",
-      fontWeight: 600,
-      fontSize: "14px",
-    }}
-  >
-    {giftRollMessage}
-  </div>
-)}
+                <div
+                  style={{
+                    marginTop: "12px",
+                    padding: "12px 14px",
+                    borderRadius: "12px",
+                    background: "#ecfdf3",
+                    color: "#166534",
+                    fontWeight: 600,
+                    fontSize: "14px",
+                  }}
+                >
+                  {giftRollMessage}
+                </div>
+              )}
 
-{giftRollError && (
-  <div
-    style={{
-      marginTop: "12px",
-      padding: "12px 14px",
-      borderRadius: "12px",
-      background: "#fef2f2",
-      color: "#b91c1c",
-      fontWeight: 600,
-      fontSize: "14px",
-    }}
-  >
-    {giftRollError}
-  </div>
-)}
+              {giftRollError && (
+                <div
+                  style={{
+                    marginTop: "12px",
+                    padding: "12px 14px",
+                    borderRadius: "12px",
+                    background: "#fef2f2",
+                    color: "#b91c1c",
+                    fontWeight: 600,
+                    fontSize: "14px",
+                  }}
+                >
+                  {giftRollError}
+                </div>
+              )}
             </section>
           )}
 
           {activeSection === "settings" && (
-  <div
-    style={{
-      display: "grid",
-      gap: "20px",
-      maxWidth: "900px",
-    }}
-  >
-    <section style={settingsCardStyle}>
-  <h2 style={settingsTitleStyle}>Робочі години</h2>
-  <p style={settingsDescStyle}>
-    Керування графіком роботи сайту та прийомом замовлень.
-  </p>
+            <div
+              style={{
+                display: "grid",
+                gap: "20px",
+                maxWidth: "900px",
+              }}
+            >
+              <section style={settingsCardStyle}>
+                <h2 style={settingsTitleStyle}>Робочі години</h2>
+                <p style={settingsDescStyle}>
+                  Керування графіком роботи сайту та прийомом замовлень.
+                </p>
 
-  <div
-    style={{
-      display: "grid",
-      gridTemplateColumns: "1fr 1fr",
-      gap: "16px",
-      marginTop: "20px",
-      marginBottom: "18px",
-    }}
-  >
-    <div>
-      <label
-        style={{
-          display: "block",
-          marginBottom: "8px",
-          fontWeight: 600,
-          color: "#222",
-        }}
-      >
-        Відкриття
-      </label>
-      <input
-        type="time"
-        name="openTime"
-        value={workingHoursSettings.openTime}
-        onChange={handleWorkingHoursChange}
-        style={inputStyle}
-      />
-    </div>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "16px",
+                    marginTop: "20px",
+                    marginBottom: "18px",
+                  }}
+                >
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "8px",
+                        fontWeight: 600,
+                        color: "#222",
+                      }}
+                    >
+                      Відкриття
+                    </label>
+                    <input
+                      type="time"
+                      name="openTime"
+                      value={workingHoursSettings.openTime}
+                      onChange={handleWorkingHoursChange}
+                      style={inputStyle}
+                    />
+                  </div>
 
-    <div>
-      <label
-        style={{
-          display: "block",
-          marginBottom: "8px",
-          fontWeight: 600,
-          color: "#222",
-        }}
-      >
-        Закриття
-      </label>
-      <input
-        type="time"
-        name="closeTime"
-        value={workingHoursSettings.closeTime}
-        onChange={handleWorkingHoursChange}
-        style={inputStyle}
-      />
-    </div>
-  </div>
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "8px",
+                        fontWeight: 600,
+                        color: "#222",
+                      }}
+                    >
+                      Закриття
+                    </label>
+                    <input
+                      type="time"
+                      name="closeTime"
+                      value={workingHoursSettings.closeTime}
+                      onChange={handleWorkingHoursChange}
+                      style={inputStyle}
+                    />
+                  </div>
+                </div>
 
-  <label
-    style={{
-      display: "flex",
-      alignItems: "center",
-      gap: "10px",
-      marginBottom: "14px",
-      fontWeight: 600,
-      color: "#222",
-    }}
-  >
-    <input
-      type="checkbox"
-      name="closedToday"
-      checked={workingHoursSettings.closedToday}
-      onChange={handleWorkingHoursChange}
-    />
-    Закрито сьогодні
-  </label>
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    marginBottom: "14px",
+                    fontWeight: 600,
+                    color: "#222",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    name="closedToday"
+                    checked={workingHoursSettings.closedToday}
+                    onChange={handleWorkingHoursChange}
+                  />
+                  Закрито сьогодні
+                </label>
 
-  <label
-    style={{
-      display: "flex",
-      alignItems: "center",
-      gap: "10px",
-      marginBottom: "20px",
-      fontWeight: 600,
-      color: "#222",
-    }}
-  >
-    <input
-      type="checkbox"
-      name="allowOrdersAfterHours"
-      checked={workingHoursSettings.allowOrdersAfterHours}
-      onChange={handleWorkingHoursChange}
-    />
-    Приймати замовлення поза графіком
-  </label>
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    marginBottom: "20px",
+                    fontWeight: 600,
+                    color: "#222",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    name="allowOrdersAfterHours"
+                    checked={workingHoursSettings.allowOrdersAfterHours}
+                    onChange={handleWorkingHoursChange}
+                  />
+                  Приймати замовлення поза графіком
+                </label>
 
-  <button
-    type="button"
-    onClick={handleSaveWorkingHours}
-    disabled={workingHoursSaving}
-    style={{
-      border: "none",
-      background: "#e56a45",
-      color: "#fff",
-      borderRadius: "14px",
-      padding: "14px 22px",
-      fontSize: "16px",
-      fontWeight: 700,
-      cursor: "pointer",
-      opacity: workingHoursSaving ? 0.7 : 1,
-    }}
-  >
-    {workingHoursSaving ? "Збереження..." : "Зберегти налаштування"}
-  </button>
+                <button
+                  type="button"
+                  onClick={handleSaveWorkingHours}
+                  disabled={workingHoursSaving}
+                  style={{
+                    border: "none",
+                    background: "#e56a45",
+                    color: "#fff",
+                    borderRadius: "14px",
+                    padding: "14px 22px",
+                    fontSize: "16px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    opacity: workingHoursSaving ? 0.7 : 1,
+                  }}
+                >
+                  {workingHoursSaving
+                    ? "Збереження..."
+                    : "Зберегти налаштування"}
+                </button>
 
-  {workingHoursMessage && (
-    <div
-      style={{
-        marginTop: "12px",
-        padding: "12px 14px",
-        borderRadius: "12px",
-        background: "#ecfdf3",
-        color: "#166534",
-        fontWeight: 600,
-        fontSize: "14px",
-      }}
-    >
-      {workingHoursMessage}
-    </div>
-  )}
+                {workingHoursMessage && (
+                  <div
+                    style={{
+                      marginTop: "12px",
+                      padding: "12px 14px",
+                      borderRadius: "12px",
+                      background: "#ecfdf3",
+                      color: "#166534",
+                      fontWeight: 600,
+                      fontSize: "14px",
+                    }}
+                  >
+                    {workingHoursMessage}
+                  </div>
+                )}
 
-  {workingHoursError && (
-    <div
-      style={{
-        marginTop: "12px",
-        padding: "12px 14px",
-        borderRadius: "12px",
-        background: "#fef2f2",
-        color: "#b91c1c",
-        fontWeight: 600,
-        fontSize: "14px",
-      }}
-    >
-      {workingHoursError}
-    </div>
-  )}
-</section>
+                {workingHoursError && (
+                  <div
+                    style={{
+                      marginTop: "12px",
+                      padding: "12px 14px",
+                      borderRadius: "12px",
+                      background: "#fef2f2",
+                      color: "#b91c1c",
+                      fontWeight: 600,
+                      fontSize: "14px",
+                    }}
+                  >
+                    {workingHoursError}
+                  </div>
+                )}
+              </section>
 
-    <section style={settingsCardStyle}>
-    <section style={settingsCardStyle}>
-  <h2 style={settingsTitleStyle}>Попап</h2>
-  <p style={settingsDescStyle}>
-    Повідомлення для клієнта поза робочим часом або коли заклад зачинений.
-  </p>
+              <section style={settingsCardStyle}>
+                <section style={settingsCardStyle}>
+                  <h2 style={settingsTitleStyle}>Попап</h2>
+                  <p style={settingsDescStyle}>
+                    Повідомлення для клієнта поза робочим часом або коли заклад
+                    зачинений.
+                  </p>
 
-  <div style={{ marginTop: "20px" }}>
-    <label
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "10px",
-        marginBottom: "12px",
-        fontWeight: 600,
-        color: "#222",
-      }}
-    >
-      <input
-        type="checkbox"
-        name="showOutsideWorkingHours"
-        checked={popupSettings.showOutsideWorkingHours}
-        onChange={handlePopupChange}
-      />
-      Показувати поза робочим часом
-    </label>
+                  <div style={{ marginTop: "20px" }}>
+                    <label
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        marginBottom: "12px",
+                        fontWeight: 600,
+                        color: "#222",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        name="showOutsideWorkingHours"
+                        checked={popupSettings.showOutsideWorkingHours}
+                        onChange={handlePopupChange}
+                      />
+                      Показувати поза робочим часом
+                    </label>
 
+                    <textarea
+                      name="outsideHoursText"
+                      value={popupSettings.outsideHoursText}
+                      onChange={handlePopupChange}
+                      placeholder="Текст для повідомлення поза робочим часом"
+                      style={{
+                        ...inputStyle,
+                        minHeight: "90px",
+                        resize: "vertical",
+                        marginBottom: "14px",
+                      }}
+                    />
 
-    <textarea
-      name="outsideHoursText"
-      value={popupSettings.outsideHoursText}
-      onChange={handlePopupChange}
-      placeholder="Текст для повідомлення поза робочим часом"
-      style={{
-        ...inputStyle,
-        minHeight: "90px",
-        resize: "vertical",
-        marginBottom: "14px",
-      }}
-    />
+                    <textarea
+                      name="closedTodayText"
+                      value={popupSettings.closedTodayText}
+                      onChange={handlePopupChange}
+                      placeholder="Текст для повідомлення коли сьогодні зачинено"
+                      style={{
+                        ...inputStyle,
+                        minHeight: "90px",
+                        resize: "vertical",
+                        marginBottom: "18px",
+                      }}
+                    />
 
-    <textarea
-      name="closedTodayText"
-      value={popupSettings.closedTodayText}
-      onChange={handlePopupChange}
-      placeholder="Текст для повідомлення коли сьогодні зачинено"
-      style={{
-        ...inputStyle,
-        minHeight: "90px",
-        resize: "vertical",
-        marginBottom: "18px",
-      }}
-    />
+                    <button
+                      type="button"
+                      onClick={handleSavePopupSettings}
+                      disabled={popupSaving}
+                      style={{
+                        border: "none",
+                        background: "#e56a45",
+                        color: "#fff",
+                        borderRadius: "14px",
+                        padding: "14px 22px",
+                        fontSize: "16px",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        opacity: popupSaving ? 0.7 : 1,
+                      }}
+                    >
+                      {popupSaving ? "Збереження..." : "Зберегти налаштування"}
+                    </button>
 
-    <button
-      type="button"
-      onClick={handleSavePopupSettings}
-      disabled={popupSaving}
-      style={{
-        border: "none",
-        background: "#e56a45",
-        color: "#fff",
-        borderRadius: "14px",
-        padding: "14px 22px",
-        fontSize: "16px",
-        fontWeight: 700,
-        cursor: "pointer",
-        opacity: popupSaving ? 0.7 : 1,
-      }}
-    >
-      {popupSaving ? "Збереження..." : "Зберегти налаштування"}
-    </button>
+                    {popupMessage && (
+                      <div
+                        style={{
+                          marginTop: "12px",
+                          padding: "12px 14px",
+                          borderRadius: "12px",
+                          background: "#ecfdf3",
+                          color: "#166534",
+                          fontWeight: 600,
+                          fontSize: "14px",
+                        }}
+                      >
+                        {popupMessage}
+                      </div>
+                    )}
 
-    {popupMessage && (
-      <div
-        style={{
-          marginTop: "12px",
-          padding: "12px 14px",
-          borderRadius: "12px",
-          background: "#ecfdf3",
-          color: "#166534",
-          fontWeight: 600,
-          fontSize: "14px",
-        }}
-      >
-        {popupMessage}
-      </div>
-    )}
+                    {popupError && (
+                      <div
+                        style={{
+                          marginTop: "12px",
+                          padding: "12px 14px",
+                          borderRadius: "12px",
+                          background: "#fef2f2",
+                          color: "#b91c1c",
+                          fontWeight: 600,
+                          fontSize: "14px",
+                        }}
+                      >
+                        {popupError}
+                      </div>
+                    )}
+                  </div>
+                </section>
+              </section>
 
-    {popupError && (
-      <div
-        style={{
-          marginTop: "12px",
-          padding: "12px 14px",
-          borderRadius: "12px",
-          background: "#fef2f2",
-          color: "#b91c1c",
-          fontWeight: 600,
-          fontSize: "14px",
-        }}
-      >
-        {popupError}
-      </div>
-    )}
-  </div>
-</section>
-    </section>
+              <section style={settingsCardStyle}>
+                <section style={settingsCardStyle}>
+                  <h2 style={settingsTitleStyle}>Контакти</h2>
+                  <p style={settingsDescStyle}>
+                    Телефони, адреса самовивозу та посилання на соцмережі.
+                  </p>
 
-    <section style={settingsCardStyle}>
-    <section style={settingsCardStyle}>
-  <h2 style={settingsTitleStyle}>Контакти</h2>
-  <p style={settingsDescStyle}>
-    Телефони, адреса самовивозу та посилання на соцмережі.
-  </p>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "16px",
+                      marginTop: "20px",
+                      marginBottom: "16px",
+                    }}
+                  >
+                    <input
+                      type="text"
+                      name="phonePrimary"
+                      placeholder="Основний телефон"
+                      value={contactsSettings.phonePrimary}
+                      onChange={handleContactsChange}
+                      style={inputStyle}
+                    />
 
-  <div
-    style={{
-      display: "grid",
-      gridTemplateColumns: "1fr 1fr",
-      gap: "16px",
-      marginTop: "20px",
-      marginBottom: "16px",
-    }}
-  >
-    <input
-      type="text"
-      name="phonePrimary"
-      placeholder="Основний телефон"
-      value={contactsSettings.phonePrimary}
-      onChange={handleContactsChange}
-      style={inputStyle}
-    />
+                    <input
+                      type="text"
+                      name="phoneSecondary"
+                      placeholder="Другий телефон"
+                      value={contactsSettings.phoneSecondary}
+                      onChange={handleContactsChange}
+                      style={inputStyle}
+                    />
+                  </div>
 
-    <input
-      type="text"
-      name="phoneSecondary"
-      placeholder="Другий телефон"
-      value={contactsSettings.phoneSecondary}
-      onChange={handleContactsChange}
-      style={inputStyle}
-    />
-  </div>
+                  <div style={{ marginBottom: "16px" }}>
+                    <input
+                      type="text"
+                      name="pickupAddress"
+                      placeholder="Адреса самовивозу"
+                      value={contactsSettings.pickupAddress}
+                      onChange={handleContactsChange}
+                      style={inputStyle}
+                    />
+                  </div>
 
-  <div style={{ marginBottom: "16px" }}>
-    <input
-      type="text"
-      name="pickupAddress"
-      placeholder="Адреса самовивозу"
-      value={contactsSettings.pickupAddress}
-      onChange={handleContactsChange}
-      style={inputStyle}
-    />
-  </div>
+                  <div style={{ marginBottom: "16px" }}>
+                    <input
+                      type="text"
+                      name="mapLink"
+                      placeholder="Посилання на гео"
+                      value={contactsSettings.mapLink}
+                      onChange={handleContactsChange}
+                      style={inputStyle}
+                    />
+                  </div>
 
-  <div style={{ marginBottom: "16px" }}>
-    <input
-      type="text"
-      name="mapLink"
-      placeholder="Посилання на гео"
-      value={contactsSettings.mapLink}
-      onChange={handleContactsChange}
-      style={inputStyle}
-    />
-  </div>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr 1fr",
+                      gap: "16px",
+                      marginBottom: "18px",
+                    }}
+                  >
+                    <input
+                      type="text"
+                      name="instagramLink"
+                      placeholder="Instagram"
+                      value={contactsSettings.instagramLink}
+                      onChange={handleContactsChange}
+                      style={inputStyle}
+                    />
 
-  <div
-    style={{
-      display: "grid",
-      gridTemplateColumns: "1fr 1fr 1fr",
-      gap: "16px",
-      marginBottom: "18px",
-    }}
-  >
-    <input
-      type="text"
-      name="instagramLink"
-      placeholder="Instagram"
-      value={contactsSettings.instagramLink}
-      onChange={handleContactsChange}
-      style={inputStyle}
-    />
+                    <input
+                      type="text"
+                      name="telegramLink"
+                      placeholder="Telegram"
+                      value={contactsSettings.telegramLink}
+                      onChange={handleContactsChange}
+                      style={inputStyle}
+                    />
 
-    <input
-      type="text"
-      name="telegramLink"
-      placeholder="Telegram"
-      value={contactsSettings.telegramLink}
-      onChange={handleContactsChange}
-      style={inputStyle}
-    />
+                    <input
+                      type="text"
+                      name="viberLink"
+                      placeholder="Viber"
+                      value={contactsSettings.viberLink}
+                      onChange={handleContactsChange}
+                      style={inputStyle}
+                    />
+                  </div>
 
-    <input
-      type="text"
-      name="viberLink"
-      placeholder="Viber"
-      value={contactsSettings.viberLink}
-      onChange={handleContactsChange}
-      style={inputStyle}
-    />
-  </div>
+                  <button
+                    type="button"
+                    onClick={handleSaveContactsSettings}
+                    disabled={contactsSaving}
+                    style={{
+                      border: "none",
+                      background: "#e56a45",
+                      color: "#fff",
+                      borderRadius: "14px",
+                      padding: "14px 22px",
+                      fontSize: "16px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      opacity: contactsSaving ? 0.7 : 1,
+                    }}
+                  >
+                    {contactsSaving ? "Збереження..." : "Зберегти контакти"}
+                  </button>
 
-  <button
-    type="button"
-    onClick={handleSaveContactsSettings}
-    disabled={contactsSaving}
-    style={{
-      border: "none",
-      background: "#e56a45",
-      color: "#fff",
-      borderRadius: "14px",
-      padding: "14px 22px",
-      fontSize: "16px",
-      fontWeight: 700,
-      cursor: "pointer",
-      opacity: contactsSaving ? 0.7 : 1,
-    }}
-  >
-    {contactsSaving ? "Збереження..." : "Зберегти контакти"}
-  </button>
+                  {contactsMessage && (
+                    <div
+                      style={{
+                        marginTop: "12px",
+                        padding: "12px 14px",
+                        borderRadius: "12px",
+                        background: "#ecfdf3",
+                        color: "#166534",
+                        fontWeight: 600,
+                        fontSize: "14px",
+                      }}
+                    >
+                      {contactsMessage}
+                    </div>
+                  )}
 
-  {contactsMessage && (
-    <div
-      style={{
-        marginTop: "12px",
-        padding: "12px 14px",
-        borderRadius: "12px",
-        background: "#ecfdf3",
-        color: "#166534",
-        fontWeight: 600,
-        fontSize: "14px",
-      }}
-    >
-      {contactsMessage}
-    </div>
-  )}
+                  {contactsError && (
+                    <div
+                      style={{
+                        marginTop: "12px",
+                        padding: "12px 14px",
+                        borderRadius: "12px",
+                        background: "#fef2f2",
+                        color: "#b91c1c",
+                        fontWeight: 600,
+                        fontSize: "14px",
+                      }}
+                    >
+                      {contactsError}
+                    </div>
+                  )}
+                </section>
+              </section>
 
-  {contactsError && (
-    <div
-      style={{
-        marginTop: "12px",
-        padding: "12px 14px",
-        borderRadius: "12px",
-        background: "#fef2f2",
-        color: "#b91c1c",
-        fontWeight: 600,
-        fontSize: "14px",
-      }}
-    >
-      {contactsError}
-    </div>
-  )}
-</section>
-    </section>
+              <section style={settingsCardStyle}>
+                <section style={settingsCardStyle}>
+                  <h2 style={settingsTitleStyle}>Доставка та самовивіз</h2>
+                  <p style={settingsDescStyle}>
+                    Основні параметри доставки, самовивозу та зон
+                    обслуговування.
+                  </p>
 
-    <section style={settingsCardStyle}>
-    <section style={settingsCardStyle}>
-  <h2 style={settingsTitleStyle}>Доставка та самовивіз</h2>
-  <p style={settingsDescStyle}>
-    Основні параметри доставки, самовивозу та зон обслуговування.
-  </p>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "16px",
+                      marginTop: "20px",
+                      marginBottom: "18px",
+                    }}
+                  >
+                    <label
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        fontWeight: 600,
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        name="deliveryEnabled"
+                        checked={deliverySettings.deliveryEnabled}
+                        onChange={handleDeliveryChange}
+                      />
+                      Доставка активна
+                    </label>
 
-  <div
-    style={{
-      display: "grid",
-      gridTemplateColumns: "1fr 1fr",
-      gap: "16px",
-      marginTop: "20px",
-      marginBottom: "18px",
-    }}
-  >
-    <label
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "10px",
-        fontWeight: 600,
-      }}
-    >
-      <input
-        type="checkbox"
-        name="deliveryEnabled"
-        checked={deliverySettings.deliveryEnabled}
-        onChange={handleDeliveryChange}
-      />
-      Доставка активна
-    </label>
+                    <label
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        fontWeight: 600,
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        name="pickupEnabled"
+                        checked={deliverySettings.pickupEnabled}
+                        onChange={handleDeliveryChange}
+                      />
+                      Самовивіз активний
+                    </label>
+                  </div>
 
-    <label
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "10px",
-        fontWeight: 600,
-      }}
-    >
-      <input
-        type="checkbox"
-        name="pickupEnabled"
-        checked={deliverySettings.pickupEnabled}
-        onChange={handleDeliveryChange}
-      />
-      Самовивіз активний
-    </label>
-  </div>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "16px",
+                      marginBottom: "16px",
+                    }}
+                  >
+                    <label>
+                      <p>Знижка самовивозу</p>
+                      <input
+                        type="number"
+                        name="pickupDiscountPercent"
+                        placeholder="Знижка на самовивіз %"
+                        value={deliverySettings.pickupDiscountPercent}
+                        onChange={handleDeliveryChange}
+                        style={inputStyle}
+                      />
+                    </label>
+                    <label
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        fontWeight: 600,
+                        paddingTop: "12px",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        name="showFreeDeliveryProgress"
+                        checked={deliverySettings.showFreeDeliveryProgress}
+                        onChange={handleDeliveryChange}
+                      />
+                      Показувати шкалу безкоштовної доставки
+                    </label>
+                  </div>
 
-  <div
-    style={{
-      display: "grid",
-      gridTemplateColumns: "1fr 1fr",
-      gap: "16px",
-      marginBottom: "16px",
-    }}
-  >
-    <label>
-      <p>Знижка самовивозу</p>
-    <input
-      type="number"
-      name="pickupDiscountPercent"
-      placeholder="Знижка на самовивіз %"
-      value={deliverySettings.pickupDiscountPercent}
-      onChange={handleDeliveryChange}
-      style={inputStyle}
-    />
-</label>
-    <label
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "10px",
-        fontWeight: 600,
-        paddingTop: "12px",
-      }}
-    >
-      <input
-        type="checkbox"
-        name="showFreeDeliveryProgress"
-        checked={deliverySettings.showFreeDeliveryProgress}
-        onChange={handleDeliveryChange}
-      />
-      Показувати шкалу безкоштовної доставки
-    </label>
-  </div>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr 1fr",
+                      gap: "16px",
+                      marginBottom: "16px",
+                    }}
+                  >
+                    <input
+                      type="text"
+                      name="shopAddress"
+                      placeholder="Адреса магазину"
+                      value={deliverySettings.shopAddress}
+                      onChange={handleDeliveryChange}
+                      style={inputStyle}
+                    />
 
-  <div
-    style={{
-      display: "grid",
-      gridTemplateColumns: "1fr 1fr 1fr",
-      gap: "16px",
-      marginBottom: "16px",
-    }}
-  >
-    <input
-      type="text"
-      name="shopAddress"
-      placeholder="Адреса магазину"
-      value={deliverySettings.shopAddress}
-      onChange={handleDeliveryChange}
-      style={inputStyle}
-    />
+                    <input
+                      type="number"
+                      step="any"
+                      name="shopLat"
+                      placeholder="Широта"
+                      value={deliverySettings.shopLat}
+                      onChange={handleDeliveryChange}
+                      style={inputStyle}
+                    />
 
-    <input
-      type="number"
-      step="any"
-      name="shopLat"
-      placeholder="Широта"
-      value={deliverySettings.shopLat}
-      onChange={handleDeliveryChange}
-      style={inputStyle}
-    />
+                    <input
+                      type="number"
+                      step="any"
+                      name="shopLng"
+                      placeholder="Довгота"
+                      value={deliverySettings.shopLng}
+                      onChange={handleDeliveryChange}
+                      style={inputStyle}
+                    />
+                  </div>
 
-    <input
-      type="number"
-      step="any"
-      name="shopLng"
-      placeholder="Довгота"
-      value={deliverySettings.shopLng}
-      onChange={handleDeliveryChange}
-      style={inputStyle}
-    />
-  </div>
+                  <div style={{ marginBottom: "16px" }}>
+                    <textarea
+                      name="deliveryText"
+                      value={deliverySettings.deliveryText}
+                      onChange={handleDeliveryChange}
+                      placeholder="Текст для доставки"
+                      style={{
+                        ...inputStyle,
+                        minHeight: "80px",
+                        resize: "vertical",
+                      }}
+                    />
+                  </div>
 
-  <div style={{ marginBottom: "16px" }}>
-    <textarea
-      name="deliveryText"
-      value={deliverySettings.deliveryText}
-      onChange={handleDeliveryChange}
-      placeholder="Текст для доставки"
-      style={{
-        ...inputStyle,
-        minHeight: "80px",
-        resize: "vertical",
-      }}
-    />
-  </div>
+                  <div style={{ marginBottom: "20px" }}>
+                    <textarea
+                      name="pickupText"
+                      value={deliverySettings.pickupText}
+                      onChange={handleDeliveryChange}
+                      placeholder="Текст для самовивозу"
+                      style={{
+                        ...inputStyle,
+                        minHeight: "80px",
+                        resize: "vertical",
+                      }}
+                    />
+                  </div>
 
-  <div style={{ marginBottom: "20px" }}>
-    <textarea
-      name="pickupText"
-      value={deliverySettings.pickupText}
-      onChange={handleDeliveryChange}
-      placeholder="Текст для самовивозу"
-      style={{
-        ...inputStyle,
-        minHeight: "80px",
-        resize: "vertical",
-      }}
-    />
-  </div>
+                  <div
+                    style={{
+                      marginBottom: "14px",
+                      fontWeight: 700,
+                      fontSize: "18px",
+                    }}
+                  >
+                    Зони доставки
+                  </div>
 
-  <div style={{ marginBottom: "14px", fontWeight: 700, fontSize: "18px" }}>
-    Зони доставки
-  </div>
+                  <div
+                    style={{
+                      display: "grid",
+                      gap: "12px",
+                      marginBottom: "16px",
+                    }}
+                  >
+                    {deliverySettings.deliveryZones.map((zone, index) => (
+                      <div
+                        key={index}
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr auto",
+                          gap: "12px",
+                          alignItems: "center",
+                        }}
+                      >
+                        <input
+                          type="number"
+                          step="any"
+                          placeholder="Макс. км"
+                          value={zone.maxKm}
+                          onChange={(e) =>
+                            handleZoneChange(index, "maxKm", e.target.value)
+                          }
+                          style={inputStyle}
+                        />
 
-  <div style={{ display: "grid", gap: "12px", marginBottom: "16px" }}>
-    {deliverySettings.deliveryZones.map((zone, index) => (
-      <div
-        key={index}
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr auto",
-          gap: "12px",
-          alignItems: "center",
-        }}
-      >
-        <input
-          type="number"
-          step="any"
-          placeholder="Макс. км"
-          value={zone.maxKm}
-          onChange={(e) => handleZoneChange(index, "maxKm", e.target.value)}
-          style={inputStyle}
-        />
+                        <input
+                          type="number"
+                          placeholder="Мін. сума замовлення"
+                          value={zone.minOrder}
+                          onChange={(e) =>
+                            handleZoneChange(index, "minOrder", e.target.value)
+                          }
+                          style={inputStyle}
+                        />
 
-        <input
-          type="number"
-          placeholder="Мін. сума замовлення"
-          value={zone.minOrder}
-          onChange={(e) => handleZoneChange(index, "minOrder", e.target.value)}
-          style={inputStyle}
-        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveZone(index)}
+                          style={{
+                            border: "none",
+                            background: "#f3f4f6",
+                            color: "#b91c1c",
+                            borderRadius: "12px",
+                            padding: "12px 14px",
+                            fontWeight: 700,
+                            cursor: "pointer",
+                          }}
+                        >
+                          Видалити
+                        </button>
+                      </div>
+                    ))}
+                  </div>
 
-        <button
-          type="button"
-          onClick={() => handleRemoveZone(index)}
-          style={{
-            border: "none",
-            background: "#f3f4f6",
-            color: "#b91c1c",
-            borderRadius: "12px",
-            padding: "12px 14px",
-            fontWeight: 700,
-            cursor: "pointer",
-          }}
-        >
-          Видалити
-        </button>
-      </div>
-    ))}
-  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddZone}
+                    style={{
+                      border: "1px solid #ddd",
+                      background: "#fff",
+                      color: "#222",
+                      borderRadius: "12px",
+                      padding: "12px 16px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      marginBottom: "20px",
+                    }}
+                  >
+                    + Додати зону
+                  </button>
 
-  <button
-    type="button"
-    onClick={handleAddZone}
-    style={{
-      border: "1px solid #ddd",
-      background: "#fff",
-      color: "#222",
-      borderRadius: "12px",
-      padding: "12px 16px",
-      fontWeight: 700,
-      cursor: "pointer",
-      marginBottom: "20px",
-    }}
-  >
-    + Додати зону
-  </button>
+                  <div>
+                    <button
+                      type="button"
+                      onClick={handleSaveDeliverySettings}
+                      disabled={deliverySaving}
+                      style={{
+                        border: "none",
+                        background: "#e56a45",
+                        color: "#fff",
+                        borderRadius: "14px",
+                        padding: "14px 22px",
+                        fontSize: "16px",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        opacity: deliverySaving ? 0.7 : 1,
+                      }}
+                    >
+                      {deliverySaving
+                        ? "Збереження..."
+                        : "Зберегти налаштування"}
+                    </button>
+                  </div>
 
-  <div>
-    <button
-      type="button"
-      onClick={handleSaveDeliverySettings}
-      disabled={deliverySaving}
-      style={{
-        border: "none",
-        background: "#e56a45",
-        color: "#fff",
-        borderRadius: "14px",
-        padding: "14px 22px",
-        fontSize: "16px",
-        fontWeight: 700,
-        cursor: "pointer",
-        opacity: deliverySaving ? 0.7 : 1,
-      }}
-    >
-      {deliverySaving ? "Збереження..." : "Зберегти налаштування"}
-    </button>
-  </div>
+                  {deliveryMessage && (
+                    <div
+                      style={{
+                        marginTop: "12px",
+                        padding: "12px 14px",
+                        borderRadius: "12px",
+                        background: "#ecfdf3",
+                        color: "#166534",
+                        fontWeight: 600,
+                        fontSize: "14px",
+                      }}
+                    >
+                      {deliveryMessage}
+                    </div>
+                  )}
 
-  {deliveryMessage && (
-    <div
-      style={{
-        marginTop: "12px",
-        padding: "12px 14px",
-        borderRadius: "12px",
-        background: "#ecfdf3",
-        color: "#166534",
-        fontWeight: 600,
-        fontSize: "14px",
-      }}
-    >
-      {deliveryMessage}
-    </div>
-  )}
+                  {deliveryError && (
+                    <div
+                      style={{
+                        marginTop: "12px",
+                        padding: "12px 14px",
+                        borderRadius: "12px",
+                        background: "#fef2f2",
+                        color: "#b91c1c",
+                        fontWeight: 600,
+                        fontSize: "14px",
+                      }}
+                    >
+                      {deliveryError}
+                    </div>
+                  )}
+                </section>
+              </section>
 
-  {deliveryError && (
-    <div
-      style={{
-        marginTop: "12px",
-        padding: "12px 14px",
-        borderRadius: "12px",
-        background: "#fef2f2",
-        color: "#b91c1c",
-        fontWeight: 600,
-        fontSize: "14px",
-      }}
-    >
-      {deliveryError}
-    </div>
-  )}
-</section>
-    </section>
+              <section style={settingsCardStyle}>
+                <section style={settingsCardStyle}>
+                  <h2 style={settingsTitleStyle}>Оплата</h2>
+                  <p style={settingsDescStyle}>
+                    Керування доступними способами оплати та режимом переказу на
+                    карту.
+                  </p>
 
-    <section style={settingsCardStyle}>
-      <h2 style={settingsTitleStyle}>Оплата</h2>
-      <p style={settingsDescStyle}>Увімкнення способів оплати та режим “переказ на карту”.</p>
-    </section>
+                  <div
+                    style={{
+                      display: "grid",
+                      gap: "14px",
+                      marginTop: "20px",
+                      marginBottom: "18px",
+                    }}
+                  >
+                    <label
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        fontWeight: 600,
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        name="cardOnlineEnabled"
+                        checked={paymentSettings.cardOnlineEnabled}
+                        onChange={handlePaymentChange}
+                      />
+                      Оплата карткою онлайн доступна
+                    </label>
 
-    <section style={settingsCardStyle}>
-      <h2 style={settingsTitleStyle}>Тексти сайту</h2>
-      <p style={settingsDescStyle}>Системні тексти для кошика, оформлення та службових повідомлень.</p>
-    </section>
-  </div>
-)}
+                    <label
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        fontWeight: 600,
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        name="bankTransferEnabled"
+                        checked={paymentSettings.bankTransferEnabled}
+                        onChange={handlePaymentChange}
+                      />
+                      Показувати “Переказ на карту”
+                    </label>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gap: "16px",
+                      marginBottom: "20px",
+                    }}
+                  >
+                    <input
+                      type="text"
+                      name="bankTransferCardNumber"
+                      placeholder="Номер картки"
+                      value={paymentSettings.bankTransferCardNumber}
+                      onChange={handlePaymentChange}
+                      style={inputStyle}
+                    />
+
+                    <input
+                      type="text"
+                      name="bankTransferRecipient"
+                      placeholder="Отримувач"
+                      value={paymentSettings.bankTransferRecipient}
+                      onChange={handlePaymentChange}
+                      style={inputStyle}
+                    />
+
+                    <input
+                      type="text"
+                      name="bankTransferBankName"
+                      placeholder="Банк"
+                      value={paymentSettings.bankTransferBankName}
+                      onChange={handlePaymentChange}
+                      style={inputStyle}
+                    />
+
+                    <textarea
+                      name="bankTransferHint"
+                      placeholder="Підказка для клієнта"
+                      value={paymentSettings.bankTransferHint}
+                      onChange={handlePaymentChange}
+                      style={{
+                        ...inputStyle,
+                        minHeight: "90px",
+                        resize: "vertical",
+                      }}
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleSavePaymentSettings}
+                    disabled={paymentSaving}
+                    style={{
+                      border: "none",
+                      background: "#e56a45",
+                      color: "#fff",
+                      borderRadius: "14px",
+                      padding: "14px 22px",
+                      fontSize: "16px",
+                      fontWeight: 700,
+                      cursor: paymentSaving ? "default" : "pointer",
+                      opacity: paymentSaving ? 0.7 : 1,
+                    }}
+                  >
+                    {paymentSaving ? "Збереження..." : "Зберегти налаштування"}
+                  </button>
+
+                  {paymentMessage && (
+                    <div
+                      style={{
+                        marginTop: "12px",
+                        padding: "12px 14px",
+                        borderRadius: "12px",
+                        background: "#ecfdf3",
+                        color: "#166534",
+                        fontWeight: 600,
+                        fontSize: "14px",
+                      }}
+                    >
+                      {paymentMessage}
+                    </div>
+                  )}
+
+                  {paymentError && (
+                    <div
+                      style={{
+                        marginTop: "12px",
+                        padding: "12px 14px",
+                        borderRadius: "12px",
+                        background: "#fef2f2",
+                        color: "#b91c1c",
+                        fontWeight: 600,
+                        fontSize: "14px",
+                      }}
+                    >
+                      {paymentError}
+                    </div>
+                  )}
+                </section>
+              </section>
+
+              <section style={settingsCardStyle}>
+                <h2 style={settingsTitleStyle}>Тексти сайту</h2>
+                <p style={settingsDescStyle}>
+                  Системні тексти для кошика, оформлення та службових
+                  повідомлень.
+                </p>
+              </section>
+            </div>
+          )}
         </main>
       </div>
     </div>
