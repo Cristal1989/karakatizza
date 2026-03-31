@@ -1,11 +1,35 @@
 import { SHOP_LOCATION, DELIVERY_ZONES } from "../config/deliveryConfig";
 
-export function getDeliveryZone(distanceKm) {
-  const zone = DELIVERY_ZONES.find((rule) => distanceKm <= rule.maxKm);
+export function getResolvedShopLocation(siteSettings) {
+  const delivery = siteSettings?.delivery;
+
+  return {
+    lat: delivery?.shopLat ?? SHOP_LOCATION.lat,
+    lng: delivery?.shopLng ?? SHOP_LOCATION.lng,
+    address: delivery?.shopAddress || SHOP_LOCATION.address,
+  };
+}
+
+export function getResolvedDeliveryZones(siteSettings) {
+  const delivery = siteSettings?.delivery;
+
+  if (Array.isArray(delivery?.deliveryZones) && delivery.deliveryZones.length > 0) {
+    return delivery.deliveryZones;
+  }
+
+  return DELIVERY_ZONES;
+}
+
+export function getDeliveryZone(distanceKm, zones = DELIVERY_ZONES) {
+  const zone = zones.find((rule) => distanceKm <= Number(rule.maxKm));
   return zone || null;
 }
 
-export async function getRouteDistanceKm(customerLat, customerLng) {
+export async function getRouteDistanceKm(
+  customerLat,
+  customerLng,
+  shopLocation = SHOP_LOCATION
+) {
   const API_URL = "https://karakatizza-production.up.railway.app";
   console.log("API URL:", API_URL);
 
@@ -17,8 +41,8 @@ export async function getRouteDistanceKm(customerLat, customerLng) {
     body: JSON.stringify({
       customerLat,
       customerLng,
-      shopLat: SHOP_LOCATION.lat,
-      shopLng: SHOP_LOCATION.lng,
+      shopLat: shopLocation.lat,
+      shopLng: shopLocation.lng,
     }),
   });
 
@@ -31,8 +55,8 @@ export async function getRouteDistanceKm(customerLat, customerLng) {
   return data.distanceKm;
 }
 
-export function getDeliveryInfo(distanceKm, cartTotal) {
-  const zone = getDeliveryZone(distanceKm);
+export function getDeliveryInfo(distanceKm, cartTotal, zones = DELIVERY_ZONES) {
+  const zone = getDeliveryZone(distanceKm, zones);
 
   if (!zone) {
     return {
@@ -43,12 +67,12 @@ export function getDeliveryInfo(distanceKm, cartTotal) {
     };
   }
 
-  const remaining = Math.max(0, zone.minOrder - cartTotal);
+  const remaining = Math.max(0, Number(zone.minOrder) - cartTotal);
 
   if (remaining <= 0) {
     return {
       type: "free",
-      minOrder: zone.minOrder,
+      minOrder: Number(zone.minOrder),
       remaining: 0,
       freeDelivery: true,
     };
@@ -56,7 +80,7 @@ export function getDeliveryInfo(distanceKm, cartTotal) {
 
   return {
     type: "paid",
-    minOrder: zone.minOrder,
+    minOrder: Number(zone.minOrder),
     remaining,
     freeDelivery: false,
   };

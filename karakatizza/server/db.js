@@ -179,7 +179,7 @@ export async function initDb() {
   ADD COLUMN IF NOT EXISTS old_price NUMERIC;
 `);
 
-await pool.query(`
+  await pool.query(`
   CREATE TABLE IF NOT EXISTS site_settings (
     id INTEGER PRIMARY KEY DEFAULT 1,
 
@@ -219,97 +219,103 @@ await pool.query(`
       {"maxKm":10,"minOrder":1100},
       {"maxKm":14,"minOrder":1300}
     ]'::jsonb,
+    card_online_enabled BOOLEAN NOT NULL DEFAULT true,
+    bank_transfer_enabled BOOLEAN NOT NULL DEFAULT false,
+    bank_transfer_card_number TEXT NOT NULL DEFAULT '',
+    bank_transfer_recipient TEXT NOT NULL DEFAULT '',
+    bank_transfer_bank_name TEXT NOT NULL DEFAULT '',
+    bank_transfer_hint TEXT NOT NULL DEFAULT '',
 
     updated_at TIMESTAMP DEFAULT NOW()
   );
 `);
 
-await pool.query(`
+  await pool.query(`
   ALTER TABLE site_settings
   ADD COLUMN IF NOT EXISTS allow_orders_after_hours BOOLEAN NOT NULL DEFAULT true;
 `);
 
-await pool.query(`
+  await pool.query(`
   ALTER TABLE site_settings
   ADD COLUMN IF NOT EXISTS phone_primary TEXT NOT NULL DEFAULT '';
 `);
 
-await pool.query(`
+  await pool.query(`
   ALTER TABLE site_settings
   ADD COLUMN IF NOT EXISTS phone_secondary TEXT NOT NULL DEFAULT '';
 `);
 
-await pool.query(`
+  await pool.query(`
   ALTER TABLE site_settings
   ADD COLUMN IF NOT EXISTS pickup_address TEXT NOT NULL DEFAULT '';
 `);
 
-await pool.query(`
+  await pool.query(`
   ALTER TABLE site_settings
   ADD COLUMN IF NOT EXISTS map_link TEXT NOT NULL DEFAULT '';
 `);
 
-await pool.query(`
+  await pool.query(`
   ALTER TABLE site_settings
   ADD COLUMN IF NOT EXISTS instagram_link TEXT NOT NULL DEFAULT '';
 `);
 
-await pool.query(`
+  await pool.query(`
   ALTER TABLE site_settings
   ADD COLUMN IF NOT EXISTS telegram_link TEXT NOT NULL DEFAULT '';
 `);
 
-await pool.query(`
+  await pool.query(`
   ALTER TABLE site_settings
   ADD COLUMN IF NOT EXISTS viber_link TEXT NOT NULL DEFAULT '';
 `);
 
-await pool.query(`
+  await pool.query(`
   ALTER TABLE site_settings
   ADD COLUMN IF NOT EXISTS delivery_enabled BOOLEAN NOT NULL DEFAULT true;
 `);
 
-await pool.query(`
+  await pool.query(`
   ALTER TABLE site_settings
   ADD COLUMN IF NOT EXISTS pickup_enabled BOOLEAN NOT NULL DEFAULT true;
 `);
 
-await pool.query(`
+  await pool.query(`
   ALTER TABLE site_settings
   ADD COLUMN IF NOT EXISTS pickup_discount_percent INTEGER NOT NULL DEFAULT 5;
 `);
 
-await pool.query(`
+  await pool.query(`
   ALTER TABLE site_settings
   ADD COLUMN IF NOT EXISTS show_free_delivery_progress BOOLEAN NOT NULL DEFAULT true;
 `);
 
-await pool.query(`
+  await pool.query(`
   ALTER TABLE site_settings
   ADD COLUMN IF NOT EXISTS delivery_text TEXT NOT NULL DEFAULT '';
 `);
 
-await pool.query(`
+  await pool.query(`
   ALTER TABLE site_settings
   ADD COLUMN IF NOT EXISTS pickup_text TEXT NOT NULL DEFAULT '';
 `);
 
-await pool.query(`
+  await pool.query(`
   ALTER TABLE site_settings
   ADD COLUMN IF NOT EXISTS shop_address TEXT NOT NULL DEFAULT 'Мала Морська 108';
 `);
 
-await pool.query(`
+  await pool.query(`
   ALTER TABLE site_settings
   ADD COLUMN IF NOT EXISTS shop_lat DOUBLE PRECISION NOT NULL DEFAULT 46.953807;
 `);
 
-await pool.query(`
+  await pool.query(`
   ALTER TABLE site_settings
   ADD COLUMN IF NOT EXISTS shop_lng DOUBLE PRECISION NOT NULL DEFAULT 31.994199;
 `);
 
-await pool.query(`
+  await pool.query(`
   ALTER TABLE site_settings
   ADD COLUMN IF NOT EXISTS delivery_zones JSONB NOT NULL DEFAULT '[
     {"maxKm":2.5,"minOrder":400},
@@ -321,8 +327,37 @@ await pool.query(`
     {"maxKm":14,"minOrder":1300}
   ]'::jsonb;
 `);
+  await pool.query(`
+  ALTER TABLE site_settings
+  ADD COLUMN IF NOT EXISTS card_online_enabled BOOLEAN NOT NULL DEFAULT true;
+`);
 
-await pool.query(`
+  await pool.query(`
+  ALTER TABLE site_settings
+  ADD COLUMN IF NOT EXISTS bank_transfer_enabled BOOLEAN NOT NULL DEFAULT false;
+`);
+
+  await pool.query(`
+  ALTER TABLE site_settings
+  ADD COLUMN IF NOT EXISTS bank_transfer_card_number TEXT NOT NULL DEFAULT '';
+`);
+
+  await pool.query(`
+  ALTER TABLE site_settings
+  ADD COLUMN IF NOT EXISTS bank_transfer_recipient TEXT NOT NULL DEFAULT '';
+`);
+
+  await pool.query(`
+  ALTER TABLE site_settings
+  ADD COLUMN IF NOT EXISTS bank_transfer_bank_name TEXT NOT NULL DEFAULT '';
+`);
+
+  await pool.query(`
+  ALTER TABLE site_settings
+  ADD COLUMN IF NOT EXISTS bank_transfer_hint TEXT NOT NULL DEFAULT '';
+`);
+
+  await pool.query(`
   INSERT INTO site_settings (
     id,
     opening_time,
@@ -349,7 +384,13 @@ await pool.query(`
     shop_address,
     shop_lat,
     shop_lng,
-    delivery_zones
+    delivery_zones,
+    card_online_enabled,
+bank_transfer_enabled,
+bank_transfer_card_number,
+bank_transfer_recipient,
+bank_transfer_bank_name,
+bank_transfer_hint
   )
   SELECT
     1,
@@ -385,11 +426,15 @@ await pool.query(`
       {"maxKm":8,"minOrder":800},
       {"maxKm":10,"minOrder":1100},
       {"maxKm":14,"minOrder":1300}
-    ]'::jsonb
+    ]'::jsonb,
+    true,
+    false,
+    '',
+    '',
+    '',
+    ''
   WHERE NOT EXISTS (
     SELECT 1 FROM site_settings WHERE id = 1
   );
 `);
-
-
 }

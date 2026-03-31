@@ -3,11 +3,14 @@ import { useEffect, useState, useRef } from "react";
 import { useCart } from "../hooks/useCart";
 import { getProducts, getImageUrl } from "../api/productsApi";
 import {
+  getResolvedDeliveryZones,
+  getResolvedShopLocation,
   getRouteDistanceKm,
   getDeliveryInfo,
 } from "../services/deliveryService";
 import { getPromotionSettings } from "../api/promotionsApi";
 import { getGiftRollSettings } from "../api/giftRollApi";
+import { useSiteSettings } from "../context/SiteSettingsContext";
 
 export default function CartDrawer() {
   const {
@@ -58,6 +61,20 @@ export default function CartDrawer() {
     weekdaysOnly: true,
   });
 
+  const { siteSettings } = useSiteSettings();
+
+  const deliveryZones = getResolvedDeliveryZones(siteSettings);
+  const shopLocation = getResolvedShopLocation(siteSettings);
+
+  const deliverySettings = siteSettings?.delivery;
+
+  const deliveryEnabled = deliverySettings?.deliveryEnabled ?? true;
+  const pickupEnabled = deliverySettings?.pickupEnabled ?? true;
+  const orderDisabled = !deliveryEnabled && !pickupEnabled;
+  const pickupDiscountPercent = deliverySettings?.pickupDiscountPercent ?? 5;
+
+  const deliveryText = deliverySettings?.deliveryText || "";
+  const pickupText = deliverySettings?.pickupText || "";
 
   const isMobile = window.matchMedia("(max-width: 768px)").matches;
   const API_URL = "https://karakatizza-production.up.railway.app";
@@ -69,7 +86,6 @@ export default function CartDrawer() {
     loadGiftRollSettings();
   }, []);
 
-  
   useEffect(() => {
     fetch("/promotions/settings")
       .then((res) => res.json())
@@ -78,9 +94,9 @@ export default function CartDrawer() {
   }, []);
 
   const selectedGiftRollProduct =
-  promoProducts.find(
-    (p) => String(p.id) === String(giftRollSettings.giftProductId)
-  ) || null;
+    promoProducts.find(
+      (p) => String(p.id) === String(giftRollSettings.giftProductId)
+    ) || null;
 
   const rollItemsForDiscountOffer = cartItems.filter((item) => {
     const category = item.category?.toLowerCase?.() || "";
@@ -98,7 +114,7 @@ export default function CartDrawer() {
   const giftRollInCart = cartItems.find((item) => item.isGiftRoll === true);
   const baseCartTotalForGift = cartItems.reduce((sum, item) => {
     if (item.isGiftRoll || item.isDiscountOffer) return sum;
-  
+
     const paidQty = Number(item.paidQuantity ?? item.quantity ?? 0);
     return sum + Number(item.price ?? 0) * paidQty;
   }, 0);
@@ -134,8 +150,8 @@ export default function CartDrawer() {
   }, 0);
 
   const rollsInCartIds = cartItems.map((item) =>
-  String(item.cartKey ?? `${item.id}-${item.isGiftRoll ? "gift" : "normal"}`)
-);
+    String(item.cartKey ?? `${item.id}-${item.isGiftRoll ? "gift" : "normal"}`)
+  );
 
   const availableDiscountRolls = allProducts.filter((product) => {
     const category = product.category?.toLowerCase?.() || "";
@@ -155,20 +171,20 @@ export default function CartDrawer() {
     !discountOfferDismissed &&
     !discountOfferAccepted &&
     !hasAnyPromoInCart &&
-    !giftRollInCart
+    !giftRollInCart;
 
-    const rollSubtotalForDiscountOffer = cartItems.reduce((sum, item) => {
-      const category = item.category?.toLowerCase?.() || "";
-      const isRoll = category === "rolls" || category === "роллы";
-    
-      if (!isRoll) return sum;
-      if (item.isGiftRoll || item.isDiscountOffer) return sum;
-      if (Number(item.freeQuantity ?? 0) > 0) return sum;
-      if (item.promoType && item.promoType !== "none") return sum;
-    
-      const paidQty = Number(item.paidQuantity ?? item.quantity ?? 0);
-      return sum + Number(item.price ?? 0) * paidQty;
-    }, 0);
+  const rollSubtotalForDiscountOffer = cartItems.reduce((sum, item) => {
+    const category = item.category?.toLowerCase?.() || "";
+    const isRoll = category === "rolls" || category === "роллы";
+
+    if (!isRoll) return sum;
+    if (item.isGiftRoll || item.isDiscountOffer) return sum;
+    if (Number(item.freeQuantity ?? 0) > 0) return sum;
+    if (item.promoType && item.promoType !== "none") return sum;
+
+    const paidQty = Number(item.paidQuantity ?? item.quantity ?? 0);
+    return sum + Number(item.price ?? 0) * paidQty;
+  }, 0);
 
   useEffect(() => {
     if (!hasAnyPromoInCart) {
@@ -201,55 +217,48 @@ export default function CartDrawer() {
   useEffect(() => {
     if (!shouldGiftRollBeActive) return;
     if (discountOfferItemInCart) return;
-  
-    const giftAlreadyInCart = cartItems.some(item => item.isGiftRoll);
+
+    const giftAlreadyInCart = cartItems.some((item) => item.isGiftRoll);
     if (giftAlreadyInCart) return;
-  
+
     addToCart({
       ...selectedGiftRollProduct,
       cartKey: `gift-${selectedGiftRollProduct.id}`,
       isGiftRoll: true,
       price: 0,
     });
-  
   }, [
     shouldGiftRollBeActive,
     hasDiscountOfferActive,
     selectedGiftRollProduct,
-    cartItems
+    cartItems,
   ]);
-
- 
 
   useEffect(() => {
     if (isCleanupProcessingRef.current) return;
-  
+
     const giftThreshold = Number(giftRollSettings.triggerSum || 0);
     const discountThreshold = Number(promotionSettings.triggerSum || 0);
-  
+
     const shouldRemoveGift =
       giftRollInCart &&
-      (
-        cartItems.length === 0 ||
+      (cartItems.length === 0 ||
         baseCartTotalForGift < giftThreshold ||
-        !!discountOfferItemInCart
-      );
-  
+        !!discountOfferItemInCart);
+
     const shouldRemoveDiscount =
       discountOfferItemInCart &&
-      (
-        cartItems.length === 0 ||
-        rollSubtotalForDiscountOffer < discountThreshold
-      );
-  
+      (cartItems.length === 0 ||
+        rollSubtotalForDiscountOffer < discountThreshold);
+
     if (!shouldRemoveGift && !shouldRemoveDiscount) return;
-  
+
     isCleanupProcessingRef.current = true;
-  
+
     if (shouldRemoveGift) {
       removeFromCart(giftRollInCart.cartKey ?? giftRollInCart.id);
     }
-  
+
     if (shouldRemoveDiscount) {
       removeFromCart(
         discountOfferItemInCart.cartKey ?? discountOfferItemInCart.id
@@ -258,7 +267,7 @@ export default function CartDrawer() {
       setDiscountOfferDismissed(false);
       setDiscountOfferAccepted(false);
     }
-  
+
     setTimeout(() => {
       isCleanupProcessingRef.current = false;
     }, 0);
@@ -332,7 +341,17 @@ export default function CartDrawer() {
       setDeliveryLoading(true);
 
       const location = await geocodeAddress(deliveryAddress.trim());
-      const distanceKm = await getRouteDistanceKm(location.lat, location.lng);
+      const distanceKm = await getRouteDistanceKm(
+        location.lat,
+        location.lng,
+        shopLocation
+      );
+      
+      const info = getDeliveryInfo(
+        distanceKm,
+        totalPrice,
+        deliveryZones
+      );
 
       setDeliveryInfo({
         distanceKm,
@@ -375,11 +394,11 @@ export default function CartDrawer() {
   async function loadPromoProducts() {
     try {
       const res = await fetch(`${API_URL}/products?admin=1`);
-  
+
       if (!res.ok) throw new Error("Bad response");
-  
+
       const text = await res.text();
-  
+
       let data;
       try {
         data = JSON.parse(text);
@@ -387,13 +406,12 @@ export default function CartDrawer() {
         console.error("NOT JSON:", text);
         return;
       }
-  
+
       setPromoProducts(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Promo load error:", error);
     }
   }
-
 
   async function loadPromotionSettings() {
     try {
@@ -424,12 +442,12 @@ export default function CartDrawer() {
     }
   }
 
-  const defaultMinOrder = 1000;
+  const defaultMinOrder = deliveryZones?.[0]?.minOrder ?? 400;
 
   const calculatedDeliveryInfo =
-    deliveryInfo?.distanceKm != null
-      ? getDeliveryInfo(deliveryInfo.distanceKm, totalPrice)
-      : null;
+  deliveryInfo?.distanceKm != null
+    ? getDeliveryInfo(deliveryInfo.distanceKm, totalPrice, deliveryZones)
+    : null;
 
   const currentMinOrder = calculatedDeliveryInfo?.minOrder ?? defaultMinOrder;
   const progressPercent = Math.min((totalPrice / currentMinOrder) * 100, 100);
@@ -481,13 +499,13 @@ export default function CartDrawer() {
   }
 
   const cartItemIds = cartItems.map(
-    (item) => item.cartKey ?? `${item.id}-${item.isGiftRoll ? "gift" : "normal"}`
+    (item) =>
+      item.cartKey ?? `${item.id}-${item.isGiftRoll ? "gift" : "normal"}`
   );
 
   const visibleUpsellProducts = upsellProducts
     .filter((product) => !cartItemIds.includes(product.id))
     .slice(0, 3);
-
 
   const shouldShowDiscountOffer =
     rollSubtotalForDiscountOffer >= Number(promotionSettings.triggerSum || 0) &&
@@ -498,32 +516,32 @@ export default function CartDrawer() {
   const shouldShowRegularUpsell =
     !shouldTriggerDiscountOffer && !discountOfferProduct;
 
-    function handleAddDiscountOffer() {
-      if (!discountOfferProduct) return;
-    
-      if (giftRollInCart) {
-        removeFromCart(giftRollInCart.cartKey ?? giftRollInCart.id);
-      }
-    
-      const discountedPrice = Math.round(
-        discountOfferProduct.price * (1 - promotionSettings.discountPercent / 100)
-      );
-    
-      addToCart({
-        ...discountOfferProduct,
-        cartKey: `discount-${discountOfferProduct.id}`,
-        originalPrice: discountOfferProduct.price,
-        price: discountedPrice,
-        isDiscountOffer: true,
-        discountLabel: `-${promotionSettings.discountPercent}%`,
-        freeSoySauce: 0,
-        freeGinger: 0,
-        freeWasabi: 0,
-      });
-    
-      setDiscountOfferAccepted(true);
-      setDiscountOfferProduct(null);
+  function handleAddDiscountOffer() {
+    if (!discountOfferProduct) return;
+
+    if (giftRollInCart) {
+      removeFromCart(giftRollInCart.cartKey ?? giftRollInCart.id);
     }
+
+    const discountedPrice = Math.round(
+      discountOfferProduct.price * (1 - promotionSettings.discountPercent / 100)
+    );
+
+    addToCart({
+      ...discountOfferProduct,
+      cartKey: `discount-${discountOfferProduct.id}`,
+      originalPrice: discountOfferProduct.price,
+      price: discountedPrice,
+      isDiscountOffer: true,
+      discountLabel: `-${promotionSettings.discountPercent}%`,
+      freeSoySauce: 0,
+      freeGinger: 0,
+      freeWasabi: 0,
+    });
+
+    setDiscountOfferAccepted(true);
+    setDiscountOfferProduct(null);
+  }
 
   if (!isCartOpen) return null;
 
@@ -629,32 +647,72 @@ export default function CartDrawer() {
               Спосіб отримання
             </div>
 
-            <button
-              type="button"
-              onClick={() =>
-                setCheckoutMode(
-                  checkoutMode === "pickup" ? "delivery" : "pickup"
-                )
-              }
+            {pickupEnabled && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (checkoutMode === "pickup" && deliveryEnabled) {
+                    setCheckoutMode("delivery");
+                    return;
+                  }
+
+                  if (checkoutMode !== "pickup" && pickupEnabled) {
+                    setCheckoutMode("pickup");
+                  }
+                }}
+                disabled={
+                  (checkoutMode === "pickup" && !deliveryEnabled) ||
+                  !pickupEnabled
+                }
+                style={{
+                  border:
+                    "1px solid " +
+                    (checkoutMode === "pickup" ? "#22c55e" : "#e5e7eb"),
+                  background: checkoutMode === "pickup" ? "#f0fdf4" : "#fff",
+                  color: checkoutMode === "pickup" ? "#166534" : "#444",
+                  borderRadius: "999px",
+                  height: "34px",
+                  padding: "0 12px",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  cursor:
+                    (checkoutMode === "pickup" && !deliveryEnabled) ||
+                    !pickupEnabled
+                      ? "default"
+                      : "pointer",
+                  whiteSpace: "nowrap",
+                  opacity: pickupEnabled ? 1 : 0.5,
+                }}
+              >
+                {checkoutMode === "pickup"
+                  ? `✓ ${
+                      pickupDiscountPercent > 0
+                        ? `Самовивіз -${pickupDiscountPercent}%`
+                        : "Самовивіз"
+                    }`
+                  : pickupDiscountPercent > 0
+                  ? `Самовивіз -${pickupDiscountPercent}%`
+                  : "Самовивіз"}
+              </button>
+            )}
+          </div>
+
+          {!deliveryEnabled && !pickupEnabled ? (
+            <div
               style={{
-                border:
-                  "1px solid " +
-                  (checkoutMode === "pickup" ? "#22c55e" : "#e5e7eb"),
-                background: checkoutMode === "pickup" ? "#f0fdf4" : "#fff",
-                color: checkoutMode === "pickup" ? "#166534" : "#444",
-                borderRadius: "999px",
-                height: "34px",
-                padding: "0 12px",
-                fontSize: "13px",
-                fontWeight: 700,
-                cursor: "pointer",
-                whiteSpace: "nowrap",
+                backgroundColor: "#fff7ed",
+                border: "1px solid #fdba74",
+                borderRadius: "14px",
+                padding: "14px",
+                fontSize: "14px",
+                color: "#9a3412",
+                fontWeight: 600,
+                lineHeight: 1.4,
               }}
             >
-              {checkoutMode === "pickup" ? "✓ Самовивіз -5%" : "Самовивіз -5%"}
-            </button>
-          </div>
-          {checkoutMode !== "pickup" ? (
+              Тимчасово недоступні ні доставка, ні самовивіз.
+            </div>
+          ) : checkoutMode !== "pickup" ? (
             <div
               style={{
                 backgroundColor: isFreeReached ? "#e8f7ed" : "#f7f3eb",
@@ -709,7 +767,7 @@ export default function CartDrawer() {
                 <div
                   style={{
                     fontSize: "13px",
-                    color: isFreeReached ? "#9a6700" : "#666",
+                    color: isFreeReached ? "#2e7d32" : "#666",
                     fontWeight: isFreeReached ? "700" : "400",
                     lineHeight: 1.35,
                   }}
@@ -717,6 +775,18 @@ export default function CartDrawer() {
                   {deliveryHint}
                 </div>
               ) : null}
+
+              {deliveryText && (
+                <div
+                  style={{
+                    fontSize: "13px",
+                    color: "#666",
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {deliveryText}
+                </div>
+              )}
 
               <div style={{ position: "relative" }}>
                 <input
@@ -792,7 +862,7 @@ export default function CartDrawer() {
                 lineHeight: 1.4,
               }}
             >
-              Самовивіз обрано — адресу вводити не потрібно
+              {pickupText || "Самовивіз обрано — адресу вводити не потрібно"}
             </div>
           )}
         </div>
@@ -825,7 +895,10 @@ export default function CartDrawer() {
               <div style={{ display: "grid", gap: "14px" }}>
                 {cartItems.map((item) => (
                   <div
-                  key={item.cartKey ?? `${item.id}-${item.isGiftRoll ? "gift" : "normal"}`}
+                    key={
+                      item.cartKey ??
+                      `${item.id}-${item.isGiftRoll ? "gift" : "normal"}`
+                    }
                     style={{
                       border: "1px solid #ececec",
                       borderRadius: "16px",
@@ -1102,7 +1175,6 @@ export default function CartDrawer() {
                       src={getImageUrl(discountOfferProduct.image)}
                       alt={`${discountOfferProduct.name}— доставка суші Каракатица`}
                       loading="lazy"
-
                       style={{
                         width: "64px",
                         height: "64px",
@@ -1410,8 +1482,14 @@ export default function CartDrawer() {
 
           <div style={{ display: "grid", gap: "10px" }}>
             <Link
-              to="/checkout"
-              onClick={closeCart}
+              to={orderDisabled ? "#" : "/checkout"}
+              onClick={(e) => {
+                if (orderDisabled) {
+                  e.preventDefault();
+                } else {
+                  closeCart();
+                }
+              }}
               style={{
                 textAlign: "center",
                 textDecoration: "none",
@@ -1424,7 +1502,7 @@ export default function CartDrawer() {
                 pointerEvents: cartItems.length ? "auto" : "none",
               }}
             >
-              Оформити замовлення
+              {orderDisabled ? "Оформлення недоступне" : "Оформити замовлення"}
             </Link>
 
             <button
@@ -1448,5 +1526,3 @@ export default function CartDrawer() {
     </>
   );
 }
-
-

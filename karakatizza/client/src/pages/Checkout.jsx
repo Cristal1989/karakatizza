@@ -12,6 +12,28 @@ export default function Checkout() {
   const { siteSettings } = useSiteSettings();
   const contacts = siteSettings?.contacts;
   const pickupAddress = contacts?.pickupAddress || "";
+  const deliverySettings = siteSettings?.delivery;
+
+  const deliveryEnabled = deliverySettings?.deliveryEnabled ?? true;
+  const pickupEnabled = deliverySettings?.pickupEnabled ?? true;
+  const orderDisabled = !deliveryEnabled && !pickupEnabled;
+
+  const pickupDiscountPercent = deliverySettings?.pickupDiscountPercent ?? 5;
+
+  const deliveryText = deliverySettings?.deliveryText || "";
+  const pickupText = deliverySettings?.pickupText || "";
+
+  const shopLocation = {
+    lat: deliverySettings?.shopLat ?? 46.953807,
+    lng: deliverySettings?.shopLng ?? 31.994199,
+    address: deliverySettings?.shopAddress || pickupAddress || "",
+  };
+
+  const deliveryZones =
+    Array.isArray(deliverySettings?.deliveryZones) &&
+    deliverySettings.deliveryZones.length > 0
+      ? deliverySettings.deliveryZones
+      : [];
 
   const navigate = useNavigate();
   const { cartItems, clearCart, totalPrice } = useCart();
@@ -443,6 +465,26 @@ export default function Checkout() {
   }, [confirmedAddress, checkoutMode]);
 
   useEffect(() => {
+    if (!deliveryEnabled && checkoutMode === "delivery" && pickupEnabled) {
+      setCheckoutMode("pickup");
+    }
+
+    if (!pickupEnabled && checkoutMode === "pickup" && deliveryEnabled) {
+      setCheckoutMode("delivery");
+    }
+  }, [deliveryEnabled, pickupEnabled, checkoutMode, setCheckoutMode]);
+
+  useEffect(() => {
+    if (!deliveryEnabled && pickupEnabled) {
+      setCheckoutMode("pickup");
+    }
+
+    if (!pickupEnabled && deliveryEnabled) {
+      setCheckoutMode("delivery");
+    }
+  }, [deliveryEnabled, pickupEnabled, setCheckoutMode]);
+
+  useEffect(() => {
     if (!hasSushiItems) {
       setForm((prev) => ({
         ...prev,
@@ -667,8 +709,17 @@ export default function Checkout() {
       setDeliveryError("");
 
       const location = await geocodeAddress(rawAddress);
-      const distanceKm = await getRouteDistanceKm(location.lat, location.lng);
-      const info = getDeliveryInfo(distanceKm, finalCheckoutTotal);
+      const distanceKm = await getRouteDistanceKm(
+        location.lat,
+        location.lng,
+        shopLocation
+      );
+
+      const info = getDeliveryInfo(
+        distanceKm,
+        finalCheckoutTotal,
+        deliveryZones.length > 0 ? deliveryZones : undefined
+      );
 
       const nextDeliveryInfo = {
         ...info,
@@ -757,6 +808,25 @@ export default function Checkout() {
             ← Назад у меню
           </button>
 
+          {orderDisabled && (
+            <div
+              style={{
+                background: "#fff7ed",
+                border: "1px solid #fdba74",
+                color: "#9a3412",
+                borderRadius: "16px",
+                padding: "16px",
+                fontSize: "15px",
+                fontWeight: 600,
+                lineHeight: 1.5,
+                marginBottom: "16px",
+              }}
+            >
+              Наразі оформлення замовлення тимчасово недоступне, оскільки
+              вимкнені і доставка, і самовивіз.
+            </div>
+          )}
+
           <div style={sectionCardStyle}>
             <div
               style={{
@@ -770,36 +840,58 @@ export default function Checkout() {
               Оформлення замовлення
             </div>
 
-            <div style={tabsWrapStyle}>
-              <button
-                type="button"
-                style={
-                  checkoutMode === "delivery"
-                    ? activeTabStyle
-                    : inactiveTabStyle
-                }
-                onClick={() => setCheckoutMode("delivery")}
-              >
-                Доставка
-              </button>
+            <div
+              style={{
+                ...tabsWrapStyle,
+                gridTemplateColumns:
+                  deliveryEnabled && pickupEnabled ? "1fr 1fr" : "1fr",
+              }}
+            >
+              {!deliveryEnabled && !pickupEnabled && (
+                <div style={warningStatusStyle}>
+                  Тимчасово недоступні ні доставка, ні самовивіз. Зв'яжіться з
+                  оператором.
+                </div>
+              )}
 
-              <button
-                type="button"
-                style={
-                  checkoutMode === "pickup" ? activeTabStyle : inactiveTabStyle
-                }
-                onClick={() => setCheckoutMode("pickup")}
-              >
-                Самовивіз
-              </button>
+              {(deliveryEnabled || pickupEnabled) && (
+                <>
+                  {deliveryEnabled && (
+                    <button
+                      type="button"
+                      style={
+                        checkoutMode === "delivery"
+                          ? activeTabStyle
+                          : inactiveTabStyle
+                      }
+                      onClick={() => setCheckoutMode("delivery")}
+                    >
+                      Доставка
+                    </button>
+                  )}
+
+                  {pickupEnabled && (
+                    <button
+                      type="button"
+                      style={
+                        checkoutMode === "pickup"
+                          ? activeTabStyle
+                          : inactiveTabStyle
+                      }
+                      onClick={() => setCheckoutMode("pickup")}
+                    >
+                      Самовивіз
+                    </button>
+                  )}
+
+                  <div style={sectionHintStyle}>
+                    {checkoutMode === "delivery"
+                      ? deliveryText || "Заповніть дані для доставки"
+                      : pickupText || "Заповніть дані для самовивозу"}
+                  </div>
+                </>
+              )}
             </div>
-
-            <div style={sectionHintStyle}>
-              {checkoutMode === "delivery"
-                ? "Заповніть дані для доставки"
-                : "Заповніть дані для самовивозу"}
-            </div>
-
             <div
               style={{
                 display: "grid",
@@ -939,7 +1031,12 @@ export default function Checkout() {
                 </>
               ) : (
                 <div style={successStatusStyle}>
-                  Самовивіз: Миколаїв, {pickupAddress}
+                  Самовивіз: Миколаїв, {shopLocation.address || pickupAddress}
+                  {pickupDiscountPercent > 0 && (
+                    <div style={{ marginTop: "6px", fontWeight: 700 }}>
+                      Знижка на самовивіз: {pickupDiscountPercent}%
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1519,34 +1616,36 @@ export default function Checkout() {
               </div>
             )}
             {pickupDiscount > 0 && (
-  <div
-    style={{
-      display: "flex",
-      justifyContent: "space-between",
-      marginTop: "4px",
-      fontSize: "14px",
-      color: "#16a34a",
-      fontWeight: 700,
-      marginBottom: "6px",
-    }}
-  >
-    <span>Знижка самовивіз 5%</span>
-    <span>-{pickupDiscount} грн</span>
-  </div>
-)}
-{checkoutMode === "pickup" && pickupDiscount === 0 && hasAnyPromoInCart && (
-  <div
-    style={{
-      marginTop: "6px",
-      marginBottom: "6px",
-      fontSize: "12px",
-      color: "#a16207",
-      fontWeight: 600,
-    }}
-  >
-    Знижка не діє разом з акціями
-  </div>
-)}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginTop: "4px",
+                  fontSize: "14px",
+                  color: "#16a34a",
+                  fontWeight: 700,
+                  marginBottom: "6px",
+                }}
+              >
+                <span>Знижка самовивіз -{pickupDiscountPercent}%</span>
+                <span>-{pickupDiscount} грн</span>
+              </div>
+            )}
+            {checkoutMode === "pickup" &&
+              pickupDiscount === 0 &&
+              hasAnyPromoInCart && (
+                <div
+                  style={{
+                    marginTop: "6px",
+                    marginBottom: "6px",
+                    fontSize: "12px",
+                    color: "#a16207",
+                    fontWeight: 600,
+                  }}
+                >
+                  Знижка не діє разом з акціями
+                </div>
+              )}
 
             <div
               style={{
@@ -1582,7 +1681,7 @@ export default function Checkout() {
             onClick={() => {
               handleSubmit();
             }}
-            disabled={loading}
+            disabled={orderDisabled || loading}
           >
             {loading ? "Відправка..." : "Підтвердити замовлення"}
           </button>

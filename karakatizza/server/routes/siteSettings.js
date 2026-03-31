@@ -30,7 +30,13 @@ router.get("/", async (req, res) => {
     shop_address,
     shop_lat,
     shop_lng,
-    delivery_zones
+    delivery_zones,
+    card_online_enabled,
+bank_transfer_enabled,
+bank_transfer_card_number,
+bank_transfer_recipient,
+bank_transfer_bank_name,
+bank_transfer_hint
   FROM site_settings
   WHERE id = 1
   LIMIT 1
@@ -74,6 +80,14 @@ router.get("/", async (req, res) => {
         shopLat: Number(row.shop_lat ?? 46.953807),
         shopLng: Number(row.shop_lng ?? 31.994199),
         deliveryZones: Array.isArray(row.delivery_zones) ? row.delivery_zones : [],
+      },
+      payment: {
+        cardOnlineEnabled: row.card_online_enabled === true,
+        bankTransferEnabled: row.bank_transfer_enabled === true,
+        bankTransferCardNumber: row.bank_transfer_card_number || "",
+        bankTransferRecipient: row.bank_transfer_recipient || "",
+        bankTransferBankName: row.bank_transfer_bank_name || "",
+        bankTransferHint: row.bank_transfer_hint || "",
       },
     });
   } catch (error) {
@@ -298,6 +312,67 @@ router.put("/delivery", async (req, res) => {
   } catch (error) {
     console.error("UPDATE DELIVERY SETTINGS ERROR:", error);
     res.status(500).json({ message: "Помилка збереження налаштувань доставки" });
+  }
+});
+
+router.put("/payment", async (req, res) => {
+  try {
+    const {
+      cardOnlineEnabled,
+      bankTransferEnabled,
+      bankTransferCardNumber,
+      bankTransferRecipient,
+      bankTransferBankName,
+      bankTransferHint,
+    } = req.body;
+
+    const result = await pool.query(
+      `
+      UPDATE site_settings
+      SET
+        card_online_enabled = $1,
+        bank_transfer_enabled = $2,
+        bank_transfer_card_number = $3,
+        bank_transfer_recipient = $4,
+        bank_transfer_bank_name = $5,
+        bank_transfer_hint = $6,
+        updated_at = NOW()
+      WHERE id = 1
+      RETURNING
+        card_online_enabled,
+        bank_transfer_enabled,
+        bank_transfer_card_number,
+        bank_transfer_recipient,
+        bank_transfer_bank_name,
+        bank_transfer_hint
+      `,
+      [
+        cardOnlineEnabled === true,
+        bankTransferEnabled === true,
+        bankTransferCardNumber || "",
+        bankTransferRecipient || "",
+        bankTransferBankName || "",
+        bankTransferHint || "",
+      ]
+    );
+
+    const row = result.rows[0];
+
+    res.json({
+      success: true,
+      message: "Налаштування оплати оновлено",
+      payment: {
+        cardOnlineEnabled: row.card_online_enabled === true,
+        bankTransferEnabled: row.bank_transfer_enabled === true,
+        bankTransferCardNumber: row.bank_transfer_card_number || "",
+        bankTransferRecipient: row.bank_transfer_recipient || "",
+        bankTransferBankName: row.bank_transfer_bank_name || "",
+        bankTransferHint: row.bank_transfer_hint || "",
+      },
+    });
+  } catch (error) {
+    console.error("UPDATE PAYMENT SETTINGS ERROR:", error);
+    res.status(500).json({ message: "Помилка збереження налаштувань оплати" });
   }
 });
 

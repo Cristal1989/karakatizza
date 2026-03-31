@@ -11,11 +11,11 @@ ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <HelmetProvider>
       <BrowserRouter>
-        <CartProvider>
         <SiteSettingsProvider>
-          <App />
-          </SiteSettingsProvider>
-        </CartProvider>
+          <CartProvider>
+            <App />
+          </CartProvider>
+        </SiteSettingsProvider>
       </BrowserRouter>
     </HelmetProvider>
   </React.StrictMode>

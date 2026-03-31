@@ -1,31 +1,92 @@
-import { FREE_DELIVERY_FROM } from "../data/products";
-import { hasFreeDelivery, getRemainingForFreeDelivery } from "../utils/delivery";
-import { formatPrice } from "../utils/formatPrice";
+import { useSiteSettings } from "../context/SiteSettingsContext";
 
-export default function DeliveryProgress({ totalPrice }) {
-  const progress = Math.min((totalPrice / FREE_DELIVERY_FROM) * 100, 100);
-  const free = hasFreeDelivery(totalPrice);
-  const remaining = getRemainingForFreeDelivery(totalPrice);
+export default function DeliveryProgress({ deliveryInfo }) {
+  const { siteSettings } = useSiteSettings();
+
+  const showFreeDeliveryProgress =
+    siteSettings?.delivery?.showFreeDeliveryProgress ?? true;
+
+  if (
+    !showFreeDeliveryProgress ||
+    !deliveryInfo ||
+    deliveryInfo.type === "operator"
+  ) {
+    return null;
+  }
+
+  const minOrder = Number(deliveryInfo.minOrder ?? 0);
+  const remaining = Number(deliveryInfo.remaining ?? 0);
+  const isFreeReached = deliveryInfo.freeDelivery === true;
+
+  const progressPercent =
+    minOrder > 0
+      ? Math.min(((minOrder - remaining) / minOrder) * 100, 100)
+      : 0;
 
   return (
-    <div className="rounded-3xl border border-neutral-200 bg-white p-4">
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <div className="text-sm font-medium text-neutral-800">
-          {free
-            ? "🎉 У вас бесплатная доставка"
-            : `Добавьте ещё ${formatPrice(remaining)} до бесплатной доставки`}
-        </div>
-        <div className="text-xs text-neutral-500">
-          от {formatPrice(FREE_DELIVERY_FROM)}
-        </div>
+    <div
+      style={{
+        background: "#fff",
+        border: "1px solid #ececec",
+        borderRadius: "16px",
+        padding: "14px",
+        display: "grid",
+        gap: "10px",
+      }}
+    >
+      <div
+        style={{
+          fontSize: "14px",
+          fontWeight: 700,
+          color: "#222",
+          lineHeight: 1.35,
+        }}
+      >
+        {isFreeReached
+          ? "Мінімальна сума для цієї зони виконана"
+          : `Додайте ще ${remaining} грн до мінімальної суми`}
       </div>
 
-      <div className="h-3 overflow-hidden rounded-full bg-neutral-200">
+      <div
+        style={{
+          width: "100%",
+          height: "10px",
+          backgroundColor: "#f0f0f0",
+          borderRadius: "999px",
+          overflow: "hidden",
+        }}
+      >
         <div
-          className="h-full rounded-full bg-red-500 transition-all"
-          style={{ width: `${progress}%` }}
+          style={{
+            width: `${progressPercent}%`,
+            height: "100%",
+            backgroundColor: isFreeReached ? "#2e7d32" : "#f57c00",
+            borderRadius: "999px",
+            transition: "0.3s",
+          }}
         />
       </div>
+
+      <div
+        style={{
+          fontSize: "13px",
+          color: "#666",
+        }}
+      >
+        Поріг для поточної зони: {minOrder} грн
+      </div>
+
+      {remaining > 0 && (
+        <div
+          style={{
+            fontSize: "13px",
+            color: "#666",
+            lineHeight: 1.35,
+          }}
+        >
+          До оформлення не вистачає: {remaining} грн
+        </div>
+      )}
     </div>
   );
 }
