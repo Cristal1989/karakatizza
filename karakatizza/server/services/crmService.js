@@ -414,3 +414,87 @@ export async function linkTelegramToCustomerByPhone(
     customer: updatedResult.rows[0] || customer,
   };
 }
+
+export async function getTelegramGiftsByPhone(pool, phone) {
+  const phoneNormalized = normalizeUaPhone(phone);
+
+  if (!phoneNormalized) {
+    return [];
+  }
+
+  const result = await pool.query(
+    `
+      SELECT
+        id,
+        customer_id,
+        phone_normalized,
+        gift_roll_id,
+        gift_roll_title,
+        status,
+        source,
+        comment,
+        issued_at,
+        used_at,
+        created_at,
+        updated_at
+      FROM telegram_gifts
+      WHERE phone_normalized = $1
+      ORDER BY created_at DESC, id DESC
+    `,
+    [phoneNormalized]
+  );
+
+  return result.rows;
+}
+
+export async function getTelegramGiftsByTelegramUserId(pool, telegramUserId) {
+  if (!telegramUserId) {
+    return {
+      customer: null,
+      gifts: [],
+    };
+  }
+
+  const customerResult = await pool.query(
+    `
+      SELECT
+        id,
+        phone,
+        phone_normalized,
+        name,
+        telegram_user_id,
+        telegram_username,
+        telegram_first_name,
+        is_telegram_subscribed,
+        is_phone_confirmed,
+        first_order_at,
+        last_order_at,
+        orders_count,
+        total_spent,
+        last_order_amount,
+        created_at,
+        updated_at
+      FROM customers
+      WHERE telegram_user_id = $1
+      ORDER BY id DESC
+      LIMIT 1
+    `,
+    [String(telegramUserId)]
+  );
+
+  const customer = customerResult.rows[0] || null;
+
+  if (!customer) {
+    return {
+      customer: null,
+      gifts: [],
+    };
+  }
+
+  const gifts = await getTelegramGiftsByPhone(pool, customer.phone);
+
+  return {
+    customer,
+    gifts,
+  };
+}

@@ -5,6 +5,7 @@ import {
   getActiveTelegramGiftByPhone,
   markTelegramGiftUsed,
   linkTelegramToCustomerByPhone,
+  getTelegramGiftsByTelegramUserId
 } from "../services/crmService.js";
 
 const router = express.Router();
@@ -355,6 +356,42 @@ router.post("/telegram/link", async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Не вдалося прив'язати Telegram до клієнта",
+      error: error?.message || "Unknown error",
+    });
+  }
+});
+
+router.get("/telegram/bonus/:telegramUserId", async (req, res) => {
+  try {
+    const { telegramUserId } = req.params;
+
+    if (!telegramUserId) {
+      return res.status(400).json({
+        success: false,
+        message: "Потрібен telegramUserId",
+      });
+    }
+
+    const result = await getTelegramGiftsByTelegramUserId(pool, telegramUserId);
+
+    const activeGift =
+      result.gifts.find((gift) => gift.status === "issued") || null;
+
+    const usedGift =
+      result.gifts.find((gift) => gift.status === "used") || null;
+
+    return res.json({
+      success: true,
+      customer: result.customer,
+      activeGift,
+      usedGift,
+      gifts: result.gifts,
+    });
+  } catch (error) {
+    console.error("CRM TELEGRAM BONUS ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Не вдалося отримати дані по бонусу",
       error: error?.message || "Unknown error",
     });
   }

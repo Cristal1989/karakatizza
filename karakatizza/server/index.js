@@ -15,8 +15,14 @@ import promotionsRoutes from "./routes/promotions.js";
 import giftRollRoutes from "./routes/giftRoll.js";
 import siteSettingsRoutes from "./routes/siteSettings.js";
 import { isValidUaPhone } from "./utils/phone.js";
-import { saveOrderToCrm } from "./services/crmService.js";
+import {
+  saveOrderToCrm,
+  getActiveTelegramGiftByPhone,
+  markTelegramGiftUsed,
+} from "./services/crmService.js";
 import crmRoutes from "./routes/crmRoutes.js";
+import { startTelegramBot } from "./bot.js";
+
 
 dotenv.config();
 
@@ -24,6 +30,7 @@ const app = express();
 app.use(compression());
 
 await initDb();
+startTelegramBot();
 
 app.use(
   cors({
@@ -1117,6 +1124,22 @@ app.post("/order", async (req, res) => {
         customerId: crmResult.customer?.id,
         orderId: crmResult.order?.id,
       });
+
+      try {
+        const activeTelegramGift = await getActiveTelegramGiftByPhone(pool, phone);
+      
+        if (activeTelegramGift) {
+          await markTelegramGiftUsed(pool, activeTelegramGift.id);
+      
+          console.log("TELEGRAM GIFT AUTO USED", {
+            giftId: activeTelegramGift.id,
+            phone,
+            giftRollTitle: activeTelegramGift.gift_roll_title,
+          });
+        }
+      } catch (giftUseError) {
+        console.error("TELEGRAM GIFT AUTO USE ERROR:", giftUseError);
+      }
     } catch (crmError) {
       console.error("CRM SAVE ERROR:", crmError);
       console.error("CRM SAVE ERROR MESSAGE:", crmError?.message);
