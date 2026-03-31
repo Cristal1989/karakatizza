@@ -225,6 +225,13 @@ export async function initDb() {
     bank_transfer_recipient TEXT NOT NULL DEFAULT '',
     bank_transfer_bank_name TEXT NOT NULL DEFAULT '',
     bank_transfer_hint TEXT NOT NULL DEFAULT '',
+    pickup_selected_text TEXT NOT NULL DEFAULT 'Самовивіз обрано — адресу вводити не потрібно',
+    delivery_address_hint TEXT NOT NULL DEFAULT 'Введіть адресу для уточнення безкоштовної доставки',
+    delivery_address_not_found_text TEXT NOT NULL DEFAULT 'Уточніть адресу у оператора',
+    order_disabled_text TEXT NOT NULL DEFAULT 'Наразі оформлення замовлення тимчасово недоступне',
+    checkout_comment_placeholder TEXT NOT NULL DEFAULT 'Коментар до замовлення',
+    checkout_exact_time_label TEXT NOT NULL DEFAULT 'Потрібно на певний час',
+    checkout_success_hint TEXT NOT NULL DEFAULT 'Дякуємо за замовлення! Ми скоро зв’яжемося з вами.',
 
     updated_at TIMESTAMP DEFAULT NOW()
   );
@@ -357,6 +364,41 @@ export async function initDb() {
   ADD COLUMN IF NOT EXISTS bank_transfer_hint TEXT NOT NULL DEFAULT '';
 `);
 
+await pool.query(`
+  ALTER TABLE site_settings
+  ADD COLUMN IF NOT EXISTS pickup_selected_text TEXT NOT NULL DEFAULT 'Самовивіз обрано — адресу вводити не потрібно';
+`);
+
+await pool.query(`
+  ALTER TABLE site_settings
+  ADD COLUMN IF NOT EXISTS delivery_address_hint TEXT NOT NULL DEFAULT 'Введіть адресу для уточнення безкоштовної доставки';
+`);
+
+await pool.query(`
+  ALTER TABLE site_settings
+  ADD COLUMN IF NOT EXISTS delivery_address_not_found_text TEXT NOT NULL DEFAULT 'Уточніть адресу у оператора';
+`);
+
+await pool.query(`
+  ALTER TABLE site_settings
+  ADD COLUMN IF NOT EXISTS order_disabled_text TEXT NOT NULL DEFAULT 'Наразі оформлення замовлення тимчасово недоступне';
+`);
+
+await pool.query(`
+  ALTER TABLE site_settings
+  ADD COLUMN IF NOT EXISTS checkout_comment_placeholder TEXT NOT NULL DEFAULT 'Коментар до замовлення';
+`);
+
+await pool.query(`
+  ALTER TABLE site_settings
+  ADD COLUMN IF NOT EXISTS checkout_exact_time_label TEXT NOT NULL DEFAULT 'Потрібно на певний час';
+`);
+
+await pool.query(`
+  ALTER TABLE site_settings
+  ADD COLUMN IF NOT EXISTS checkout_success_hint TEXT NOT NULL DEFAULT 'Дякуємо за замовлення! Ми скоро зв’яжемося з вами.';
+`);
+
   await pool.query(`
   INSERT INTO site_settings (
     id,
@@ -390,7 +432,14 @@ bank_transfer_enabled,
 bank_transfer_card_number,
 bank_transfer_recipient,
 bank_transfer_bank_name,
-bank_transfer_hint
+bank_transfer_hint,
+pickup_selected_text,
+delivery_address_hint,
+delivery_address_not_found_text,
+order_disabled_text,
+checkout_comment_placeholder,
+checkout_exact_time_label,
+checkout_success_hint
   )
   SELECT
     1,
@@ -432,7 +481,14 @@ bank_transfer_hint
     '',
     '',
     '',
-    ''
+    '',
+    'Самовивіз обрано — адресу вводити не потрібно',
+'Введіть адресу для уточнення безкоштовної доставки',
+'Уточніть адресу у оператора',
+'Наразі оформлення замовлення тимчасово недоступне',
+'Коментар до замовлення',
+'Потрібно на певний час',
+'Дякуємо за замовлення! Ми скоро зв’яжемося з вами.'
   WHERE NOT EXISTS (
     SELECT 1 FROM site_settings WHERE id = 1
   );

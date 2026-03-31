@@ -36,7 +36,14 @@ bank_transfer_enabled,
 bank_transfer_card_number,
 bank_transfer_recipient,
 bank_transfer_bank_name,
-bank_transfer_hint
+bank_transfer_hint,
+pickup_selected_text,
+delivery_address_hint,
+delivery_address_not_found_text,
+order_disabled_text,
+checkout_comment_placeholder,
+checkout_exact_time_label,
+checkout_success_hint
   FROM site_settings
   WHERE id = 1
   LIMIT 1
@@ -88,6 +95,15 @@ bank_transfer_hint
         bankTransferRecipient: row.bank_transfer_recipient || "",
         bankTransferBankName: row.bank_transfer_bank_name || "",
         bankTransferHint: row.bank_transfer_hint || "",
+      },
+      texts: {
+        pickupSelectedText: row.pickup_selected_text || "",
+        deliveryAddressHint: row.delivery_address_hint || "",
+        deliveryAddressNotFoundText: row.delivery_address_not_found_text || "",
+        orderDisabledText: row.order_disabled_text || "",
+        checkoutCommentPlaceholder: row.checkout_comment_placeholder || "",
+        checkoutExactTimeLabel: row.checkout_exact_time_label || "",
+        checkoutSuccessHint: row.checkout_success_hint || "",
       },
     });
   } catch (error) {
@@ -373,6 +389,72 @@ router.put("/payment", async (req, res) => {
   } catch (error) {
     console.error("UPDATE PAYMENT SETTINGS ERROR:", error);
     res.status(500).json({ message: "Помилка збереження налаштувань оплати" });
+  }
+});
+
+router.put("/texts", async (req, res) => {
+  try {
+    const {
+      pickupSelectedText,
+      deliveryAddressHint,
+      deliveryAddressNotFoundText,
+      orderDisabledText,
+      checkoutCommentPlaceholder,
+      checkoutExactTimeLabel,
+      checkoutSuccessHint,
+    } = req.body;
+
+    const result = await pool.query(
+      `
+      UPDATE site_settings
+      SET
+        pickup_selected_text = $1,
+        delivery_address_hint = $2,
+        delivery_address_not_found_text = $3,
+        order_disabled_text = $4,
+        checkout_comment_placeholder = $5,
+        checkout_exact_time_label = $6,
+        checkout_success_hint = $7,
+        updated_at = NOW()
+      WHERE id = 1
+      RETURNING
+        pickup_selected_text,
+        delivery_address_hint,
+        delivery_address_not_found_text,
+        order_disabled_text,
+        checkout_comment_placeholder,
+        checkout_exact_time_label,
+        checkout_success_hint
+      `,
+      [
+        pickupSelectedText || "",
+        deliveryAddressHint || "",
+        deliveryAddressNotFoundText || "",
+        orderDisabledText || "",
+        checkoutCommentPlaceholder || "",
+        checkoutExactTimeLabel || "",
+        checkoutSuccessHint || "",
+      ]
+    );
+
+    const row = result.rows[0];
+
+    res.json({
+      success: true,
+      message: "Тексти сайту оновлено",
+      texts: {
+        pickupSelectedText: row.pickup_selected_text || "",
+        deliveryAddressHint: row.delivery_address_hint || "",
+        deliveryAddressNotFoundText: row.delivery_address_not_found_text || "",
+        orderDisabledText: row.order_disabled_text || "",
+        checkoutCommentPlaceholder: row.checkout_comment_placeholder || "",
+        checkoutExactTimeLabel: row.checkout_exact_time_label || "",
+        checkoutSuccessHint: row.checkout_success_hint || "",
+      },
+    });
+  } catch (error) {
+    console.error("UPDATE SITE TEXTS ERROR:", error);
+    res.status(500).json({ message: "Помилка збереження текстів сайту" });
   }
 });
 
