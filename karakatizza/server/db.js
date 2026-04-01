@@ -673,6 +673,10 @@ telegram_template_inactive_60
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
   );
 `);
+await pool.query(`
+  ALTER TABLE orders
+  ADD COLUMN IF NOT EXISTS telegram_bonus_meta JSONB;
+`);
 
   await pool.query(`
   CREATE TABLE IF NOT EXISTS customer_rewards (

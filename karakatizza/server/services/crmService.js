@@ -118,6 +118,7 @@ export async function saveOrderToCrm(pool, orderData) {
     regularSticksCount,
     trainingSticksCount,
     sticksExtraPrice,
+    telegramBonusMeta = null,
   } = orderData;
 
   const customer = await findOrCreateCustomer(pool, {
@@ -152,11 +153,12 @@ export async function saveOrderToCrm(pool, orderData) {
       training_sticks_count,
       sticks_extra_price,
       status,
-      source
+      source,
+      telegram_bonus_meta
     )
     VALUES (
       $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-      $11, $12, $13, $14::jsonb, $15, $16::jsonb, $17, $18, $19, 'new', 'site'
+      $11, $12, $13, $14::jsonb, $15, $16::jsonb, $17, $18, $19, 'new', 'site', JSON.stringify(telegramBonusMeta || null)
     )
     RETURNING *
     `,

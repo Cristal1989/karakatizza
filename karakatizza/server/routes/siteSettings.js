@@ -48,7 +48,9 @@ telegram_template_come_back_30,
 telegram_template_week_promo,
 telegram_template_vip,
 telegram_template_new_menu,
-telegram_template_inactive_60
+telegram_template_inactive_60,
+telegram_promo_title,
+telegram_promo_text
   FROM site_settings
   WHERE id = 1
   LIMIT 1
@@ -62,8 +64,8 @@ telegram_template_inactive_60
 
     res.json({
       workingHours: {
-        openTime: row.opening_time || "10:00",
-        closeTime: row.closing_time || "22:00",
+        openingTime: row.opening_time || "10:00",
+        closingTime: row.closing_time || "22:00",
         closedToday: row.closed_all_day === true,
         allowOrdersAfterHours: row.allow_orders_after_hours === true,
       },
@@ -117,6 +119,12 @@ telegram_template_inactive_60
         newMenu: row.telegram_template_new_menu || "",
         inactive60: row.telegram_template_inactive_60 || "",
       },
+      telegramPromo: {
+        title: row.telegram_promo_title || "🔥 Актуальні акції Karakatizza",
+        text:
+          row.telegram_promo_text ||
+          "Слідкуй за нашими пропозиціями на сайті та в Telegram.",
+      },
     });
   } catch (error) {
     console.error("GET SITE SETTINGS ERROR:", error);
@@ -126,12 +134,8 @@ telegram_template_inactive_60
 
 router.put("/working-hours", async (req, res) => {
   try {
-    const {
-      openTime,
-      closeTime,
-      closedToday,
-      allowOrdersAfterHours,
-    } = req.body;
+    const { openTime, closeTime, closedToday, allowOrdersAfterHours } =
+      req.body;
 
     if (!openTime || !closeTime) {
       return res.status(400).json({
@@ -334,12 +338,16 @@ router.put("/delivery", async (req, res) => {
         shopAddress: row.shop_address || "",
         shopLat: Number(row.shop_lat ?? 0),
         shopLng: Number(row.shop_lng ?? 0),
-        deliveryZones: Array.isArray(row.delivery_zones) ? row.delivery_zones : [],
+        deliveryZones: Array.isArray(row.delivery_zones)
+          ? row.delivery_zones
+          : [],
       },
     });
   } catch (error) {
     console.error("UPDATE DELIVERY SETTINGS ERROR:", error);
-    res.status(500).json({ message: "Помилка збереження налаштувань доставки" });
+    res
+      .status(500)
+      .json({ message: "Помилка збереження налаштувань доставки" });
   }
 });
 
@@ -472,11 +480,8 @@ router.put("/texts", async (req, res) => {
 
 router.put("/popup", async (req, res) => {
   try {
-    const {
-      showOutsideWorkingHours,
-      outsideHoursText,
-      closedTodayText,
-    } = req.body;
+    const { showOutsideWorkingHours, outsideHoursText, closedTodayText } =
+      req.body;
 
     const result = await pool.query(
       `
@@ -518,13 +523,7 @@ router.put("/popup", async (req, res) => {
 
 router.put("/telegram-templates", async (req, res) => {
   try {
-    const {
-      comeBack30,
-      weekPromo,
-      vip,
-      newMenu,
-      inactive60,
-    } = req.body || {};
+    const { comeBack30, weekPromo, vip, newMenu, inactive60 } = req.body || {};
 
     const result = await pool.query(
       `
@@ -570,6 +569,46 @@ router.put("/telegram-templates", async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Не вдалося зберегти шаблони Telegram",
+      error: error?.message || "Unknown error",
+    });
+  }
+});
+
+router.put("/telegram-promo", async (req, res) => {
+  try {
+    const {
+      title = "🔥 Актуальні акції Karakatizza",
+      text = "Слідкуй за нашими пропозиціями на сайті та в Telegram.",
+    } = req.body || {};
+
+    const result = await pool.query(
+      `
+        UPDATE site_settings
+        SET
+          telegram_promo_title = $1,
+          telegram_promo_text = $2
+        WHERE id = 1
+        RETURNING
+          telegram_promo_title,
+          telegram_promo_text
+      `,
+      [title || "", text || ""]
+    );
+
+    const row = result.rows[0];
+
+    return res.json({
+      success: true,
+      telegramPromo: {
+        title: row?.telegram_promo_title || "",
+        text: row?.telegram_promo_text || "",
+      },
+    });
+  } catch (error) {
+    console.error("UPDATE TELEGRAM PROMO ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Помилка оновлення Telegram-акції",
       error: error?.message || "Unknown error",
     });
   }

@@ -3,6 +3,8 @@ import TelegramBot from "node-telegram-bot-api";
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const API_BASE_URL =
   process.env.TELEGRAM_CRM_API_URL || "http://localhost:5000";
+  const TELEGRAM_SUPPORT_URL = "https://t.me/karakatizza_sushi";
+const TELEGRAM_SUPPORT_USERNAME = "@karakatizza_sushi";
 
 let botInstance = null;
 
@@ -31,7 +33,26 @@ function buildLinkedKeyboard() {
 }
 
 function buildMainKeyboard(isLinked = false) {
-  return isLinked ? buildLinkedKeyboard() : buildGuestKeyboard();
+  if (isLinked) {
+    return {
+      keyboard: [
+        [{ text: "Мій бонус" }, { text: "Акції" }],
+        [{ text: "Написати нам" }, { text: "Допомога" }],
+      ],
+      resize_keyboard: true,
+      persistent: true,
+    };
+  }
+
+  return {
+    keyboard: [
+      [{ text: "Підтвердити номер" }],
+      [{ text: "Мій бонус" }, { text: "Акції" }],
+      [{ text: "Написати нам" }, { text: "Допомога" }],
+    ],
+    resize_keyboard: true,
+    persistent: true,
+  };
 }
 
 async function getCustomerByTelegramUserId(telegramUserId) {
@@ -92,6 +113,17 @@ async function getJson(url) {
   return data;
 }
 
+async function getTelegramPromoSettings() {
+  const data = await getJson(`${API_BASE_URL}/site-settings`);
+
+  return {
+    title: data?.telegramPromo?.title || "🔥 Актуальні акції Karakatizza",
+    text:
+      data?.telegramPromo?.text ||
+      "Слідкуй за нашими пропозиціями на сайті та в Telegram.",
+  };
+}
+
 async function handleHelp(bot, msg) {
   try {
     const chatId = msg.chat.id;
@@ -125,17 +157,76 @@ async function handleHelp(bot, msg) {
   }
 }
 
-async function handleMyBonus(bot, msg) {
+async function handleContactUs(bot, msg) {
+  const chatId = msg.chat.id;
+
+  await bot.sendMessage(
+    chatId,
+    `Потрібна допомога, хочеш уточнити замовлення або є питання по меню?\n\nНапиши нам у Telegram: ${TELEGRAM_SUPPORT_USERNAME}`,
+    {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: "Написати нам",
+              url: TELEGRAM_SUPPORT_URL,
+            },
+          ],
+        ],
+      },
+    }
+  );
+}
+
+async function handlePromotions(bot, msg) {
   try {
     const chatId = msg.chat.id;
     const telegramUserId = msg.from?.id ? String(msg.from.id) : "";
 
     const customer = await getCustomerByTelegramUserId(telegramUserId);
+    const isLinked = Boolean(customer?.telegram_user_id);
+
+    const promo = await getTelegramPromoSettings();
+
+    const title = (promo.title || "").trim();
+    const text = (promo.text || "").trim();
+
+    const message = [title, text].filter(Boolean).join("\n\n");
+
+    await bot.sendMessage(chatId, message || "Зараз активних акцій немає.", {
+      reply_markup: buildMainKeyboard(isLinked),
+    });
+  } catch (error) {
+    console.error("TELEGRAM PROMOTIONS ERROR:", error);
+
+    const telegramUserId = msg.from?.id ? String(msg.from.id) : "";
+    const customer = await getCustomerByTelegramUserId(telegramUserId).catch(
+      () => null
+    );
+    const isLinked = Boolean(customer?.telegram_user_id);
+
+    await bot.sendMessage(
+      msg.chat.id,
+      "Не вдалося завантажити актуальні акції. Спробуй ще раз трохи пізніше.",
+      {
+        reply_markup: buildMainKeyboard(isLinked),
+      }
+    );
+  }
+}
+
+async function handleMyBonus(bot, msg) {
+  const chatId = msg.chat.id;
+  const telegramUserId = msg.from?.id ? String(msg.from.id) : "";
+
+  try {
+    const customer = await getCustomerByTelegramUserId(telegramUserId);
+    const isLinked = Boolean(customer?.telegram_user_id);
 
     if (!customer) {
       await bot.sendMessage(
         chatId,
-        `Я ще не бачу прив'язаний номер телефону 🙄
+        `Я ще не бачу прив'язаний номер телефону 🙁
 
 Натисни "Підтвердити номер", щоб я зміг знайти твій профіль і перевірити бонус.`,
         {
@@ -145,64 +236,184 @@ async function handleMyBonus(bot, msg) {
       return;
     }
 
-    const result = await getJson(
-      `${API_BASE_URL}/api/crm/telegram/bonus/${telegramUserId}`
+    const bonusSettings = await getJson(`${API_BASE_URL}/gift-roll/settings`);
+    const activeGiftResponse = await getJson(
+      `${API_BASE_URL}/api/crm/telegram-gifts/active/${encodeURIComponent(
+        customer.phone
+      )}`
     );
 
-    const gift = result?.gift || null;
+    const activeGift = activeGiftResponse?.gift || null;
 
-    if (!gift) {
-      await bot.sendMessage(
-        chatId,
-        `Зараз у тебе немає активного бонусу.
+    const bonusType = bonusSettings?.bonusType || "gift_product";
+    const bonusTitle = bonusSettings?.bonusTitle || "";
+    const bonusDescription = bonusSettings?.bonusDescription || "";
+    const bonusImage = bonusSettings?.bonusImage || "";
+    const discountPercent = bonusSettings?.discountPercent || "";
+    const customText = bonusSettings?.customText || "";
 
-Якщо з'являться нові акції — я напишу тобі тут у Telegram.`,
-        {
-          reply_markup: buildMainKeyboard(true),
+    if (activeGift && activeGift.status === "issued") {
+      if (bonusType === "gift_product") {
+        const title = bonusTitle || activeGift.gift_roll_title || "Подарунок";
+        const description =
+          bonusDescription || "Бонус уже закріплений за твоїм номером.";
+        const image = bonusImage || "";
+
+        const text = `🎁 Твій бонус
+
+Подарунок: ${title}
+
+${description}
+
+Він уже закріплений за твоїм номером і буде використаний при наступному замовленні.`;
+
+        if (image) {
+          try {
+            await bot.sendPhoto(chatId, image, {
+              caption: text,
+              reply_markup: buildMainKeyboard(isLinked),
+            });
+            return;
+          } catch (photoError) {
+            console.error("TELEGRAM BONUS PHOTO ERROR:", photoError);
+          }
         }
-      );
-      return;
+
+        await bot.sendMessage(chatId, text, {
+          reply_markup: buildMainKeyboard(isLinked),
+        });
+        return;
+      }
+
+      if (bonusType === "discount_percent") {
+        const text = `🎁 У тебе є активний бонус
+
+Знижка: ${discountPercent || "0"}% на наступне замовлення
+
+Бонус уже закріплений за твоїм номером і буде використаний при наступному замовленні.`;
+
+        await bot.sendMessage(chatId, text, {
+          reply_markup: buildMainKeyboard(isLinked),
+        });
+        return;
+      }
+
+      if (bonusType === "custom_text") {
+        const text = `🎁 У тебе є активний бонус
+
+${customText || "Для тебе діє спеціальна пропозиція."}
+
+Бонус уже закріплений за твоїм номером і буде використаний при наступному замовленні.`;
+
+        await bot.sendMessage(chatId, text, {
+          reply_markup: buildMainKeyboard(isLinked),
+        });
+        return;
+      }
     }
 
-    if (gift.status === "used") {
-      await bot.sendMessage(
-        chatId,
-        `✅ Бонус уже був використаний
+    let usedGift = null;
 
-Подарунок: ${gift.gift_roll_title || "Подарунковий рол"}
-
-Якщо з'являться нові акції — я напишу тобі тут у Telegram.`,
-        {
-          reply_markup: buildMainKeyboard(true),
-        }
+    try {
+      const usedGiftResponse = await getJson(
+        `${API_BASE_URL}/api/crm/telegram-gifts/history/${encodeURIComponent(
+          customer.phone
+        )}`
       );
-      return;
+
+      const giftsHistory = Array.isArray(usedGiftResponse?.gifts)
+        ? usedGiftResponse.gifts
+        : [];
+
+      usedGift = giftsHistory.find((item) => item.status === "used") || null;
+    } catch (historyError) {
+      console.log("TELEGRAM BONUS HISTORY SKIPPED:", historyError?.message || historyError);
+    }
+
+    if (usedGift) {
+      if (bonusType === "gift_product") {
+        const title = bonusTitle || usedGift.gift_roll_title || "Подарунок";
+        const image = bonusImage || "";
+
+        const text = `✅ Бонус уже був використаний
+
+Подарунок: ${title}
+
+Якщо з'являться нові акції — я напишу тобі тут у Telegram.`;
+
+        if (image) {
+          try {
+            await bot.sendPhoto(chatId, image, {
+              caption: text,
+              reply_markup: buildMainKeyboard(isLinked),
+            });
+            return;
+          } catch (photoError) {
+            console.error("TELEGRAM USED BONUS PHOTO ERROR:", photoError);
+          }
+        }
+
+        await bot.sendMessage(chatId, text, {
+          reply_markup: buildMainKeyboard(isLinked),
+        });
+        return;
+      }
+
+      if (bonusType === "discount_percent") {
+        const text = `✅ Бонус уже був використаний
+
+Знижка: ${discountPercent || "0"}%
+
+Якщо з'являться нові акції — я напишу тобі тут у Telegram.`;
+
+        await bot.sendMessage(chatId, text, {
+          reply_markup: buildMainKeyboard(isLinked),
+        });
+        return;
+      }
+
+      if (bonusType === "custom_text") {
+        const text = `✅ Бонус уже був використаний
+
+${customText || "Спеціальна пропозиція вже була використана."}
+
+Якщо з'являться нові акції — я напишу тобі тут у Telegram.`;
+
+        await bot.sendMessage(chatId, text, {
+          reply_markup: buildMainKeyboard(isLinked),
+        });
+        return;
+      }
     }
 
     await bot.sendMessage(
       chatId,
-      `🎁 У тебе є активний бонус
+      `Зараз у тебе немає активного бонусу.
 
-Подарунок: ${gift.gift_roll_title || "Подарунковий рол"}
-Статус: активний
-
-Він уже закріплений за твоїм номером і буде використаний при наступному замовленні.`,
+Якщо з'являться нові акції — я напишу тобі тут у Telegram.`,
       {
-        reply_markup: buildMainKeyboard(true),
+        reply_markup: buildMainKeyboard(isLinked),
       }
     );
   } catch (error) {
     console.error("TELEGRAM MY BONUS ERROR:", error);
 
+    let isLinked = false;
+    try {
+      const customer = await getCustomerByTelegramUserId(telegramUserId);
+      isLinked = Boolean(customer?.telegram_user_id);
+    } catch {}
+
     await bot.sendMessage(
-      msg.chat.id,
-      `Не вдалося перевірити бонус. Спробуй ще раз трохи пізніше.`,
+      chatId,
+      "Не вдалося перевірити бонус. Спробуй ще раз трохи пізніше.",
       {
-        reply_markup: buildMainKeyboard(true),
+        reply_markup: buildMainKeyboard(isLinked),
       }
     );
   }
 }
+
 async function handleContact(bot, msg) {
   const chatId = msg.chat.id;
   const telegramUserId = String(msg.from?.id || "");
@@ -445,31 +656,18 @@ Telegram уже прив'язаний до твого профілю в Karakati
       return;
     }
 
+    if (text === "Написати нам") {
+      await handleContactUs(bot, msg);
+      return;
+    }
+
     if (text === "Мій бонус") {
       await handleMyBonus(bot, msg);
       return;
     }
 
     if (text === "Акції") {
-      try {
-        const chatId = msg.chat.id;
-        const telegramUserId = msg.from?.id ? String(msg.from.id) : "";
-        const customer = await getCustomerByTelegramUserId(telegramUserId);
-        const isLinked = Boolean(customer?.telegram_user_id);
-
-        await bot.sendMessage(
-          chatId,
-          `🔥 Актуальні акції Karakatizza
-
-Слідкуй за нашими пропозиціями на сайті та в Telegram.
-Скоро тут можна буде показувати персональні акції саме для тебе 🍣`,
-          {
-            reply_markup: buildMainKeyboard(isLinked),
-          }
-        );
-      } catch (error) {
-        console.error("TELEGRAM АКЦІЇ ERROR:", error);
-      }
+      await handlePromotions(bot, msg);
       return;
     }
 

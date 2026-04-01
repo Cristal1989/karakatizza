@@ -13,27 +13,68 @@ export function isOutsideWorkingHours(openTime, closeTime) {
   return currentMinutes < openTotal || currentMinutes >= closeTotal;
 }
 
+function getOpenTimeValue(workingHours) {
+  return (
+    workingHours?.openTime ||
+    workingHours?.openingTime ||
+    ""
+  );
+}
+
+function getCloseTimeValue(workingHours) {
+  return (
+    workingHours?.closeTime ||
+    workingHours?.closingTime ||
+    ""
+  );
+}
+
+function getClosedTodayValue(workingHours) {
+  if (typeof workingHours?.closedToday === "boolean") {
+    return workingHours.closedToday;
+  }
+
+  if (typeof workingHours?.closedAllDay === "boolean") {
+    return workingHours.closedAllDay;
+  }
+
+  return false;
+}
+
 export function getWorkingHoursLabel(workingHours) {
   if (!workingHours) return "";
 
-  if (workingHours.closedToday) {
+  const closedToday = getClosedTodayValue(workingHours);
+  if (closedToday) {
     return "Сьогодні зачинено";
   }
 
-  return `${workingHours.openTime} – ${workingHours.closeTime}`;
+  const openTime = getOpenTimeValue(workingHours);
+  const closeTime = getCloseTimeValue(workingHours);
+
+  if (!openTime || !closeTime) {
+    return "";
+  }
+
+  return `${openTime} – ${closeTime}`;
 }
 
 export function getWorkingStatusLabel(workingHours) {
   if (!workingHours) return "";
 
-  if (workingHours.closedToday) {
+  const closedToday = getClosedTodayValue(workingHours);
+  if (closedToday) {
     return "Сьогодні зачинено";
   }
 
-  const outside = isOutsideWorkingHours(
-    workingHours.openTime,
-    workingHours.closeTime
-  );
+  const openTime = getOpenTimeValue(workingHours);
+  const closeTime = getCloseTimeValue(workingHours);
+
+  if (!openTime || !closeTime) {
+    return "";
+  }
+
+  const outside = isOutsideWorkingHours(openTime, closeTime);
 
   return outside ? "Зачинено" : "Відчинено";
 }

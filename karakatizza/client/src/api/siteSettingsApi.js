@@ -136,3 +136,28 @@ export async function updateTelegramTemplates(payload) {
 
   return data;
 }
+
+export async function updateTelegramPromo(payload) {
+  const res = await fetch(`${API_BASE}/site-settings/telegram-promo`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const text = await res.text();
+
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error(`Сервер вернул не JSON: ${text.slice(0, 120)}`);
+  }
+
+  if (!res.ok) {
+    throw new Error(data.message || "Не удалось обновить Telegram-акцию");
+  }
+
+  return data;
+}

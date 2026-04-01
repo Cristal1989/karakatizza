@@ -1,6 +1,5 @@
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  "https://karakatizza-production.up.railway.app";
+  import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export async function getGiftRollSettings() {
   const res = await fetch(`${API_BASE_URL}/gift-roll/settings`);
@@ -19,7 +18,23 @@ export async function getGiftRollSettings() {
     );
   }
 
-  return data;
+  return {
+    triggerSum: data.triggerSum ?? 1000,
+    giftProductId: data.giftProductId ?? "",
+    isActive: data.isActive ?? true,
+    weekdaysOnly: data.weekdaysOnly ?? true,
+
+    bonusType: data.bonusType || "gift_product",
+    bonusTitle: data.bonusTitle || "",
+    bonusDescription: data.bonusDescription || "",
+    bonusImage: data.bonusImage || "",
+    discountPercent:
+      data.discountPercent === null || data.discountPercent === undefined
+        ? ""
+        : String(data.discountPercent),
+    customText: data.customText || "",
+    updatedAt: data.updatedAt || null,
+  };
 }
 
 export async function updateGiftRollSettings(payload) {
@@ -46,5 +61,21 @@ export async function updateGiftRollSettings(payload) {
     );
   }
 
-  return data;
+  return {
+    triggerSum: data.triggerSum ?? 1000,
+    giftProductId: data.giftProductId ?? "",
+    isActive: data.isActive ?? true,
+    weekdaysOnly: data.weekdaysOnly ?? true,
+
+    bonusType: data.bonusType || "gift_product",
+    bonusTitle: data.bonusTitle || "",
+    bonusDescription: data.bonusDescription || "",
+    bonusImage: data.bonusImage || "",
+    discountPercent:
+      data.discountPercent === null || data.discountPercent === undefined
+        ? ""
+        : String(data.discountPercent),
+    customText: data.customText || "",
+    updatedAt: data.updatedAt || null,
+  };
 }

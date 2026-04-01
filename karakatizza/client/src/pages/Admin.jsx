@@ -8,6 +8,7 @@ import {
   updatePaymentSettings,
   updateSiteTexts,
   updateTelegramTemplates,
+  updateTelegramPromo,
 } from "../api/siteSettingsApi";
 import {
   getProducts,
@@ -32,6 +33,7 @@ import {
   updateGiftRollSettings,
 } from "../api/giftRollApi";
 import CustomersPage from "./CustomersPage";
+import { issueTestTelegramBonus, useActiveTelegramBonus } from "../api/crmApi";
 
 const sidebarItems = [
   { key: "products", label: "Товари", icon: "🍣" },
@@ -240,6 +242,22 @@ export default function Admin() {
   const [telegramTemplatesMessage, setTelegramTemplatesMessage] = useState("");
   const [telegramTemplatesError, setTelegramTemplatesError] = useState("");
 
+  const [telegramPromoTitle, setTelegramPromoTitle] = useState("");
+  const [telegramPromoText, setTelegramPromoText] = useState("");
+  const [telegramPromoSaving, setTelegramPromoSaving] = useState(false);
+  const [telegramPromoStatus, setTelegramPromoStatus] = useState("");
+
+  const [bonusType, setBonusType] = useState("gift_product");
+  const [bonusTitle, setBonusTitle] = useState("");
+  const [bonusDescription, setBonusDescription] = useState("");
+  const [bonusImage, setBonusImage] = useState("");
+  const [discountPercent, setDiscountPercent] = useState("");
+  const [customText, setCustomText] = useState("");
+
+  const [testBonusPhone, setTestBonusPhone] = useState("+380635170656");
+  const [testBonusLoading, setTestBonusLoading] = useState(false);
+  const [testBonusStatus, setTestBonusStatus] = useState("");
+
   const inputStyle = {
     width: "100%",
     padding: "10px",
@@ -315,6 +333,22 @@ export default function Admin() {
 
     loadSettings();
   }, []);
+
+  useEffect(() => {
+    if (bonusType !== "gift_product") return;
+    if (!giftRollSettings?.giftProductId) return;
+    if (!Array.isArray(products)) return;
+
+    const selectedProduct = products.find(
+      (item) => String(item.id) === String(giftRollSettings.giftProductId)
+    );
+
+    if (!selectedProduct) return;
+
+    setBonusTitle((prev) => prev || selectedProduct.name || "");
+    setBonusDescription((prev) => prev || selectedProduct.description || "");
+    setBonusImage((prev) => prev || selectedProduct.image || "");
+  }, [bonusType, giftRollSettings?.giftProductId, products]);
 
   useEffect(() => {
     const loadWorkingHoursSettings = async () => {
@@ -405,6 +439,10 @@ export default function Admin() {
             inactive60: settings.telegramTemplates.inactive60 || "",
           });
         }
+        if (settings?.telegramPromo) {
+          setTelegramPromoTitle(settings.telegramPromo.title || "");
+          setTelegramPromoText(settings.telegramPromo.text || "");
+        }
       } catch (error) {
         console.error("LOAD WORKING HOURS ERROR:", error);
         setWorkingHoursError("Не вдалося завантажити робочі години");
@@ -481,6 +519,12 @@ export default function Admin() {
         isActive: data?.isActive ?? true,
         weekdaysOnly: data?.weekdaysOnly ?? true,
       });
+      setBonusType(settings.bonusType || "gift_product");
+      setBonusTitle(settings.bonusTitle || "");
+      setBonusDescription(settings.bonusDescription || "");
+      setBonusImage(settings.bonusImage || "");
+      setDiscountPercent(settings.discountPercent || "");
+      setCustomText(settings.customText || "");
     } catch (error) {
       console.error("GIFT ROLL SETTINGS LOAD ERROR:", error);
     } finally {
@@ -541,6 +585,25 @@ export default function Admin() {
     }));
   };
 
+  async function handleSaveTelegramPromo() {
+    try {
+      setTelegramPromoSaving(true);
+      setTelegramPromoStatus("");
+
+      await updateTelegramPromo({
+        title: telegramPromoTitle,
+        text: telegramPromoText,
+      });
+
+      setTelegramPromoStatus("Збережено ✅");
+    } catch (error) {
+      console.error("SAVE TELEGRAM PROMO ERROR:", error);
+      setTelegramPromoStatus("Не вдалося зберегти Telegram-акцію");
+    } finally {
+      setTelegramPromoSaving(false);
+    }
+  }
+
   const handleTelegramTemplatesChange = (e) => {
     const { name, value } = e.target;
 
@@ -582,6 +645,54 @@ export default function Admin() {
       setTelegramTemplatesSaving(false);
     }
   };
+
+  async function handleIssueTestBonus() {
+    try {
+      setTestBonusLoading(true);
+      setTestBonusStatus("");
+
+      const result = await issueTestTelegramBonus({
+        phone: testBonusPhone,
+        giftRollTitle: "Тестовий бонус",
+        comment: "Issued from admin panel",
+      });
+
+      if (result?.created === true) {
+        setTestBonusStatus("Тестовий бонус видано ✅");
+      } else if (result?.reason === "active_gift_exists") {
+        setTestBonusStatus("На цьому номері вже є активний бонус");
+      } else {
+        setTestBonusStatus("Операцію виконано");
+      }
+    } catch (error) {
+      console.error("ISSUE TEST BONUS ERROR:", error);
+      setTestBonusStatus(error.message || "Не вдалося видати тестовий бонус");
+    } finally {
+      setTestBonusLoading(false);
+    }
+  }
+
+  async function handleUseActiveBonus() {
+    try {
+      setTestBonusLoading(true);
+      setTestBonusStatus("");
+
+      const result = await useActiveTelegramBonus({
+        phone: testBonusPhone,
+      });
+
+      if (result?.updated === true) {
+        setTestBonusStatus("Активний бонус списано ✅");
+      } else {
+        setTestBonusStatus(result?.message || "Активного бонусу немає");
+      }
+    } catch (error) {
+      console.error("USE ACTIVE BONUS ERROR:", error);
+      setTestBonusStatus(error.message || "Не вдалося списати бонус");
+    } finally {
+      setTestBonusLoading(false);
+    }
+  }
 
   const handleWorkingHoursChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -950,12 +1061,36 @@ export default function Admin() {
       setGiftRollMessage("");
       setGiftRollError("");
 
-      await updateGiftRollSettings({
+      const normalizedPayload = {
         triggerSum: Number(giftRollSettings.triggerSum) || 1000,
         giftProductId: giftRollSettings.giftProductId || null,
         isActive: giftRollSettings.isActive === true,
         weekdaysOnly: giftRollSettings.weekdaysOnly === true,
-      });
+
+        bonusType,
+        bonusTitle: "",
+        bonusDescription: "",
+        bonusImage: "",
+        discountPercent: "",
+        customText: "",
+      };
+
+      if (bonusType === "gift_product") {
+        normalizedPayload.giftProductId = giftRollSettings.giftProductId || "";
+        normalizedPayload.bonusTitle = bonusTitle || "";
+        normalizedPayload.bonusDescription = bonusDescription || "";
+        normalizedPayload.bonusImage = bonusImage || "";
+      }
+
+      if (bonusType === "discount_percent") {
+        normalizedPayload.discountPercent = discountPercent || "";
+      }
+
+      if (bonusType === "custom_text") {
+        normalizedPayload.customText = customText || "";
+      }
+
+      await updateGiftRollSettings(normalizedPayload);
 
       setGiftRollMessage("✅ Налаштування подарункового ролу збережено");
     } catch (error) {
@@ -2733,126 +2868,139 @@ export default function Admin() {
                 boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
               }}
             >
-              <h2
+              <div
                 style={{
-                  marginTop: 0,
-                  marginBottom: "8px",
-                  fontSize: "36px",
-                  fontWeight: 800,
+                  background: "#fff",
+                  borderRadius: "16px",
+                  padding: "20px",
+                  marginTop: "20px",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
                 }}
               >
-                Налаштування акції знижка
-              </h2>
-
-              <p
-                style={{
-                  marginTop: 0,
-                  marginBottom: "24px",
-                  color: "#666",
-                  fontSize: "16px",
-                }}
-              >
-                Окремо налаштовується акція “ролл зі знижкою” для кошика.
-              </p>
-
-              <form onSubmit={handleSavePromotionSettings}>
-                <div
+                <h2
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "16px",
-                    marginBottom: "16px",
+                    marginTop: 0,
+                    marginBottom: "8px",
+                    fontSize: "36px",
+                    fontWeight: 800,
                   }}
                 >
-                  <input
-                    type="number"
-                    name="triggerSum"
-                    min="1"
-                    placeholder="Сума спрацювання"
-                    value={promotionSettings.triggerSum}
-                    onChange={handlePromotionChange}
-                    style={inputStyle}
-                  />
+                  Налаштування акції знижка
+                </h2>
 
-                  <input
-                    type="number"
-                    name="discountPercent"
-                    min="1"
-                    max="100"
-                    placeholder="Знижка %"
-                    value={promotionSettings.discountPercent}
-                    onChange={handlePromotionChange}
-                    style={inputStyle}
-                  />
-                </div>
-
-                <label
+                <p
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "10px",
-                    marginBottom: "20px",
-                    fontWeight: 600,
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    name="isActive"
-                    checked={promotionSettings.isActive}
-                    onChange={handlePromotionChange}
-                  />
-                  Акція активна
-                </label>
-
-                <button
-                  type="submit"
-                  disabled={promotionSaving || promotionLoading}
-                  style={{
-                    border: "none",
-                    background: "#e56a45",
-                    color: "#fff",
-                    borderRadius: "14px",
-                    padding: "14px 22px",
+                    marginTop: 0,
+                    marginBottom: "24px",
+                    color: "#666",
                     fontSize: "16px",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    opacity: promotionSaving || promotionLoading ? 0.7 : 1,
                   }}
                 >
-                  {promotionSaving ? "Зберігаємо..." : "Зберегти налаштування"}
-                </button>
-              </form>
-              {promotionMessage && (
-                <div
-                  style={{
-                    marginTop: "12px",
-                    padding: "12px 14px",
-                    borderRadius: "12px",
-                    background: "#ecfdf3",
-                    color: "#166534",
-                    fontWeight: 600,
-                    fontSize: "14px",
-                  }}
-                >
-                  {promotionMessage}
-                </div>
-              )}
+                  Окремо налаштовується акція “ролл зі знижкою” для кошика.
+                </p>
 
-              {promotionError && (
-                <div
-                  style={{
-                    marginTop: "12px",
-                    padding: "12px 14px",
-                    borderRadius: "12px",
-                    background: "#fef2f2",
-                    color: "#b91c1c",
-                    fontWeight: 600,
-                    fontSize: "14px",
-                  }}
-                >
-                  {promotionError}
-                </div>
-              )}
+                <form onSubmit={handleSavePromotionSettings}>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "16px",
+                      marginBottom: "16px",
+                    }}
+                  >
+                    <input
+                      type="number"
+                      name="triggerSum"
+                      min="1"
+                      placeholder="Сума спрацювання"
+                      value={promotionSettings.triggerSum}
+                      onChange={handlePromotionChange}
+                      style={inputStyle}
+                    />
+
+                    <input
+                      type="number"
+                      name="discountPercent"
+                      min="1"
+                      max="100"
+                      placeholder="Знижка %"
+                      value={promotionSettings.discountPercent}
+                      onChange={handlePromotionChange}
+                      style={inputStyle}
+                    />
+                  </div>
+
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      marginBottom: "20px",
+                      fontWeight: 600,
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      name="isActive"
+                      checked={promotionSettings.isActive}
+                      onChange={handlePromotionChange}
+                    />
+                    Акція активна
+                  </label>
+
+                  <button
+                    type="submit"
+                    disabled={promotionSaving || promotionLoading}
+                    style={{
+                      border: "none",
+                      background: "#e56a45",
+                      color: "#fff",
+                      borderRadius: "14px",
+                      padding: "14px 22px",
+                      fontSize: "16px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      opacity: promotionSaving || promotionLoading ? 0.7 : 1,
+                    }}
+                  >
+                    {promotionSaving
+                      ? "Зберігаємо..."
+                      : "Зберегти налаштування"}
+                  </button>
+                </form>
+                {promotionMessage && (
+                  <div
+                    style={{
+                      marginTop: "12px",
+                      padding: "12px 14px",
+                      borderRadius: "12px",
+                      background: "#ecfdf3",
+                      color: "#166534",
+                      fontWeight: 600,
+                      fontSize: "14px",
+                    }}
+                  >
+                    {promotionMessage}
+                  </div>
+                )}
+
+                {promotionError && (
+                  <div
+                    style={{
+                      marginTop: "12px",
+                      padding: "12px 14px",
+                      borderRadius: "12px",
+                      background: "#fef2f2",
+                      color: "#b91c1c",
+                      fontWeight: 600,
+                      fontSize: "14px",
+                    }}
+                  >
+                    {promotionError}
+                  </div>
+                )}
+              </div>
+
               <div
                 style={{
                   background: "#fff",
@@ -2951,6 +3099,248 @@ export default function Admin() {
                   Лише з понеділка по четвер
                 </label>
 
+                <div
+                  style={{
+                    background: "#fff",
+                    borderRadius: "16px",
+                    padding: "20px",
+                    marginTop: "20px",
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
+                  }}
+                >
+                  <h3
+                    style={{
+                      margin: "0 0 8px",
+                      fontSize: 24,
+                      fontWeight: 800,
+                      color: "#0f172a",
+                    }}
+                  >
+                    Telegram бонус новачку
+                  </h3>
+
+                  <div
+                    style={{
+                      marginTop: 18,
+                      display: "grid",
+                      gap: 12,
+                      maxWidth: 900,
+                    }}
+                  >
+                    <div>
+                      <label
+                        style={{
+                          display: "block",
+                          marginBottom: 6,
+                          fontSize: 14,
+                          fontWeight: 600,
+                          color: "#0f172a",
+                        }}
+                      >
+                        Тип welcome-бонусу
+                      </label>
+
+                      <select
+                        value={bonusType}
+                        onChange={(e) => setBonusType(e.target.value)}
+                        style={{
+                          width: "100%",
+                          height: 44,
+                          borderRadius: 12,
+                          border: "1px solid #dbe2ea",
+                          padding: "0 14px",
+                          fontSize: 15,
+                          outline: "none",
+                          background: "#fff",
+                        }}
+                      >
+                        <option value="gift_product">Подарунок</option>
+                        <option value="discount_percent">Знижка %</option>
+                        <option value="custom_text">Кастомний текст</option>
+                      </select>
+                    </div>
+
+                    {bonusType === "gift_product" ? (
+                      <>
+                        <div>
+                          <label
+                            style={{
+                              display: "block",
+                              marginBottom: 6,
+                              fontSize: 14,
+                              fontWeight: 600,
+                              color: "#0f172a",
+                            }}
+                          >
+                            Назва бонусу
+                          </label>
+                          <input
+                            type="text"
+                            value={bonusTitle}
+                            onChange={(e) => setBonusTitle(e.target.value)}
+                            placeholder="Наприклад: Сакура"
+                            style={{
+                              width: "100%",
+                              height: 44,
+                              borderRadius: 12,
+                              border: "1px solid #dbe2ea",
+                              padding: "0 14px",
+                              fontSize: 15,
+                              outline: "none",
+                            }}
+                          />
+                        </div>
+
+                        <div>
+                          <label
+                            style={{
+                              display: "block",
+                              marginBottom: 6,
+                              fontSize: 14,
+                              fontWeight: 600,
+                              color: "#0f172a",
+                            }}
+                          >
+                            Опис бонусу
+                          </label>
+                          <textarea
+                            value={bonusDescription}
+                            onChange={(e) =>
+                              setBonusDescription(e.target.value)
+                            }
+                            placeholder="Короткий опис подарунка"
+                            rows={4}
+                            style={{
+                              width: "100%",
+                              minHeight: 110,
+                              borderRadius: 12,
+                              border: "1px solid #dbe2ea",
+                              padding: "12px 14px",
+                              fontSize: 15,
+                              outline: "none",
+                              resize: "vertical",
+                              fontFamily: "inherit",
+                              lineHeight: 1.5,
+                            }}
+                          />
+                        </div>
+
+                        <div>
+                          <label
+                            style={{
+                              display: "block",
+                              marginBottom: 6,
+                              fontSize: 14,
+                              fontWeight: 600,
+                              color: "#0f172a",
+                            }}
+                          >
+                            Фото бонусу
+                          </label>
+                          <input
+                            type="text"
+                            value={bonusImage}
+                            onChange={(e) => setBonusImage(e.target.value)}
+                            placeholder="URL зображення"
+                            style={{
+                              width: "100%",
+                              height: 44,
+                              borderRadius: 12,
+                              border: "1px solid #dbe2ea",
+                              padding: "0 14px",
+                              fontSize: 15,
+                              outline: "none",
+                            }}
+                          />
+                        </div>
+
+                        {bonusImage ? (
+                          <div>
+                            <img
+                              src={bonusImage}
+                              alt={bonusTitle || "bonus"}
+                              style={{
+                                width: 180,
+                                height: 180,
+                                objectFit: "contain",
+                                borderRadius: 16,
+                                border: "1px solid #e2e8f0",
+                              }}
+                            />
+                          </div>
+                        ) : null}
+                      </>
+                    ) : null}
+
+                    {bonusType === "discount_percent" ? (
+                      <div>
+                        <label
+                          style={{
+                            display: "block",
+                            marginBottom: 6,
+                            fontSize: 14,
+                            fontWeight: 600,
+                            color: "#0f172a",
+                          }}
+                        >
+                          Розмір знижки, %
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="100"
+                          value={discountPercent}
+                          onChange={(e) => setDiscountPercent(e.target.value)}
+                          placeholder="Наприклад: 10"
+                          style={{
+                            width: "100%",
+                            height: 44,
+                            borderRadius: 12,
+                            border: "1px solid #dbe2ea",
+                            padding: "0 14px",
+                            fontSize: 15,
+                            outline: "none",
+                          }}
+                        />
+                      </div>
+                    ) : null}
+
+                    {bonusType === "custom_text" ? (
+                      <div>
+                        <label
+                          style={{
+                            display: "block",
+                            marginBottom: 6,
+                            fontSize: 14,
+                            fontWeight: 600,
+                            color: "#0f172a",
+                          }}
+                        >
+                          Текст бонусу
+                        </label>
+                        <textarea
+                          value={customText}
+                          onChange={(e) => setCustomText(e.target.value)}
+                          placeholder="Наприклад: -50% на сет Філадельфія при наступному замовленні"
+                          rows={5}
+                          style={{
+                            width: "100%",
+                            minHeight: 130,
+                            borderRadius: 12,
+                            border: "1px solid #dbe2ea",
+                            padding: "12px 14px",
+                            fontSize: 15,
+                            outline: "none",
+                            resize: "vertical",
+                            fontFamily: "inherit",
+                            lineHeight: 1.5,
+                          }}
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+
                 <button
                   type="button"
                   onClick={handleSaveGiftRollSettings}
@@ -3000,6 +3390,251 @@ export default function Admin() {
                   {giftRollError}
                 </div>
               )}
+              <div
+                style={{
+                  background: "#fff",
+                  borderRadius: "16px",
+                  padding: "20px",
+                  marginTop: "20px",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
+                }}
+              >
+                <h3
+                  style={{
+                    margin: "0 0 8px",
+                    fontSize: 24,
+                    fontWeight: 800,
+                    color: "#0f172a",
+                  }}
+                >
+                  Telegram-акція
+                </h3>
+
+                <p
+                  style={{
+                    margin: "0 0 16px",
+                    color: "#64748b",
+                    fontSize: 14,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Цей текст буде показуватись у боті по кнопці «Акції».
+                </p>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gap: 12,
+                    maxWidth: 900,
+                  }}
+                >
+                  <input
+                    type="text"
+                    value={telegramPromoTitle}
+                    onChange={(e) => setTelegramPromoTitle(e.target.value)}
+                    placeholder="Заголовок акції"
+                    style={{
+                      width: "100%",
+                      height: 44,
+                      borderRadius: 12,
+                      border: "1px solid #dbe2ea",
+                      padding: "0 14px",
+                      fontSize: 15,
+                      outline: "none",
+                    }}
+                  />
+
+                  <textarea
+                    value={telegramPromoText}
+                    onChange={(e) => setTelegramPromoText(e.target.value)}
+                    placeholder="Текст акції для Telegram"
+                    rows={6}
+                    style={{
+                      width: "100%",
+                      minHeight: 140,
+                      borderRadius: 12,
+                      border: "1px solid #dbe2ea",
+                      padding: "12px 14px",
+                      fontSize: 15,
+                      outline: "none",
+                      resize: "vertical",
+                      fontFamily: "inherit",
+                      lineHeight: 1.5,
+                    }}
+                  />
+
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={handleSaveTelegramPromo}
+                      disabled={telegramPromoSaving}
+                      style={{
+                        height: 44,
+                        padding: "0 18px",
+                        borderRadius: 12,
+                        border: "none",
+                        background: telegramPromoSaving
+                          ? "#cbd5e1"
+                          : "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
+                        color: "#fff",
+                        fontSize: 15,
+                        fontWeight: 700,
+                        cursor: telegramPromoSaving ? "not-allowed" : "pointer",
+                        boxShadow: "0 10px 24px rgba(249, 115, 22, 0.25)",
+                      }}
+                    >
+                      {telegramPromoSaving
+                        ? "Збереження..."
+                        : "Зберегти Telegram-акцію"}
+                    </button>
+
+                    {telegramPromoStatus ? (
+                      <span
+                        style={{
+                          fontSize: 14,
+                          color: telegramPromoStatus.includes("✅")
+                            ? "#16a34a"
+                            : "#dc2626",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {telegramPromoStatus}
+                      </span>
+                    ) : null}
+
+                    <div
+                      style={{
+                        marginTop: 32,
+                        paddingTop: 24,
+                        borderTop: "1px solid rgba(15, 23, 42, 0.08)",
+                      }}
+                    >
+                      <h3
+                        style={{
+                          margin: "0 0 8px",
+                          fontSize: 24,
+                          fontWeight: 800,
+                          color: "#0f172a",
+                        }}
+                      >
+                        Тестовий бонус
+                      </h3>
+
+                      <p
+                        style={{
+                          margin: "0 0 16px",
+                          color: "#64748b",
+                          fontSize: 14,
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        Для швидкої перевірки бота без DevTools. Можна вручну
+                        видати або списати активний бонус по номеру телефону.
+                      </p>
+
+                      <div
+                        style={{
+                          display: "grid",
+                          gap: 12,
+                          maxWidth: 700,
+                        }}
+                      >
+                        <input
+                          type="text"
+                          value={testBonusPhone}
+                          onChange={(e) => setTestBonusPhone(e.target.value)}
+                          placeholder="+380..."
+                          style={{
+                            width: "100%",
+                            height: 44,
+                            borderRadius: 12,
+                            border: "1px solid #dbe2ea",
+                            padding: "0 14px",
+                            fontSize: 15,
+                            outline: "none",
+                          }}
+                        />
+
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: 12,
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <button
+                            type="button"
+                            onClick={handleIssueTestBonus}
+                            disabled={testBonusLoading}
+                            style={{
+                              height: 44,
+                              padding: "0 18px",
+                              borderRadius: 12,
+                              border: "none",
+                              background: testBonusLoading
+                                ? "#cbd5e1"
+                                : "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
+                              color: "#fff",
+                              fontSize: 15,
+                              fontWeight: 700,
+                              cursor: testBonusLoading
+                                ? "not-allowed"
+                                : "pointer",
+                              boxShadow: "0 10px 24px rgba(249, 115, 22, 0.25)",
+                            }}
+                          >
+                            Видати тестовий бонус
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handleUseActiveBonus}
+                            disabled={testBonusLoading}
+                            style={{
+                              height: 44,
+                              padding: "0 18px",
+                              borderRadius: 12,
+                              border: "1px solid #dbe2ea",
+                              background: "#fff",
+                              color: "#0f172a",
+                              fontSize: 15,
+                              fontWeight: 700,
+                              cursor: testBonusLoading
+                                ? "not-allowed"
+                                : "pointer",
+                            }}
+                          >
+                            Списати активний бонус
+                          </button>
+                        </div>
+
+                        {testBonusStatus ? (
+                          <div
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 600,
+                              color:
+                                testBonusStatus.includes("✅") ||
+                                testBonusStatus.includes("виконано")
+                                  ? "#16a34a"
+                                  : "#dc2626",
+                            }}
+                          >
+                            {testBonusStatus}
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </section>
           )}
 

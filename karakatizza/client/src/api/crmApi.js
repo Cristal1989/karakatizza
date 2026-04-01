@@ -159,3 +159,79 @@ export async function getTelegramBroadcastHistory(limit = 20) {
 
   return data;
 }
+
+export async function issueTestTelegramBonus(payload) {
+  const res = await fetch(`${API_BASE_URL}/api/crm/telegram-gifts/issue-test`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const text = await res.text();
+
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error(`Сервер вернул не JSON: ${text.slice(0, 120)}`);
+  }
+
+  if (!res.ok) {
+    throw new Error(data.message || "Не вдалося видати тестовий бонус");
+  }
+
+  return data;
+}
+
+export async function useActiveTelegramBonus(payload) {
+  const res = await fetch(`${API_BASE_URL}/api/crm/telegram-gifts/use-active`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const text = await res.text();
+
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error(`Сервер вернул не JSON: ${text.slice(0, 120)}`);
+  }
+
+  if (!res.ok) {
+    throw new Error(data.message || "Не вдалося списати активний бонус");
+  }
+
+  return data;
+}
+
+
+export async function getTelegramCheckoutStatus(phone) {
+  const encodedPhone = encodeURIComponent(phone || "");
+
+  const res = await fetch(
+    `${API_BASE_URL}/api/crm/telegram-checkout-status/${encodedPhone}`
+  );
+
+  const text = await res.text();
+
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error(`Сервер вернул не JSON: ${text.slice(0, 200)}`);
+  }
+
+  if (!res.ok) {
+    throw new Error(
+      data?.message || "Не вдалося отримати Telegram-статус для checkout"
+    );
+  }
+
+  return data;
+}

@@ -127,24 +127,23 @@ export default function CustomersPage() {
   const { siteSettings } = useSiteSettings();
 
   const [customers, setCustomers] = useState([]);
-const [loading, setLoading] = useState(true);
-const [loadingOrdersId, setLoadingOrdersId] = useState(null);
-const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [loadingOrdersId, setLoadingOrdersId] = useState(null);
+  const [error, setError] = useState("");
 
-const [expandedCustomerId, setExpandedCustomerId] = useState(null);
-const [ordersByCustomer, setOrdersByCustomer] = useState({});
-const customersLoading = loading;
-const customersError = error;
-const customerOrdersLoading = loadingOrdersId === expandedCustomerId;
-const customerOrders = expandedCustomerId
-  ? ordersByCustomer[expandedCustomerId] || []
-  : [];
+  const [expandedCustomerId, setExpandedCustomerId] = useState(null);
+  const [ordersByCustomer, setOrdersByCustomer] = useState({});
+  const customersLoading = loading;
+  const customersError = error;
+  const customerOrdersLoading = loadingOrdersId === expandedCustomerId;
+  const customerOrders = expandedCustomerId
+    ? ordersByCustomer[expandedCustomerId] || []
+    : [];
 
   const [search, setSearch] = useState("");
   const [orderType, setOrderType] = useState("all");
   const [telegram, setTelegram] = useState("all");
   const [inactiveDays, setInactiveDays] = useState("");
-
 
   const [copyMessage, setCopyMessage] = useState("");
 
@@ -167,6 +166,8 @@ const customerOrders = expandedCustomerId
   const [showTelegramComposer, setShowTelegramComposer] = useState(true);
   const [showTelegramHistory, setShowTelegramHistory] = useState(false);
   const [showCustomersList, setShowCustomersList] = useState(true);
+
+  const [activeQuickFilter, setActiveQuickFilter] = useState("all");
 
   const telegramTemplates = [
     {
@@ -284,6 +285,21 @@ const customerOrders = expandedCustomerId
     await loadCustomers();
   }
 
+  function getQuickFilterStyle(filterKey, baseStyles = {}, activeStyles = {}) {
+    const isActive = activeQuickFilter === filterKey;
+
+    return {
+      border: "none",
+      borderRadius: "12px",
+      padding: "10px 14px",
+      fontWeight: 700,
+      cursor: "pointer",
+      transition: "all 0.18s ease",
+      ...baseStyles,
+      ...(isActive ? activeStyles : {}),
+    };
+  }
+
   async function handleCopyPhones() {
     try {
       const phones = customers
@@ -387,6 +403,7 @@ const customerOrders = expandedCustomerId
       nextInactiveDays = "60";
     }
 
+    setActiveQuickFilter(type);
     setMinTotalSpent(nextMinTotalSpent);
     setMinLastOrderAmount(nextMinLastOrderAmount);
     setSearch(nextSearch);
@@ -500,7 +517,7 @@ const customerOrders = expandedCustomerId
     let nextSearch = search;
     let nextOrderType = orderType;
     let nextTelegram = telegram;
-    let nextInactiveDays = inactiveDays;
+    let nextInactiveDays = "";
     let nextMinTotalSpent = "";
     let nextMinLastOrderAmount = "";
 
@@ -516,6 +533,7 @@ const customerOrders = expandedCustomerId
       nextMinLastOrderAmount = "700";
     }
 
+    setActiveQuickFilter(type);
     setSearch(nextSearch);
     setOrderType(nextOrderType);
     setTelegram(nextTelegram);
@@ -533,7 +551,7 @@ const customerOrders = expandedCustomerId
     });
   }
 
-  async function handleToggleOrders(customerId) {
+  async function handleToggleCustomerOrders(customerId) {
     if (expandedCustomerId === customerId) {
       setExpandedCustomerId(null);
       return;
@@ -680,15 +698,18 @@ const customerOrders = expandedCustomerId
           <button
             type="button"
             onClick={() => applyQuickFilter("all")}
-            style={{
-              border: "none",
-              borderRadius: "12px",
-              padding: "10px 14px",
-              background: "#f3f4f6",
-              color: "#111827",
-              fontWeight: 700,
-              cursor: "pointer",
-            }}
+            style={getQuickFilterStyle(
+              "all",
+              {
+                background: "#f3f4f6",
+                color: "#111827",
+              },
+              {
+                background: "#e5e7eb",
+                color: "#111827",
+                boxShadow: "inset 0 0 0 2px #9ca3af",
+              }
+            )}
           >
             Усі
           </button>
@@ -696,15 +717,18 @@ const customerOrders = expandedCustomerId
           <button
             type="button"
             onClick={() => applyQuickFilter("first")}
-            style={{
-              border: "none",
-              borderRadius: "12px",
-              padding: "10px 14px",
-              background: "#eef2ff",
-              color: "#3730a3",
-              fontWeight: 700,
-              cursor: "pointer",
-            }}
+            style={getQuickFilterStyle(
+              "first",
+              {
+                background: "#eef2ff",
+                color: "#3730a3",
+              },
+              {
+                background: "#c7d2fe",
+                color: "#312e81",
+                boxShadow: "inset 0 0 0 2px #6366f1",
+              }
+            )}
           >
             Нові
           </button>
@@ -712,15 +736,18 @@ const customerOrders = expandedCustomerId
           <button
             type="button"
             onClick={() => applyQuickFilter("repeat")}
-            style={{
-              border: "none",
-              borderRadius: "12px",
-              padding: "10px 14px",
-              background: "#ecfdf5",
-              color: "#166534",
-              fontWeight: 700,
-              cursor: "pointer",
-            }}
+            style={getQuickFilterStyle(
+              "repeat",
+              {
+                background: "#ecfdf5",
+                color: "#166534",
+              },
+              {
+                background: "#bbf7d0",
+                color: "#166534",
+                boxShadow: "inset 0 0 0 2px #22c55e",
+              }
+            )}
           >
             Повторні
           </button>
@@ -728,15 +755,18 @@ const customerOrders = expandedCustomerId
           <button
             type="button"
             onClick={() => applyQuickFilter("inactive30")}
-            style={{
-              border: "none",
-              borderRadius: "12px",
-              padding: "10px 14px",
-              background: "#fff7ed",
-              color: "#9a3412",
-              fontWeight: 700,
-              cursor: "pointer",
-            }}
+            style={getQuickFilterStyle(
+              "inactive30",
+              {
+                background: "#fff7ed",
+                color: "#9a3412",
+              },
+              {
+                background: "#fed7aa",
+                color: "#7c2d12",
+                boxShadow: "inset 0 0 0 2px #ea580c",
+              }
+            )}
           >
             30+ днів
           </button>
@@ -744,15 +774,18 @@ const customerOrders = expandedCustomerId
           <button
             type="button"
             onClick={() => applyQuickFilter("inactive60")}
-            style={{
-              border: "none",
-              borderRadius: "12px",
-              padding: "10px 14px",
-              background: "#fef2f2",
-              color: "#991b1b",
-              fontWeight: 700,
-              cursor: "pointer",
-            }}
+            style={getQuickFilterStyle(
+              "inactive60",
+              {
+                background: "#fef2f2",
+                color: "#991b1b",
+              },
+              {
+                background: "#fecaca",
+                color: "#7f1d1d",
+                boxShadow: "inset 0 0 0 2px #ef4444",
+              }
+            )}
           >
             60+ днів
           </button>
@@ -778,15 +811,18 @@ const customerOrders = expandedCustomerId
             <button
               type="button"
               onClick={() => applyMoneyQuickFilter("total1000")}
-              style={{
-                border: "none",
-                borderRadius: "12px",
-                padding: "10px 14px",
-                background: "#eef2ff",
-                color: "#3730a3",
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
+              style={getQuickFilterStyle(
+                "total1000",
+                {
+                  background: "#eef2ff",
+                  color: "#3730a3",
+                },
+                {
+                  background: "#c7d2fe",
+                  color: "#312e81",
+                  boxShadow: "inset 0 0 0 2px #6366f1",
+                }
+              )}
             >
               1000+ всього
             </button>
@@ -794,15 +830,18 @@ const customerOrders = expandedCustomerId
             <button
               type="button"
               onClick={() => applyMoneyQuickFilter("total2000")}
-              style={{
-                border: "none",
-                borderRadius: "12px",
-                padding: "10px 14px",
-                background: "#ecfdf5",
-                color: "#166534",
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
+              style={getQuickFilterStyle(
+                "total2000",
+                {
+                  background: "#ecfdf5",
+                  color: "#166534",
+                },
+                {
+                  background: "#bbf7d0",
+                  color: "#166534",
+                  boxShadow: "inset 0 0 0 2px #22c55e",
+                }
+              )}
             >
               2000+ всього
             </button>
@@ -810,15 +849,18 @@ const customerOrders = expandedCustomerId
             <button
               type="button"
               onClick={() => applyMoneyQuickFilter("last700")}
-              style={{
-                border: "none",
-                borderRadius: "12px",
-                padding: "10px 14px",
-                background: "#fff7ed",
-                color: "#9a3412",
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
+              style={getQuickFilterStyle(
+                "last700",
+                {
+                  background: "#fff7ed",
+                  color: "#9a3412",
+                },
+                {
+                  background: "#fed7aa",
+                  color: "#7c2d12",
+                  boxShadow: "inset 0 0 0 2px #ea580c",
+                }
+              )}
             >
               700+ останній чек
             </button>
@@ -900,7 +942,10 @@ const customerOrders = expandedCustomerId
             type="text"
             placeholder="Пошук по імені або телефону"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setActiveQuickFilter("");
+            }}
             style={{
               width: "100%",
               padding: "13px 14px",
@@ -914,7 +959,10 @@ const customerOrders = expandedCustomerId
 
           <select
             value={orderType}
-            onChange={(e) => setOrderType(e.target.value)}
+            onChange={(e) => {
+              setOrderType(e.target.value);
+              setActiveQuickFilter("");
+            }}
             style={{
               width: "100%",
               padding: "13px 14px",
@@ -933,7 +981,10 @@ const customerOrders = expandedCustomerId
 
           <select
             value={telegram}
-            onChange={(e) => setTelegram(e.target.value)}
+            onChange={(e) => {
+              setTelegram(e.target.value);
+              setActiveQuickFilter("");
+            }}
             style={{
               width: "100%",
               padding: "13px 14px",
@@ -955,7 +1006,10 @@ const customerOrders = expandedCustomerId
             min="1"
             placeholder="Не замовляв N днів"
             value={inactiveDays}
-            onChange={(e) => setInactiveDays(e.target.value)}
+            onChange={(e) => {
+              setInactiveDays(e.target.value);
+              setActiveQuickFilter("");
+            }}
             style={{
               width: "100%",
               padding: "13px 14px",
@@ -981,7 +1035,10 @@ const customerOrders = expandedCustomerId
             min="0"
             placeholder="Від суми всіх замовлень"
             value={minTotalSpent}
-            onChange={(e) => setMinTotalSpent(e.target.value)}
+            onChange={(e) => {
+              setMinTotalSpent(e.target.value);
+              setActiveQuickFilter("");
+            }}
             style={{
               width: "100%",
               padding: "13px 14px",
@@ -998,7 +1055,10 @@ const customerOrders = expandedCustomerId
             min="0"
             placeholder="Від суми останнього чека"
             value={minLastOrderAmount}
-            onChange={(e) => setMinLastOrderAmount(e.target.value)}
+            onChange={(e) => {
+              setMinLastOrderAmount(e.target.value);
+              setActiveQuickFilter("");
+            }}
             style={{
               width: "100%",
               padding: "13px 14px",

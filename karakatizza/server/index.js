@@ -23,7 +23,6 @@ import {
 import crmRoutes from "./routes/crmRoutes.js";
 import { startTelegramBot } from "./bot.js";
 
-
 dotenv.config();
 
 const app = express();
@@ -94,6 +93,8 @@ app.use("/api/delivery", deliveryRoutes);
 app.use("/promotions", promotionsRoutes(pool));
 app.use("/gift-roll", giftRollRoutes(pool));
 app.use("/api/crm", crmRoutes);
+app.use("/site-settings", siteSettingsRoutes);
+``;
 
 const storage = new CloudinaryStorage({
   cloudinary,
@@ -133,7 +134,6 @@ function writeProducts(products) {
 const PORT = process.env.PORT || 5000;
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const CHAT_ID = process.env.CHAT_ID;
-
 
 app.get("/products", async (req, res) => {
   try {
@@ -190,35 +190,6 @@ app.get("/products", async (req, res) => {
     console.error("GET /products ERROR:", error);
     return res.status(500).json({
       message: "Не вдалося отримати товари",
-    });
-  }
-});
-
-app.get("/site-settings", async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT
-        opening_time AS "openingTime",
-        closing_time AS "closingTime",
-        enable_after_hours_popup AS "enableAfterHoursPopup",
-        closed_all_day AS "closedAllDay",
-        closed_all_day_date AS "closedAllDayDate",
-        popup_message AS "popupMessage",
-        closed_all_day_message AS "closedAllDayMessage"
-      FROM site_settings
-      WHERE id = 1
-      LIMIT 1
-    `);
-
-    if (!result.rows.length) {
-      return res.status(404).json({ message: "Налаштування не знайдено" });
-    }
-
-    return res.json(result.rows[0]);
-  } catch (error) {
-    console.error("GET /site-settings ERROR:", error);
-    return res.status(500).json({
-      message: "Не вдалося отримати налаштування сайту",
     });
   }
 });
@@ -610,54 +581,6 @@ app.put("/products/:id", (req, res) => {
   });
 });
 
-app.put("/site-settings", async (req, res) => {
-  try {
-    const {
-      openingTime,
-      closingTime,
-      enableAfterHoursPopup,
-      closedAllDay,
-      closedAllDayDate,
-      popupMessage,
-      closedAllDayMessage,
-    } = req.body;
-
-    await pool.query(
-      `
-      UPDATE site_settings
-      SET
-        opening_time = $1,
-        closing_time = $2,
-        enable_after_hours_popup = $3,
-        closed_all_day = $4,
-        closed_all_day_date = $5,
-        popup_message = $6,
-        closed_all_day_message = $7,
-        updated_at = NOW()
-      WHERE id = 1
-      `,
-      [
-        openingTime || "10:00",
-        closingTime || "22:00",
-        enableAfterHoursPopup === true,
-        closedAllDay === true,
-        closedAllDayDate || "",
-        popupMessage ||
-          "Ми зараз не працюємо, але ви можете оформити замовлення, і ми зв’яжемося з вами в робочий час.",
-        closedAllDayMessage ||
-          "Сьогодні ми тимчасово не працюємо, але ви можете залишити замовлення і ми зв’яжемося з вами пізніше.",
-      ]
-    );
-
-    return res.json({ success: true });
-  } catch (error) {
-    console.error("PUT /site-settings ERROR:", error);
-    return res.status(500).json({
-      message: "Не вдалося зберегти налаштування сайту",
-    });
-  }
-});
-
 app.put(
   "/banners/:id",
   upload.fields([
@@ -955,17 +878,26 @@ app.post("/order", async (req, res) => {
     } = req.body;
 
     let sticksText = "";
+    
     const calculatedTotal =
       items.reduce((sum, item) => {
         const paidQuantity = item.paidQuantity ?? item.quantity ?? 0;
         return sum + item.price * paidQuantity;
       }, 0) + (sticksExtraPrice ?? 0);
 
-      if (!isValidUaPhone(phone)) {
-        return res.status(400).json({
-          message: "Вкажіть коректний номер телефону України",
-        });
-      }
+    if (!isValidUaPhone(phone)) {
+      return res.status(400).json({
+        message: "Вкажіть коректний номер телефону України",
+      });
+    }
+
+    let activeTelegramGift = null;
+
+    try {
+      activeTelegramGift = await getActiveTelegramGiftByPhone(pool, phone);
+    } catch (giftLookupError) {
+      console.error("ACTIVE TELEGRAM GIFT LOOKUP ERROR:", giftLookupError);
+    }
 
     if ((regularSticksCount ?? 0) > 0 || (trainingSticksCount ?? 0) > 0) {
       sticksText = `🥢 Паличкu: звичайні: ${
@@ -986,9 +918,9 @@ app.post("/order", async (req, res) => {
         paymentMethod === "card"
           ? "Картка онлайн"
           : paymentMethod === "bank_transfer"
-            ? "Переказ на карту"
-            : "Готівка";
-    
+          ? "Переказ на карту"
+          : "Готівка";
+
       message += `💳 Оплата: ${paymentText}\n`;
     }
     if (needExactTime && exactTime) {
@@ -1074,6 +1006,22 @@ app.post("/order", async (req, res) => {
       }
     }
 
+    if (activeTelegramGift) {
+      let bonusBlock = `\n🎁 Бонус до замовлення:\n`;
+    
+      bonusBlock += `Назва: ${activeTelegramGift.gift_roll_title || "Бонус"}\n`;
+    
+      if (activeTelegramGift.gift_roll_id) {
+        bonusBlock += `Код: ${activeTelegramGift.gift_roll_id}\n`;
+      }
+    
+      if (activeTelegramGift.comment) {
+        bonusBlock += `Коментар: ${activeTelegramGift.comment}\n`;
+      }
+    
+      message += bonusBlock;
+    }
+
     message += `💰 Разом: ${totalPrice} грн`;
 
     const telegramUrl = `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`;
@@ -1092,7 +1040,7 @@ app.post("/order", async (req, res) => {
     } catch (telegramError) {
       console.log("⚠️ Telegram error:", telegramError.message);
     }
-    
+
     try {
       console.log("CRM SAVE START", {
         phone,
@@ -1100,7 +1048,7 @@ app.post("/order", async (req, res) => {
         paymentMethod,
         itemsCount: Array.isArray(items) ? items.length : 0,
       });
-    
+
       const crmResult = await saveOrderToCrm(pool, {
         name,
         phone,
@@ -1118,24 +1066,38 @@ app.post("/order", async (req, res) => {
         regularSticksCount,
         trainingSticksCount,
         sticksExtraPrice,
+        telegramBonusMeta: activeTelegramGift
+          ? {
+              id: activeTelegramGift.id,
+              giftRollId: activeTelegramGift.gift_roll_id,
+              giftRollTitle: activeTelegramGift.gift_roll_title,
+              comment: activeTelegramGift.comment,
+              status: activeTelegramGift.status,
+              source: activeTelegramGift.source,
+              issuedAt: activeTelegramGift.issued_at,
+            }
+          : null,
       });
-    
+
       console.log("CRM SAVE SUCCESS", {
         customerId: crmResult.customer?.id,
         orderId: crmResult.order?.id,
       });
 
       try {
-        const activeTelegramGift = await getActiveTelegramGiftByPhone(pool, phone);
-      
-        if (activeTelegramGift) {
-          await markTelegramGiftUsed(pool, activeTelegramGift.id);
-      
-          console.log("TELEGRAM GIFT AUTO USED", {
-            giftId: activeTelegramGift.id,
-            phone,
-            giftRollTitle: activeTelegramGift.gift_roll_title,
-          });
+        if (crmResult?.order && activeTelegramGift) {
+          try {
+            await markTelegramGiftUsed(pool, activeTelegramGift.id);
+        
+            console.log("TELEGRAM GIFT AUTO USED", {
+              giftId: activeTelegramGift.id,
+              phone,
+              giftRollTitle: activeTelegramGift.gift_roll_title,
+              orderId: crmResult.order?.id,
+            });
+          } catch (giftUseError) {
+            console.error("TELEGRAM GIFT AUTO USE ERROR:", giftUseError);
+          }
         }
       } catch (giftUseError) {
         console.error("TELEGRAM GIFT AUTO USE ERROR:", giftUseError);
@@ -1144,18 +1106,18 @@ app.post("/order", async (req, res) => {
       console.error("CRM SAVE ERROR:", crmError);
       console.error("CRM SAVE ERROR MESSAGE:", crmError?.message);
     }
-    
+
     return res.json({
       success: true,
       message: "Замовлення прийнято",
     });
-    } catch (error) {
-      console.error("Order error:", error);
-    
-      return res.status(500).json({
-        message: "Помилка при оформленні замовлення",
-      });
-    }
+  } catch (error) {
+    console.error("Order error:", error);
+
+    return res.status(500).json({
+      message: "Помилка при оформленні замовлення",
+    });
+  }
 });
 
 app.use((err, req, res, next) => {

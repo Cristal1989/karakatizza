@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { createOrder } from "../api/ordersApi";
@@ -7,6 +7,7 @@ import {
   getDeliveryInfo,
 } from "../services/deliveryService";
 import { useSiteSettings } from "../context/SiteSettingsContext";
+import { getTelegramCheckoutStatus } from "../api/crmApi";
 
 export default function Checkout() {
   const { siteSettings } = useSiteSettings();
@@ -47,15 +48,15 @@ export default function Checkout() {
 
   const texts = siteSettings?.texts;
 
-const checkoutCommentPlaceholder =
-  texts?.checkoutCommentPlaceholder || "Коментар до замовлення";
+  const checkoutCommentPlaceholder =
+    texts?.checkoutCommentPlaceholder || "Коментар до замовлення";
 
-const checkoutExactTimeLabel =
-  texts?.checkoutExactTimeLabel || "Потрібно на певний час";
+  const checkoutExactTimeLabel =
+    texts?.checkoutExactTimeLabel || "Потрібно на певний час";
 
-const checkoutSuccessHint =
-  texts?.checkoutSuccessHint ||
-  "Дякуємо за замовлення! Ми скоро зв’яжемося з вами.";
+  const checkoutSuccessHint =
+    texts?.checkoutSuccessHint ||
+    "Дякуємо за замовлення! Ми скоро зв’яжемося з вами.";
 
   const navigate = useNavigate();
   const { cartItems, clearCart, totalPrice } = useCart();
@@ -93,6 +94,59 @@ const checkoutSuccessHint =
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const [telegramCheckoutStatus, setTelegramCheckoutStatus] = useState(null);
+  const [telegramCheckoutLoading, setTelegramCheckoutLoading] = useState(false);
+  const [telegramCheckoutError, setTelegramCheckoutError] = useState("");
+
+  const TELEGRAM_BOT_WEB_URL =
+    "https://t.me/crm_karakatizza_bot?start=checkout";
+  const TELEGRAM_BOT_APP_URL =
+    "tg://resolve?domain=crm_karakatizza_bot&start=checkout";
+
+  const checkoutPhoneValue = useMemo(() => {
+    if (typeof formData !== "undefined" && formData?.phone != null) {
+      return String(formData.phone);
+    }
+
+    if (typeof form !== "undefined" && form?.phone != null) {
+      return String(form.phone);
+    }
+
+    if (typeof customerData !== "undefined" && customerData?.phone != null) {
+      return String(customerData.phone);
+    }
+
+    if (typeof customerPhone !== "undefined" && customerPhone != null) {
+      return String(customerPhone);
+    }
+
+    if (typeof phone !== "undefined" && phone != null) {
+      return String(phone);
+    }
+
+    return "";
+  }, [
+    typeof formData !== "undefined" ? formData?.phone : null,
+    typeof form !== "undefined" ? form?.phone : null,
+    typeof customerData !== "undefined" ? customerData?.phone : null,
+    typeof customerPhone !== "undefined" ? customerPhone : null,
+    typeof phone !== "undefined" ? phone : null,
+  ]);
+
+  function getCheckoutBonusText(activeGift) {
+    if (!activeGift) return "";
+
+    if (activeGift.giftRollTitle && String(activeGift.giftRollTitle).trim()) {
+      return String(activeGift.giftRollTitle).trim();
+    }
+
+    if (activeGift.giftRollId && String(activeGift.giftRollId).trim()) {
+      return String(activeGift.giftRollId).trim();
+    }
+
+    return "Активний бонус";
+  }
 
   const isMobile = window.innerWidth <= 768;
 
@@ -487,6 +541,37 @@ const checkoutSuccessHint =
   }, [confirmedAddress, checkoutMode]);
 
   useEffect(() => {
+    const cleanPhone = (checkoutPhoneValue || "").trim();
+
+    if (!cleanPhone || cleanPhone.length < 10) {
+      setTelegramCheckoutStatus(null);
+      setTelegramCheckoutError("");
+      setTelegramCheckoutLoading(false);
+      return;
+    }
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        setTelegramCheckoutLoading(true);
+        setTelegramCheckoutError("");
+
+        const data = await getTelegramCheckoutStatus(cleanPhone);
+        setTelegramCheckoutStatus(data);
+      } catch (error) {
+        console.error("CHECKOUT TELEGRAM STATUS ERROR:", error);
+        setTelegramCheckoutStatus(null);
+        setTelegramCheckoutError(
+          "Не вдалося перевірити Telegram-бонус для цього номера"
+        );
+      } finally {
+        setTelegramCheckoutLoading(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [checkoutPhoneValue]);
+
+  useEffect(() => {
     if (!deliveryEnabled && checkoutMode === "delivery" && pickupEnabled) {
       setCheckoutMode("pickup");
     }
@@ -520,11 +605,8 @@ const checkoutSuccessHint =
         }));
       }
     }
-  
-    if (
-      form.paymentMethod === "bank_transfer" &&
-      !bankTransferEnabled
-    ) {
+
+    if (form.paymentMethod === "bank_transfer" && !bankTransferEnabled) {
       if (cardOnlineEnabled) {
         setForm((prev) => ({
           ...prev,
@@ -582,6 +664,20 @@ const checkoutSuccessHint =
       setDeliveryError("");
     }
   }, [checkoutMode]);
+
+  function getCheckoutBonusText(activeGift) {
+    if (!activeGift) return "";
+
+    if (activeGift.giftRollTitle) {
+      return activeGift.giftRollTitle;
+    }
+
+    if (activeGift.giftRollId) {
+      return activeGift.giftRollId;
+    }
+
+    return "Активний бонус";
+  }
 
   const handleNameChange = (e) => {
     const value = e.target.value;
@@ -985,6 +1081,193 @@ const checkoutSuccessHint =
                   style={fieldStyle}
                 />
               </div>
+              {telegramCheckoutLoading ||
+              telegramCheckoutError ||
+              (telegramCheckoutStatus &&
+                (telegramCheckoutStatus.telegramLinked === false ||
+                  Boolean(telegramCheckoutStatus.activeGift))) ? (
+                <div
+                  style={{
+                    marginTop: 10,
+                    marginBottom: 14,
+                    padding: "10px 12px",
+                    borderRadius: 14,
+                    border: "1px solid #e5e7eb",
+                    background: "#f8fafc",
+                    display: "grid",
+                    gap: 8,
+                  }}
+                >
+                  {telegramCheckoutLoading ? (
+                    <div
+                      style={{
+                        fontSize: 13,
+                        color: "#64748b",
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      Перевіряємо Telegram-бонус...
+                    </div>
+                  ) : null}
+
+                  {!telegramCheckoutLoading && telegramCheckoutError ? (
+                    <div
+                      style={{
+                        fontSize: 13,
+                        color: "#dc2626",
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      {telegramCheckoutError}
+                    </div>
+                  ) : null}
+
+                  {!telegramCheckoutLoading &&
+                  !telegramCheckoutError &&
+                  telegramCheckoutStatus &&
+                  telegramCheckoutStatus.telegramLinked === false ? (
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        gap: 12,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <div
+                        style={{
+                          minWidth: 0,
+                          flex: "1 1 260px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 700,
+                            color: "#0f172a",
+                            lineHeight: 1.35,
+                            marginBottom: 4,
+                          }}
+                        >
+                          🎁 Хочеш бонус до наступного замовлення?
+                        </div>
+
+                        <div
+                          style={{
+                            fontSize: 13,
+                            color: "#475569",
+                            lineHeight: 1.45,
+                          }}
+                        >
+                          Підпиши Telegram-бота та підтвердь номер.
+                        </div>
+                      </div>
+
+                      <a
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+
+                          const isMobile = /Android|iPhone|iPad|iPod/i.test(
+                            navigator.userAgent
+                          );
+
+                          if (isMobile) {
+                            window.location.href = TELEGRAM_BOT_APP_URL;
+                            setTimeout(() => {
+                              window.location.href = TELEGRAM_BOT_WEB_URL;
+                            }, 700);
+                            return;
+                          }
+
+                          window.open(
+                            TELEGRAM_BOT_WEB_URL,
+                            "_blank",
+                            "noopener,noreferrer"
+                          );
+                        }}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          minHeight: 36,
+                          padding: "0 14px",
+                          borderRadius: 10,
+                          background: "#d96f55",
+                          color: "#fff",
+                          textDecoration: "none",
+                          fontSize: 13,
+                          fontWeight: 700,
+                          whiteSpace: "nowrap",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Перейти в Telegram
+                      </a>
+                    </div>
+                  ) : null}
+
+                  {!telegramCheckoutLoading &&
+                  !telegramCheckoutError &&
+                  telegramCheckoutStatus &&
+                  telegramCheckoutStatus.telegramLinked === true &&
+                  telegramCheckoutStatus.activeGift ? (
+                    <div>
+                      <div
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 700,
+                          color: "#0f172a",
+                          lineHeight: 1.35,
+                          marginBottom: 4,
+                        }}
+                      >
+                        🎁 Для цього номера є активний бонус
+                      </div>
+
+                      <div
+                        style={{
+                          fontSize: 13,
+                          color: "#0f172a",
+                          lineHeight: 1.45,
+                          fontWeight: 600,
+                        }}
+                      >
+                        {getCheckoutBonusText(
+                          telegramCheckoutStatus.activeGift
+                        )}
+                      </div>
+
+                      {telegramCheckoutStatus.activeGift.comment ? (
+                        <div
+                          style={{
+                            marginTop: 2,
+                            fontSize: 12,
+                            color: "#64748b",
+                            lineHeight: 1.45,
+                          }}
+                        >
+                          {telegramCheckoutStatus.activeGift.comment}
+                        </div>
+                      ) : null}
+
+                      <div
+                        style={{
+                          marginTop: 4,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: "#16a34a",
+                          lineHeight: 1.45,
+                        }}
+                      >
+                        Бонус буде використаний у цьому замовленні.
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
 
               {checkoutMode === "delivery" ? (
                 <>
