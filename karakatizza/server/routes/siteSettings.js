@@ -43,7 +43,12 @@ delivery_address_not_found_text,
 order_disabled_text,
 checkout_comment_placeholder,
 checkout_exact_time_label,
-checkout_success_hint
+checkout_success_hint,
+telegram_template_come_back_30,
+telegram_template_week_promo,
+telegram_template_vip,
+telegram_template_new_menu,
+telegram_template_inactive_60
   FROM site_settings
   WHERE id = 1
   LIMIT 1
@@ -104,6 +109,13 @@ checkout_success_hint
         checkoutCommentPlaceholder: row.checkout_comment_placeholder || "",
         checkoutExactTimeLabel: row.checkout_exact_time_label || "",
         checkoutSuccessHint: row.checkout_success_hint || "",
+      },
+      telegramTemplates: {
+        comeBack30: row.telegram_template_come_back_30 || "",
+        weekPromo: row.telegram_template_week_promo || "",
+        vip: row.telegram_template_vip || "",
+        newMenu: row.telegram_template_new_menu || "",
+        inactive60: row.telegram_template_inactive_60 || "",
       },
     });
   } catch (error) {
@@ -501,6 +513,65 @@ router.put("/popup", async (req, res) => {
   } catch (error) {
     console.error("UPDATE POPUP SETTINGS ERROR:", error);
     res.status(500).json({ message: "Помилка збереження налаштувань попапа" });
+  }
+});
+
+router.put("/telegram-templates", async (req, res) => {
+  try {
+    const {
+      comeBack30,
+      weekPromo,
+      vip,
+      newMenu,
+      inactive60,
+    } = req.body || {};
+
+    const result = await pool.query(
+      `
+      UPDATE site_settings
+      SET
+        telegram_template_come_back_30 = $1,
+        telegram_template_week_promo = $2,
+        telegram_template_vip = $3,
+        telegram_template_new_menu = $4,
+        telegram_template_inactive_60 = $5,
+        updated_at = NOW()
+      WHERE id = 1
+      RETURNING
+        telegram_template_come_back_30,
+        telegram_template_week_promo,
+        telegram_template_vip,
+        telegram_template_new_menu,
+        telegram_template_inactive_60
+      `,
+      [
+        comeBack30 || "",
+        weekPromo || "",
+        vip || "",
+        newMenu || "",
+        inactive60 || "",
+      ]
+    );
+
+    const row = result.rows[0];
+
+    return res.json({
+      success: true,
+      telegramTemplates: {
+        comeBack30: row.telegram_template_come_back_30 || "",
+        weekPromo: row.telegram_template_week_promo || "",
+        vip: row.telegram_template_vip || "",
+        newMenu: row.telegram_template_new_menu || "",
+        inactive60: row.telegram_template_inactive_60 || "",
+      },
+    });
+  } catch (error) {
+    console.error("UPDATE TELEGRAM TEMPLATES ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Не вдалося зберегти шаблони Telegram",
+      error: error?.message || "Unknown error",
+    });
   }
 });
 

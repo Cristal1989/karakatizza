@@ -5,8 +5,13 @@ import {
   getActiveTelegramGiftByPhone,
   markTelegramGiftUsed,
   linkTelegramToCustomerByPhone,
-  getTelegramGiftsByTelegramUserId
+  getTelegramGiftsByTelegramUserId,
+  getTelegramCustomersForBroadcast,
+  saveTelegramBroadcastHistory,
+  getTelegramBroadcastHistory,
+  getTelegramBroadcastCount,
 } from "../services/crmService.js";
+import { sendTelegramTextToUser, sendTelegramTextToMany } from "../bot.js";
 
 const router = express.Router();
 
@@ -67,7 +72,7 @@ router.get("/customers", async (req, res) => {
       values.push(Number(minTotalSpent));
       paramIndex++;
     }
-    
+
     if (minLastOrderAmount && !Number.isNaN(Number(minLastOrderAmount))) {
       conditions.push(`last_order_amount >= $${paramIndex}`);
       values.push(Number(minLastOrderAmount));
@@ -76,7 +81,6 @@ router.get("/customers", async (req, res) => {
 
     const whereClause =
       conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
-
 
     const result = await pool.query(
       `
@@ -204,8 +208,7 @@ router.get("/customers/:id/orders", async (req, res) => {
     });
   } catch (error) {
     console.error("CRM CUSTOMER ORDERS ERROR:", error);
-    res.
-      status(500).json({
+    res.status(500).json({
       message: "Помилка завантаження замовлень клієнта",
     });
   }
@@ -392,6 +395,226 @@ router.get("/telegram/bonus/:telegramUserId", async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Не вдалося отримати дані по бонусу",
+      error: error?.message || "Unknown error",
+    });
+  }
+});
+
+router.post("/telegram/send-one", async (req, res) => {
+  try {
+    const { telegramUserId, text } = req.body || {};
+
+    if (!telegramUserId) {
+      return res.status(400).json({
+        success: false,
+        message: "Потрібен telegramUserId",
+      });
+    }
+
+    if (!text || !text.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Потрібен текст повідомлення",
+      });
+    }
+
+    const customerResult = await pool.query(
+      `
+        SELECT
+          id,
+          name,
+          telegram_user_id
+        FROM customers
+        WHERE telegram_user_id = $1
+        ORDER BY id DESC
+        LIMIT 1
+      `,
+      [String(telegramUserId)]
+    );
+
+    const customer = customerResult.rows[0] || null;
+
+    const result = await sendTelegramTextToUser(telegramUserId, text, {
+      name: customer?.name || "",
+    });
+
+    return res.json({
+      success: true,
+      message: "Повідомлення відправлено",
+      result,
+    });
+  } catch (error) {
+    console.error("CRM TELEGRAM SEND ONE ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Не вдалося відправити повідомлення",
+      error: error?.message || "Unknown error",
+    });
+  }
+});
+
+router.post("/telegram/send-broadcast", async (req, res) => {
+  try {
+    const {
+      text,
+      search = "",
+      orderType = "all",
+      inactiveDays = "",
+      minTotalSpent = "",
+      minLastOrderAmount = "",
+    } = req.body || {};
+
+    if (!text || !text.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Потрібен текст повідомлення",
+      });
+    }
+
+    const customers = await getTelegramCustomersForBroadcast(pool, {
+      search,
+      orderType,
+      telegram: "with",
+      inactiveDays,
+      minTotalSpent,
+      minLastOrderAmount,
+    });
+
+    const sendResults = await sendTelegramTextToMany(customers, text);
+
+    const sentCount = sendResults.filter((item) => item.success).length;
+    const failedCount = sendResults.filter((item) => !item.success).length;
+
+    const filters = {
+      search,
+      orderType,
+      inactiveDays,
+      minTotalSpent,
+      minLastOrderAmount,
+    };
+
+    await saveTelegramBroadcastHistory(pool, {
+      text,
+      filters,
+      recipientsCount: customers.length,
+      sentCount,
+      failedCount,
+      results: sendResults,
+    });
+
+    return res.json({
+      success: true,
+      total: customers.length,
+      sentCount,
+      failedCount,
+      results: sendResults,
+    });
+  } catch (error) {
+    console.error("CRM TELEGRAM BROADCAST ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Не вдалося виконати розсилку",
+      error: error?.message || "Unknown error",
+    });
+  }
+});
+
+router.post("/telegram/broadcast-count", async (req, res) => {
+  try {
+    const {
+      search = "",
+      orderType = "all",
+      inactiveDays = "",
+      minTotalSpent = "",
+      minLastOrderAmount = "",
+    } = req.body || {};
+
+    const count = await getTelegramBroadcastCount(pool, {
+      search,
+      orderType,
+      inactiveDays,
+      minTotalSpent,
+      minLastOrderAmount,
+    });
+
+    return res.json({
+      success: true,
+      count,
+    });
+  } catch (error) {
+    console.error("CRM TELEGRAM BROADCAST COUNT ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Не вдалося порахувати отримувачів розсилки",
+      error: error?.message || "Unknown error",
+    });
+  }
+});
+
+router.get("/telegram/broadcast-history", async (req, res) => {
+  try {
+    const limit = Number(req.query.limit || 20);
+
+    const items = await getTelegramBroadcastHistory(pool, limit);
+
+    return res.json({
+      success: true,
+      items,
+    });
+  } catch (error) {
+    console.error("CRM TELEGRAM BROADCAST HISTORY ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Не вдалося отримати історію розсилок",
+      error: error?.message || "Unknown error",
+    });
+  }
+});
+
+router.get("/telegram/customer/:telegramUserId", async (req, res) => {
+  try {
+    const { telegramUserId } = req.params;
+
+    if (!telegramUserId) {
+      return res.status(400).json({
+        success: false,
+        message: "Потрібен telegramUserId",
+      });
+    }
+
+    const result = await pool.query(
+      `
+        SELECT
+          id,
+          name,
+          phone,
+          telegram_user_id,
+          telegram_username,
+          telegram_first_name,
+          is_telegram_subscribed,
+          is_phone_confirmed
+        FROM customers
+        WHERE telegram_user_id = $1
+        ORDER BY id DESC
+        LIMIT 1
+      `,
+      [String(telegramUserId)]
+    );
+
+    return res.json({
+      success: true,
+      customer: result.rows[0] || null,
+    });
+  } catch (error) {
+    console.error("CRM TELEGRAM CUSTOMER BY USER ID ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Не вдалося отримати клієнта Telegram",
       error: error?.message || "Unknown error",
     });
   }

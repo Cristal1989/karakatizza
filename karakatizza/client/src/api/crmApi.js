@@ -59,3 +59,103 @@ export async function getCustomerOrders(customerId) {
 
   return data;
 }
+
+export async function sendTelegramMessageToOne({
+  telegramUserId,
+  text,
+}) {
+  const response = await fetch(`${API_BASE_URL}/api/crm/telegram/send-one`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      telegramUserId,
+      text,
+    }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data?.message || "Не вдалося відправити повідомлення");
+  }
+
+  return data;
+}
+
+export async function sendTelegramBroadcast({
+  text,
+  search = "",
+  orderType = "all",
+  inactiveDays = "",
+  minTotalSpent = "",
+  minLastOrderAmount = "",
+}) {
+  const response = await fetch(`${API_BASE_URL}/api/crm/telegram/send-broadcast`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      text,
+      search,
+      orderType,
+      inactiveDays,
+      minTotalSpent,
+      minLastOrderAmount,
+    }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data?.message || "Не вдалося виконати розсилку");
+  }
+
+  return data;
+}
+
+export async function getTelegramBroadcastCount({
+  search = "",
+  orderType = "all",
+  inactiveDays = "",
+  minTotalSpent = "",
+  minLastOrderAmount = "",
+}) {
+  const response = await fetch(`${API_BASE_URL}/api/crm/telegram/broadcast-count`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      search,
+      orderType,
+      inactiveDays,
+      minTotalSpent,
+      minLastOrderAmount,
+    }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data?.message || "Не вдалося порахувати отримувачів");
+  }
+
+  return data;
+}
+
+export async function getTelegramBroadcastHistory(limit = 20) {
+  const response = await fetch(
+    `${API_BASE_URL}/api/crm/telegram/broadcast-history?limit=${limit}`
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data?.message || "Не вдалося отримати історію розсилок");
+  }
+
+  return data;
+}

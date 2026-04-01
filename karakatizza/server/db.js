@@ -135,6 +135,36 @@ export async function initDb() {
 `);
 
   await pool.query(`
+ALTER TABLE gift_roll_settings
+ADD COLUMN IF NOT EXISTS bonus_type TEXT NOT NULL DEFAULT 'gift_product'
+`);
+
+  await pool.query(`
+ALTER TABLE gift_roll_settings
+ADD COLUMN IF NOT EXISTS bonus_title TEXT NOT NULL DEFAULT ''
+`);
+
+  await pool.query(`
+ALTER TABLE gift_roll_settings
+ADD COLUMN IF NOT EXISTS bonus_description TEXT NOT NULL DEFAULT ''
+`);
+
+  await pool.query(`
+ALTER TABLE gift_roll_settings
+ADD COLUMN IF NOT EXISTS bonus_image TEXT NOT NULL DEFAULT ''
+`);
+
+  await pool.query(`
+ALTER TABLE gift_roll_settings
+ADD COLUMN IF NOT EXISTS discount_percent INTEGER DEFAULT NULL
+`);
+
+  await pool.query(`
+ALTER TABLE gift_roll_settings
+ADD COLUMN IF NOT EXISTS custom_text TEXT NOT NULL DEFAULT ''
+`);
+
+  await pool.query(`
   ALTER TABLE products
   ADD COLUMN IF NOT EXISTS free_soy_sauce INTEGER DEFAULT 0;
 `);
@@ -232,9 +262,40 @@ export async function initDb() {
     checkout_comment_placeholder TEXT NOT NULL DEFAULT 'Коментар до замовлення',
     checkout_exact_time_label TEXT NOT NULL DEFAULT 'Потрібно на певний час',
     checkout_success_hint TEXT NOT NULL DEFAULT 'Дякуємо за замовлення! Ми скоро зв’яжемося з вами.',
+    telegram_template_come_back_30 TEXT NOT NULL DEFAULT 'Привіт, {{name}}!
+    
+Скучили за тобою 🙂
+Повернись за улюбленими ролами — для тебе вже є привід оформити нове замовлення.',
+telegram_template_week_promo TEXT NOT NULL DEFAULT 'Привіт, {{name}}!
+
+У нас зараз діє вигідна пропозиція тижня.
+Зазирни на сайт та обери щось смачне для себе 👌',
+telegram_template_vip TEXT NOT NULL DEFAULT 'Привіт, {{name}}!
+
+Дякуємо, що замовляєш у Karakatizza 🍣
+
+Для наших постійних клієнтів ми готуємо особливі пропозиції.',
+telegram_template_new_menu TEXT NOT NULL DEFAULT 'Привіт, {{name}}!
+
+У меню з''явилися новинки.
+Саме час спробувати щось нове до вечері 😉',
+telegram_template_inactive_60 TEXT NOT NULL DEFAULT 'Привіт, {{name}}!
+
+Давно тебе не бачили в Karakatizza.
+Можливо, саме сьогодні час повернутися за улюбленими ролами 🍣',
 
     updated_at TIMESTAMP DEFAULT NOW()
   );
+`);
+
+  await pool.query(`
+ALTER TABLE site_settings
+ADD COLUMN IF NOT EXISTS telegram_promo_title TEXT NOT NULL DEFAULT '🔥 Актуальні акції Karakatizza'
+`);
+
+  await pool.query(`
+ALTER TABLE site_settings
+ADD COLUMN IF NOT EXISTS telegram_promo_text TEXT NOT NULL DEFAULT 'Слідкуй за нашими пропозиціями на сайті та в Telegram.'
 `);
 
   await pool.query(`
@@ -364,39 +425,80 @@ export async function initDb() {
   ADD COLUMN IF NOT EXISTS bank_transfer_hint TEXT NOT NULL DEFAULT '';
 `);
 
-await pool.query(`
+  await pool.query(`
   ALTER TABLE site_settings
   ADD COLUMN IF NOT EXISTS pickup_selected_text TEXT NOT NULL DEFAULT 'Самовивіз обрано — адресу вводити не потрібно';
 `);
 
-await pool.query(`
+  await pool.query(`
   ALTER TABLE site_settings
   ADD COLUMN IF NOT EXISTS delivery_address_hint TEXT NOT NULL DEFAULT 'Введіть адресу для уточнення безкоштовної доставки';
 `);
 
-await pool.query(`
+  await pool.query(`
   ALTER TABLE site_settings
   ADD COLUMN IF NOT EXISTS delivery_address_not_found_text TEXT NOT NULL DEFAULT 'Уточніть адресу у оператора';
 `);
 
-await pool.query(`
+  await pool.query(`
   ALTER TABLE site_settings
   ADD COLUMN IF NOT EXISTS order_disabled_text TEXT NOT NULL DEFAULT 'Наразі оформлення замовлення тимчасово недоступне';
 `);
 
-await pool.query(`
+  await pool.query(`
   ALTER TABLE site_settings
   ADD COLUMN IF NOT EXISTS checkout_comment_placeholder TEXT NOT NULL DEFAULT 'Коментар до замовлення';
 `);
 
-await pool.query(`
+  await pool.query(`
   ALTER TABLE site_settings
   ADD COLUMN IF NOT EXISTS checkout_exact_time_label TEXT NOT NULL DEFAULT 'Потрібно на певний час';
 `);
 
-await pool.query(`
+  await pool.query(`
   ALTER TABLE site_settings
   ADD COLUMN IF NOT EXISTS checkout_success_hint TEXT NOT NULL DEFAULT 'Дякуємо за замовлення! Ми скоро зв’яжемося з вами.';
+`);
+
+  await pool.query(`
+  ALTER TABLE site_settings
+  ADD COLUMN IF NOT EXISTS telegram_template_come_back_30 TEXT NOT NULL DEFAULT 'Привіт, {{name}}!
+
+Скучили за тобою 🙂
+Повернись за улюбленими ролами — для тебе вже є привід оформити нове замовлення.';
+`);
+
+  await pool.query(`
+  ALTER TABLE site_settings
+  ADD COLUMN IF NOT EXISTS telegram_template_week_promo TEXT NOT NULL DEFAULT 'Привіт, {{name}}!
+
+У нас зараз діє вигідна пропозиція тижня.
+Зазирни на сайт та обери щось смачне для себе 👌';
+`);
+
+  await pool.query(`
+  ALTER TABLE site_settings
+  ADD COLUMN IF NOT EXISTS telegram_template_vip TEXT NOT NULL DEFAULT 'Привіт, {{name}}!
+
+Дякуємо, що замовляєш у Karakatizza 🍣
+
+Для наших постійних клієнтів ми готуємо особливі пропозиції.';
+`);
+
+  await pool.query(`
+  ALTER TABLE site_settings
+  ADD COLUMN IF NOT EXISTS telegram_template_new_menu TEXT NOT NULL DEFAULT 'Привіт, {{name}}!
+
+У меню з''явилися новинки.
+Саме час спробувати щось нове до вечері 😉';
+`);
+
+  await pool.query(`
+  ALTER TABLE site_settings
+  ADD COLUMN IF NOT EXISTS telegram_template_inactive_60 TEXT NOT NULL DEFAULT 'Привіт, {{name}}!
+
+Давно тебе не бачили в Karakatizza.
+Можливо, саме сьогодні час повернутися за улюбленими ролами 🍣';
 `);
 
   await pool.query(`
@@ -439,7 +541,12 @@ delivery_address_not_found_text,
 order_disabled_text,
 checkout_comment_placeholder,
 checkout_exact_time_label,
-checkout_success_hint
+checkout_success_hint,
+telegram_template_come_back_30,
+telegram_template_week_promo,
+telegram_template_vip,
+telegram_template_new_menu,
+telegram_template_inactive_60
   )
   SELECT
     1,
@@ -488,13 +595,34 @@ checkout_success_hint
 'Наразі оформлення замовлення тимчасово недоступне',
 'Коментар до замовлення',
 'Потрібно на певний час',
-'Дякуємо за замовлення! Ми скоро зв’яжемося з вами.'
+'Дякуємо за замовлення! Ми скоро зв’яжемося з вами.',
+'Привіт, {{name}}!
+
+Скучили за тобою 🙂
+Повернись за улюбленими ролами — для тебе вже є привід оформити нове замовлення.',
+'Привіт, {{name}}!
+
+У нас зараз діє вигідна пропозиція тижня.
+Зазирни на сайт та обери щось смачне для себе 👌',
+'Привіт, {{name}}!
+
+Дякуємо, що замовляєш у Karakatizza 🍣
+
+Для наших постійних клієнтів ми готуємо особливі пропозиції.',
+'Привіт, {{name}}!
+
+У меню з''явилися новинки.
+Саме час спробувати щось нове до вечері 😉',
+'Привіт, {{name}}!
+
+Давно тебе не бачили в Karakatizza.
+Можливо, саме сьогодні час повернутися за улюбленими ролами 🍣'
   WHERE NOT EXISTS (
     SELECT 1 FROM site_settings WHERE id = 1
   );
 `);
 
-await pool.query(`
+  await pool.query(`
   CREATE TABLE IF NOT EXISTS customers (
     id SERIAL PRIMARY KEY,
     phone TEXT NOT NULL,
@@ -515,7 +643,7 @@ await pool.query(`
   );
 `);
 
-await pool.query(`
+  await pool.query(`
   CREATE TABLE IF NOT EXISTS orders (
     id SERIAL PRIMARY KEY,
     customer_id INTEGER REFERENCES customers(id) ON DELETE SET NULL,
@@ -546,7 +674,7 @@ await pool.query(`
   );
 `);
 
-await pool.query(`
+  await pool.query(`
   CREATE TABLE IF NOT EXISTS customer_rewards (
     id SERIAL PRIMARY KEY,
     customer_id INTEGER NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
@@ -564,42 +692,42 @@ await pool.query(`
   );
 `);
 
-await pool.query(`
+  await pool.query(`
   CREATE INDEX IF NOT EXISTS idx_customers_phone_normalized
   ON customers(phone_normalized);
 `);
 
-await pool.query(`
+  await pool.query(`
   CREATE INDEX IF NOT EXISTS idx_customers_last_order_at
   ON customers(last_order_at);
 `);
 
-await pool.query(`
+  await pool.query(`
   CREATE INDEX IF NOT EXISTS idx_orders_customer_id
   ON orders(customer_id);
 `);
 
-await pool.query(`
+  await pool.query(`
   CREATE INDEX IF NOT EXISTS idx_orders_phone_normalized
   ON orders(phone_normalized);
 `);
 
-await pool.query(`
+  await pool.query(`
   CREATE INDEX IF NOT EXISTS idx_orders_created_at
   ON orders(created_at);
 `);
 
-await pool.query(`
+  await pool.query(`
   CREATE INDEX IF NOT EXISTS idx_customer_rewards_customer_id
   ON customer_rewards(customer_id);
 `);
 
-await pool.query(`
+  await pool.query(`
   CREATE INDEX IF NOT EXISTS idx_customer_rewards_status
   ON customer_rewards(status);
 `);
 
-await pool.query(`
+  await pool.query(`
   CREATE TABLE IF NOT EXISTS telegram_gifts (
     id SERIAL PRIMARY KEY,
     customer_id INTEGER REFERENCES customers(id) ON DELETE CASCADE,
@@ -616,18 +744,36 @@ await pool.query(`
   );
 `);
 
-await pool.query(`
+  await pool.query(`
   CREATE INDEX IF NOT EXISTS idx_telegram_gifts_customer_id
   ON telegram_gifts(customer_id);
 `);
 
-await pool.query(`
+  await pool.query(`
   CREATE INDEX IF NOT EXISTS idx_telegram_gifts_phone_normalized
   ON telegram_gifts(phone_normalized);
 `);
 
-await pool.query(`
+  await pool.query(`
   CREATE INDEX IF NOT EXISTS idx_telegram_gifts_status
   ON telegram_gifts(status);
+`);
+
+  await pool.query(`
+  CREATE TABLE IF NOT EXISTS telegram_broadcasts (
+    id SERIAL PRIMARY KEY,
+    text TEXT NOT NULL DEFAULT '',
+    filters_json TEXT NOT NULL DEFAULT '{}',
+    recipients_count INTEGER NOT NULL DEFAULT 0,
+    sent_count INTEGER NOT NULL DEFAULT 0,
+    failed_count INTEGER NOT NULL DEFAULT 0,
+    results_json TEXT NOT NULL DEFAULT '[]',
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+  );
+`);
+
+  await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_telegram_broadcasts_created_at
+  ON telegram_broadcasts(created_at DESC);
 `);
 }

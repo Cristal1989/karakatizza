@@ -1,25 +1,52 @@
 import TelegramBot from "node-telegram-bot-api";
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const API_BASE_URL = process.env.TELEGRAM_CRM_API_URL || "http://localhost:5000";
+const API_BASE_URL =
+  process.env.TELEGRAM_CRM_API_URL || "http://localhost:5000";
 
 let botInstance = null;
 
-function buildMainKeyboard() {
+function buildGuestKeyboard() {
   return {
     keyboard: [
-      [
-        {
-          text: "Підтвердити номер",
-          request_contact: true,
-        },
-      ],
+      [{ text: "Підтвердити номер", request_contact: true }],
       [{ text: "Мій бонус" }],
       [{ text: "Допомога" }],
     ],
     resize_keyboard: true,
-    one_time_keyboard: false,
+    persistent: true,
   };
+}
+
+function buildLinkedKeyboard() {
+  return {
+    keyboard: [
+      [{ text: "Мій бонус" }],
+      [{ text: "Акції" }],
+      [{ text: "Допомога" }],
+    ],
+    resize_keyboard: true,
+    persistent: true,
+  };
+}
+
+function buildMainKeyboard(isLinked = false) {
+  return isLinked ? buildLinkedKeyboard() : buildGuestKeyboard();
+}
+
+async function getCustomerByTelegramUserId(telegramUserId) {
+  if (!telegramUserId) return null;
+
+  const response = await fetch(
+    `${API_BASE_URL}/api/crm/telegram/customer/${telegramUserId}`
+  );
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const data = await response.json();
+  return data?.customer || null;
 }
 
 async function postJson(url, body) {
@@ -65,97 +92,88 @@ async function getJson(url) {
   return data;
 }
 
-async function handleStart(bot, msg) {
-  const chatId = msg.chat.id;
-  const firstName = msg.from?.first_name || "друже";
-
-  await bot.sendMessage(
-    chatId,
-    `Привіт, ${firstName}! 👋
-
-Підтверди свій номер телефону, який ти вказував у замовленні в Karakatizza, і ми закріпимо за тобою Telegram-профіль.
-
-🎁 За перше підтвердження номера — одноразовий бонус до наступного замовлення.
-
-Натисни кнопку нижче:`,
-    {
-      reply_markup: buildMainKeyboard(),
-    }
-  );
-}
-
 async function handleHelp(bot, msg) {
-  const chatId = msg.chat.id;
+  try {
+    const chatId = msg.chat.id;
+    const telegramUserId = msg.from?.id ? String(msg.from.id) : "";
+    const customer = await getCustomerByTelegramUserId(telegramUserId);
+    const isLinked = Boolean(customer?.telegram_user_id);
 
-  await bot.sendMessage(
-    chatId,
-    `Що тут можна зробити:
+    await bot.sendMessage(
+      chatId,
+      `Я можу допомогти з такими діями:
 
-1. Підтвердити номер телефону
-2. Отримати одноразовий бонус за Telegram
-3. У майбутньому — отримувати акції та персональні повідомлення
+• перевірити, чи є в тебе бонус
+• показати актуальні акції
+• підтвердити номер телефону для прив'язки Telegram
 
-Щоб почати, натисни кнопку "Підтвердити номер".`,
-    {
-      reply_markup: buildMainKeyboard(),
-    }
-  );
+Якщо щось не працює — просто спробуй ще раз або звернись до нас напряму.`,
+      {
+        reply_markup: buildMainKeyboard(isLinked),
+      }
+    );
+  } catch (error) {
+    console.error("TELEGRAM HELP ERROR:", error);
+
+    await bot.sendMessage(
+      msg.chat.id,
+      `Сталася помилка. Спробуй ще раз трохи пізніше.`,
+      {
+        reply_markup: buildMainKeyboard(false),
+      }
+    );
+  }
 }
 
 async function handleMyBonus(bot, msg) {
-  const chatId = msg.chat.id;
-  const telegramUserId = String(msg.from?.id || "");
-
   try {
+    const chatId = msg.chat.id;
+    const telegramUserId = msg.from?.id ? String(msg.from.id) : "";
+
+    const customer = await getCustomerByTelegramUserId(telegramUserId);
+
+    if (!customer) {
+      await bot.sendMessage(
+        chatId,
+        `Я ще не бачу прив'язаний номер телефону 🙄
+
+Натисни "Підтвердити номер", щоб я зміг знайти твій профіль і перевірити бонус.`,
+        {
+          reply_markup: buildMainKeyboard(false),
+        }
+      );
+      return;
+    }
+
     const result = await getJson(
       `${API_BASE_URL}/api/crm/telegram/bonus/${telegramUserId}`
     );
 
-    if (!result?.customer) {
+    const gift = result?.gift || null;
+
+    if (!gift) {
       await bot.sendMessage(
         chatId,
-        `Я ще не бачу прив'язаний номер телефону 😕
+        `Зараз у тебе немає активного бонусу.
 
-Натисни "Підтвердити номер", щоб я зміг знайти твій профіль і перевірити бонус.`,
+Якщо з'являться нові акції — я напишу тобі тут у Telegram.`,
         {
-          reply_markup: buildMainKeyboard(),
+          reply_markup: buildMainKeyboard(true),
         }
       );
       return;
     }
 
-    if (result.activeGift) {
-      const giftTitle =
-        result.activeGift.gift_roll_title || "подарунок до наступного замовлення";
-
-      await bot.sendMessage(
-        chatId,
-        `🎁 У тебе є активний бонус
-
-Подарунок: ${giftTitle}
-Статус: активний
-
-Він уже закріплений за твоїм номером і буде використаний при наступному замовленні.`,
-        {
-          reply_markup: buildMainKeyboard(),
-        }
-      );
-      return;
-    }
-
-    if (result.usedGift) {
-      const giftTitle =
-        result.usedGift.gift_roll_title || "подарунок за підписку";
-
+    if (gift.status === "used") {
       await bot.sendMessage(
         chatId,
         `✅ Бонус уже був використаний
 
-Подарунок: ${giftTitle}
+Подарунок: ${gift.gift_roll_title || "Подарунковий рол"}
 
 Якщо з'являться нові акції — я напишу тобі тут у Telegram.`,
         {
-          reply_markup: buildMainKeyboard(),
+          reply_markup: buildMainKeyboard(true),
         }
       );
       return;
@@ -163,21 +181,24 @@ async function handleMyBonus(bot, msg) {
 
     await bot.sendMessage(
       chatId,
-      `Поки що активного бонусу не знайдено.
+      `🎁 У тебе є активний бонус
 
-Якщо ти щойно підтвердив номер, спробуй перевірити ще раз через кілька секунд.`,
+Подарунок: ${gift.gift_roll_title || "Подарунковий рол"}
+Статус: активний
+
+Він уже закріплений за твоїм номером і буде використаний при наступному замовленні.`,
       {
-        reply_markup: buildMainKeyboard(),
+        reply_markup: buildMainKeyboard(true),
       }
     );
   } catch (error) {
     console.error("TELEGRAM MY BONUS ERROR:", error);
 
     await bot.sendMessage(
-      chatId,
-      "Не вдалося перевірити бонус. Спробуй ще раз трохи пізніше.",
+      msg.chat.id,
+      `Не вдалося перевірити бонус. Спробуй ще раз трохи пізніше.`,
       {
-        reply_markup: buildMainKeyboard(),
+        reply_markup: buildMainKeyboard(true),
       }
     );
   }
@@ -192,7 +213,7 @@ async function handleContact(bot, msg) {
   if (!contact?.phone_number) {
     await bot.sendMessage(
       chatId,
-      "Не вдалося отримати номер телефону. Спробуй ще раз через кнопку \"Підтвердити номер\".",
+      'Не вдалося отримати номер телефону. Спробуй ще раз через кнопку "Підтвердити номер".',
       {
         reply_markup: buildMainKeyboard(),
       }
@@ -234,13 +255,16 @@ async function handleContact(bot, msg) {
 
     let issueResult = null;
     try {
-      issueResult = await postJson(`${API_BASE_URL}/api/crm/telegram-gifts/issue`, {
-        customerId: customer.id,
-        phone: customer.phone,
-        giftRollId: "telegram-welcome",
-        giftRollTitle: "Подарунковий рол",
-        comment: "Telegram welcome gift",
-      });
+      issueResult = await postJson(
+        `${API_BASE_URL}/api/crm/telegram-gifts/issue`,
+        {
+          customerId: customer.id,
+          phone: customer.phone,
+          giftRollId: "telegram-welcome",
+          giftRollTitle: "Подарунковий рол",
+          comment: "Telegram welcome gift",
+        }
+      );
     } catch (issueError) {
       console.error("TELEGRAM ISSUE ERROR:", issueError);
     }
@@ -256,7 +280,7 @@ Telegram успішно прив'язаний до профілю.
 🎁 Одноразовий бонус за підписку нараховано.
 Він закріплений за твоїм номером і буде використаний при наступному замовленні.`,
         {
-          reply_markup: buildMainKeyboard(),
+          reply_markup: buildMainKeyboard(true),
         }
       );
       return;
@@ -264,10 +288,8 @@ Telegram успішно прив'язаний до профілю.
 
     if (
       issueResult?.created === false &&
-      (
-        issueResult?.reason === "active_gift_exists" ||
-        issueResult?.reason === "welcome_gift_already_issued"
-      )
+      (issueResult?.reason === "active_gift_exists" ||
+        issueResult?.reason === "welcome_gift_already_issued")
     ) {
       await bot.sendMessage(
         chatId,
@@ -276,7 +298,7 @@ Telegram успішно прив'язаний до профілю.
     Telegram уже прив'язаний до твого профілю.
     🎁 Бонус за підписку вже був нарахований раніше. Повторно ця акція не надається.`,
         {
-          reply_markup: buildMainKeyboard(),
+          reply_markup: buildMainKeyboard(true),
         }
       );
       return;
@@ -321,8 +343,94 @@ export function startTelegramBot() {
     polling: true,
   });
 
-  bot.onText(/^\/start$/, async (msg) => {
-    await handleStart(bot, msg);
+  function buildGuestKeyboard() {
+    return {
+      keyboard: [
+        [{ text: "Підтвердити номер", request_contact: true }],
+        [{ text: "Мій бонус" }],
+        [{ text: "Допомога" }],
+      ],
+      resize_keyboard: true,
+      persistent: true,
+    };
+  }
+
+  function buildLinkedKeyboard() {
+    return {
+      keyboard: [
+        [{ text: "Мій бонус" }],
+        [{ text: "Акції" }],
+        [{ text: "Допомога" }],
+      ],
+      resize_keyboard: true,
+      persistent: true,
+    };
+  }
+
+  function buildMainKeyboard(isLinked = false) {
+    return isLinked ? buildLinkedKeyboard() : buildGuestKeyboard();
+  }
+
+  async function getCustomerByTelegramUserId(telegramUserId) {
+    if (!telegramUserId) return null;
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/crm/telegram/customer/${telegramUserId}`
+      );
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const data = await response.json();
+      return data?.customer || null;
+    } catch (error) {
+      console.error("GET CUSTOMER BY TELEGRAM USER ID ERROR:", error);
+      return null;
+    }
+  }
+
+  bot.onText(/\/start/, async (msg) => {
+    try {
+      const chatId = msg.chat.id;
+      const telegramUserId = msg.from?.id ? String(msg.from.id) : "";
+      const firstName = msg.from?.first_name || "друже";
+
+      const customer = await getCustomerByTelegramUserId(telegramUserId);
+      const isLinked = Boolean(customer?.telegram_user_id);
+
+      if (isLinked) {
+        await bot.sendMessage(
+          chatId,
+          `Привіт, ${firstName}! 👋
+
+Telegram уже прив'язаний до твого профілю в Karakatizza.
+
+Що хочеш зробити далі?`,
+          {
+            reply_markup: buildMainKeyboard(true),
+          }
+        );
+        return;
+      }
+
+      await bot.sendMessage(
+        chatId,
+        `Привіт, ${firstName}! 👋
+
+Підтверди свій номер телефону, який ти вказував у замовленні в Karakatizza, і ми закріпимо за тобою Telegram-профіль.
+
+🎁 За перше підтвердження номера — одноразовий бонус до наступного замовлення.
+
+Натисни кнопку нижче:`,
+        {
+          reply_markup: buildMainKeyboard(false),
+        }
+      );
+    } catch (error) {
+      console.error("TELEGRAM /start ERROR:", error);
+    }
   });
 
   bot.on("message", async (msg) => {
@@ -342,6 +450,29 @@ export function startTelegramBot() {
       return;
     }
 
+    if (text === "Акції") {
+      try {
+        const chatId = msg.chat.id;
+        const telegramUserId = msg.from?.id ? String(msg.from.id) : "";
+        const customer = await getCustomerByTelegramUserId(telegramUserId);
+        const isLinked = Boolean(customer?.telegram_user_id);
+
+        await bot.sendMessage(
+          chatId,
+          `🔥 Актуальні акції Karakatizza
+
+Слідкуй за нашими пропозиціями на сайті та в Telegram.
+Скоро тут можна буде показувати персональні акції саме для тебе 🍣`,
+          {
+            reply_markup: buildMainKeyboard(isLinked),
+          }
+        );
+      } catch (error) {
+        console.error("TELEGRAM АКЦІЇ ERROR:", error);
+      }
+      return;
+    }
+
     if (msg.contact) {
       await handleContact(bot, msg);
       return;
@@ -355,4 +486,87 @@ export function startTelegramBot() {
   console.log("Telegram bot started");
   botInstance = bot;
   return botInstance;
+}
+
+export async function sendTelegramTextToUser(
+  telegramUserId,
+  text,
+  context = {}
+) {
+  if (!botInstance) {
+    throw new Error("Telegram bot is not started");
+  }
+
+  if (!telegramUserId) {
+    throw new Error("telegramUserId is required");
+  }
+
+  if (!text || !text.trim()) {
+    throw new Error("Message text is required");
+  }
+
+  const safeName = String(context?.name || "").trim() || "друже";
+  const isLinked = Boolean(context?.isLinked);
+
+  const finalText = text.replaceAll("{{name}}", safeName).trim();
+
+  const result = await botInstance.sendMessage(
+    String(telegramUserId),
+    finalText,
+    {
+      reply_markup: buildMainKeyboard(isLinked),
+    }
+  );
+
+  return result;
+}
+
+export async function sendTelegramTextToMany(users = [], text) {
+  if (!botInstance) {
+    throw new Error("Telegram bot is not started");
+  }
+
+  if (!text || !text.trim()) {
+    throw new Error("Message text is required");
+  }
+
+  const results = [];
+
+  for (const user of users) {
+    const telegramUserId = user?.telegram_user_id;
+
+    if (!telegramUserId) {
+      results.push({
+        success: false,
+        telegramUserId: null,
+        customerId: user?.id || null,
+        error: "telegram_user_id is missing",
+      });
+      continue;
+    }
+
+    try {
+      const safeName = String(user?.name || "").trim() || "друже";
+      const finalText = text.replaceAll("{{name}}", safeName).trim();
+
+      await botInstance.sendMessage(String(telegramUserId), finalText, {
+        reply_markup: buildMainKeyboard(true),
+      });
+
+      results.push({
+        success: true,
+        telegramUserId: String(telegramUserId),
+        customerId: user?.id || null,
+      });
+    } catch (error) {
+      results.push({
+        success: false,
+        telegramUserId: String(telegramUserId),
+        customerId: user?.id || null,
+        error: error?.message || "Unknown error",
+      });
+    }
+  }
+
+  return results;
 }

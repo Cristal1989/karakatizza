@@ -7,6 +7,7 @@ import {
   updateDeliverySettings,
   updatePaymentSettings,
   updateSiteTexts,
+  updateTelegramTemplates,
 } from "../api/siteSettingsApi";
 import {
   getProducts,
@@ -227,6 +228,18 @@ export default function Admin() {
   const [siteTextsMessage, setSiteTextsMessage] = useState("");
   const [siteTextsError, setSiteTextsError] = useState("");
 
+  const [telegramTemplates, setTelegramTemplates] = useState({
+    comeBack30: "",
+    weekPromo: "",
+    vip: "",
+    newMenu: "",
+    inactive60: "",
+  });
+
+  const [telegramTemplatesSaving, setTelegramTemplatesSaving] = useState(false);
+  const [telegramTemplatesMessage, setTelegramTemplatesMessage] = useState("");
+  const [telegramTemplatesError, setTelegramTemplatesError] = useState("");
+
   const inputStyle = {
     width: "100%",
     padding: "10px",
@@ -287,7 +300,14 @@ export default function Admin() {
         if (!res.ok) throw new Error();
 
         const data = await res.json();
-        setSettings(data);
+        setSiteTexts({
+          selfPickupText: data?.siteTexts?.selfPickupText || "",
+          addressNotFoundText: data?.siteTexts?.addressNotFoundText || "",
+          checkoutDisabledText: data?.siteTexts?.checkoutDisabledText || "",
+          commentPlaceholder: data?.siteTexts?.commentPlaceholder || "",
+          exactTimeLabel: data?.siteTexts?.exactTimeLabel || "",
+          orderSuccessText: data?.siteTexts?.orderSuccessText || "",
+        });
       } catch (e) {
         console.error("LOAD SETTINGS ERROR", e);
       }
@@ -374,6 +394,15 @@ export default function Admin() {
               settings.texts.checkoutCommentPlaceholder || "",
             checkoutExactTimeLabel: settings.texts.checkoutExactTimeLabel || "",
             checkoutSuccessHint: settings.texts.checkoutSuccessHint || "",
+          });
+        }
+        if (settings?.telegramTemplates) {
+          setTelegramTemplates({
+            comeBack30: settings.telegramTemplates.comeBack30 || "",
+            weekPromo: settings.telegramTemplates.weekPromo || "",
+            vip: settings.telegramTemplates.vip || "",
+            newMenu: settings.telegramTemplates.newMenu || "",
+            inactive60: settings.telegramTemplates.inactive60 || "",
           });
         }
       } catch (error) {
@@ -510,6 +539,48 @@ export default function Admin() {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+  };
+
+  const handleTelegramTemplatesChange = (e) => {
+    const { name, value } = e.target;
+
+    setTelegramTemplatesError("");
+    setTelegramTemplatesMessage("");
+
+    setTelegramTemplates((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSaveTelegramTemplates = async () => {
+    try {
+      setTelegramTemplatesSaving(true);
+      setTelegramTemplatesError("");
+      setTelegramTemplatesMessage("");
+
+      const result = await updateTelegramTemplates(telegramTemplates);
+
+      setTelegramTemplates({
+        comeBack30: result.telegramTemplates?.comeBack30 || "",
+        weekPromo: result.telegramTemplates?.weekPromo || "",
+        vip: result.telegramTemplates?.vip || "",
+        newMenu: result.telegramTemplates?.newMenu || "",
+        inactive60: result.telegramTemplates?.inactive60 || "",
+      });
+
+      setTelegramTemplatesMessage("✅ Telegram-шаблони збережено");
+
+      setTimeout(() => {
+        setTelegramTemplatesMessage("");
+      }, 2500);
+    } catch (error) {
+      setTelegramTemplatesError(
+        error?.message || "Помилка збереження Telegram-шаблонів"
+      );
+    } finally {
+      setTelegramTemplatesSaving(false);
+    }
   };
 
   const handleWorkingHoursChange = (e) => {
@@ -3936,6 +4007,135 @@ export default function Admin() {
                     </div>
                   )}
                 </section>
+              </section>
+              <section style={settingsCardStyle}>
+                <h2 style={settingsTitleStyle}>Telegram-шаблони</h2>
+                <p style={settingsDescStyle}>
+                  Шаблони повідомлень для Telegram-розсилок. Можна
+                  використовувати змінну {"{{name}}"}.
+                </p>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gap: "14px",
+                    marginTop: "20px",
+                    marginBottom: "20px",
+                  }}
+                >
+                  <textarea
+                    name="comeBack30"
+                    placeholder="30+ днів без замовлення"
+                    value={telegramTemplates.comeBack30}
+                    onChange={handleTelegramTemplatesChange}
+                    style={{
+                      ...inputStyle,
+                      minHeight: "110px",
+                      resize: "vertical",
+                    }}
+                  />
+
+                  <textarea
+                    name="weekPromo"
+                    placeholder="Акція тижня"
+                    value={telegramTemplates.weekPromo}
+                    onChange={handleTelegramTemplatesChange}
+                    style={{
+                      ...inputStyle,
+                      minHeight: "110px",
+                      resize: "vertical",
+                    }}
+                  />
+
+                  <textarea
+                    name="vip"
+                    placeholder="Топ-клієнтам"
+                    value={telegramTemplates.vip}
+                    onChange={handleTelegramTemplatesChange}
+                    style={{
+                      ...inputStyle,
+                      minHeight: "110px",
+                      resize: "vertical",
+                    }}
+                  />
+
+                  <textarea
+                    name="newMenu"
+                    placeholder="Новинки меню"
+                    value={telegramTemplates.newMenu}
+                    onChange={handleTelegramTemplatesChange}
+                    style={{
+                      ...inputStyle,
+                      minHeight: "110px",
+                      resize: "vertical",
+                    }}
+                  />
+
+                  <textarea
+                    name="inactive60"
+                    placeholder="60+ днів тиша"
+                    value={telegramTemplates.inactive60}
+                    onChange={handleTelegramTemplatesChange}
+                    style={{
+                      ...inputStyle,
+                      minHeight: "110px",
+                      resize: "vertical",
+                    }}
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleSaveTelegramTemplates}
+                  disabled={telegramTemplatesSaving}
+                  style={{
+                    border: "none",
+                    background: "#e56a45",
+                    color: "#fff",
+                    borderRadius: "14px",
+                    padding: "14px 22px",
+                    fontSize: "16px",
+                    fontWeight: 700,
+                    cursor: telegramTemplatesSaving ? "default" : "pointer",
+                    opacity: telegramTemplatesSaving ? 0.7 : 1,
+                  }}
+                >
+                  {telegramTemplatesSaving
+                    ? "Збереження..."
+                    : "Зберегти шаблони"}
+                </button>
+
+                {telegramTemplatesMessage && (
+                  <div
+                    style={{
+                      marginTop: "12px",
+                      padding: "12px 14px",
+                      borderRadius: "12px",
+                      background: "#ecfdf3",
+                      color: "#166534",
+                      fontWeight: 600,
+                      fontSize: "14px",
+                    }}
+                  >
+                    {telegramTemplatesMessage}
+                  </div>
+                )}
+
+                {telegramTemplatesError && (
+                  <div
+                    style={{
+                      marginTop: "12px",
+                      padding: "12px 14px",
+                      borderRadius: "12px",
+                      background: "#fef2f2",
+                      color: "#b91c1c",
+                      fontWeight: 600,
+                      fontSize: "14px",
+                    }}
+                  >
+                    {telegramTemplatesError}
+                  </div>
+                )}
               </section>
             </div>
           )}

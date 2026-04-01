@@ -546,3 +546,235 @@ export async function getTelegramGiftsByTelegramUserId(pool, telegramUserId) {
     gifts,
   };
 }
+
+export async function getTelegramCustomersForBroadcast(
+  pool,
+  {
+    search = "",
+    orderType = "all",
+    telegram = "with",
+    inactiveDays = "",
+    minTotalSpent = "",
+    minLastOrderAmount = "",
+  } = {}
+) {
+  const conditions = [`telegram_user_id IS NOT NULL`, `is_telegram_subscribed = TRUE`];
+  const values = [];
+  let paramIndex = 1;
+
+  if (search && search.trim()) {
+    conditions.push(`(
+      COALESCE(name, '') ILIKE $${paramIndex}
+      OR COALESCE(phone, '') ILIKE $${paramIndex}
+      OR COALESCE(phone_normalized, '') ILIKE $${paramIndex}
+      OR COALESCE(telegram_username, '') ILIKE $${paramIndex}
+    )`);
+    values.push(`%${search.trim()}%`);
+    paramIndex += 1;
+  }
+
+  if (orderType === "first") {
+    conditions.push(`orders_count = 1`);
+  }
+
+  if (orderType === "repeat") {
+    conditions.push(`orders_count > 1`);
+  }
+
+  if (inactiveDays !== "" && Number(inactiveDays) > 0) {
+    conditions.push(`last_order_at <= NOW() - ($${paramIndex}::text || ' days')::interval`);
+    values.push(String(Number(inactiveDays)));
+    paramIndex += 1;
+  }
+
+  if (minTotalSpent !== "" && Number(minTotalSpent) > 0) {
+    conditions.push(`total_spent >= $${paramIndex}`);
+    values.push(Number(minTotalSpent));
+    paramIndex += 1;
+  }
+
+  if (minLastOrderAmount !== "" && Number(minLastOrderAmount) > 0) {
+    conditions.push(`last_order_amount >= $${paramIndex}`);
+    values.push(Number(minLastOrderAmount));
+    paramIndex += 1;
+  }
+
+  const whereSql = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+
+  const result = await pool.query(
+    `
+      SELECT
+        id,
+        phone,
+        phone_normalized,
+        name,
+        telegram_user_id,
+        telegram_username,
+        telegram_first_name,
+        is_telegram_subscribed,
+        is_phone_confirmed,
+        first_order_at,
+        last_order_at,
+        orders_count,
+        total_spent,
+        last_order_amount,
+        created_at,
+        updated_at,
+        CASE
+          WHEN orders_count > 0 THEN ROUND((total_spent / orders_count)::numeric, 2)
+          ELSE 0
+        END AS avg_check
+      FROM customers
+      ${whereSql}
+      ORDER BY last_order_at DESC NULLS LAST, id DESC
+    `,
+    values
+  );
+
+  return result.rows;
+}
+
+export async function getTelegramBroadcastCount(
+  pool,
+  {
+    search = "",
+    orderType = "all",
+    inactiveDays = "",
+    minTotalSpent = "",
+    minLastOrderAmount = "",
+  } = {}
+) {
+  const conditions = [`telegram_user_id IS NOT NULL`, `is_telegram_subscribed = TRUE`];
+  const values = [];
+  let paramIndex = 1;
+
+  if (search && search.trim()) {
+    conditions.push(`(
+      COALESCE(name, '') ILIKE $${paramIndex}
+      OR COALESCE(phone, '') ILIKE $${paramIndex}
+      OR COALESCE(phone_normalized, '') ILIKE $${paramIndex}
+      OR COALESCE(telegram_username, '') ILIKE $${paramIndex}
+    )`);
+    values.push(`%${search.trim()}%`);
+    paramIndex += 1;
+  }
+
+  if (orderType === "first") {
+    conditions.push(`orders_count = 1`);
+  }
+
+  if (orderType === "repeat") {
+    conditions.push(`orders_count > 1`);
+  }
+
+  if (inactiveDays !== "" && Number(inactiveDays) > 0) {
+    conditions.push(`last_order_at <= NOW() - ($${paramIndex}::text || ' days')::interval`);
+    values.push(String(Number(inactiveDays)));
+    paramIndex += 1;
+  }
+
+  if (minTotalSpent !== "" && Number(minTotalSpent) > 0) {
+    conditions.push(`total_spent >= $${paramIndex}`);
+    values.push(Number(minTotalSpent));
+    paramIndex += 1;
+  }
+
+  if (minLastOrderAmount !== "" && Number(minLastOrderAmount) > 0) {
+    conditions.push(`last_order_amount >= $${paramIndex}`);
+    values.push(Number(minLastOrderAmount));
+    paramIndex += 1;
+  }
+
+  const whereSql = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+
+  const result = await pool.query(
+    `
+      SELECT COUNT(*)::int AS count
+      FROM customers
+      ${whereSql}
+    `,
+    values
+  );
+
+  return Number(result.rows[0]?.count || 0);
+}
+
+export async function saveTelegramBroadcastHistory(
+  pool,
+  {
+    text = "",
+    filters = {},
+    recipientsCount = 0,
+    sentCount = 0,
+    failedCount = 0,
+    results = [],
+  } = {}
+) {
+  const result = await pool.query(
+    `
+      INSERT INTO telegram_broadcasts (
+        text,
+        filters_json,
+        recipients_count,
+        sent_count,
+        failed_count,
+        results_json,
+        created_at
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, NOW())
+      RETURNING
+        id,
+        text,
+        filters_json,
+        recipients_count,
+        sent_count,
+        failed_count,
+        results_json,
+        created_at
+    `,
+    [
+      text || "",
+      JSON.stringify(filters || {}),
+      Number(recipientsCount || 0),
+      Number(sentCount || 0),
+      Number(failedCount || 0),
+      JSON.stringify(results || []),
+    ]
+  );
+
+  return result.rows[0];
+}
+
+export async function getTelegramBroadcastHistory(pool, limit = 20) {
+  const result = await pool.query(
+    `
+      SELECT
+        id,
+        text,
+        filters_json,
+        recipients_count,
+        sent_count,
+        failed_count,
+        results_json,
+        created_at
+      FROM telegram_broadcasts
+      ORDER BY created_at DESC, id DESC
+      LIMIT $1
+    `,
+    [Number(limit) || 20]
+  );
+
+  return result.rows.map((row) => ({
+    ...row,
+    filters: safeJsonParse(row.filters_json, {}),
+    results: safeJsonParse(row.results_json, []),
+  }));
+}
+
+function safeJsonParse(value, fallback) {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}

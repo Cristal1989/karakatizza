@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { getCustomers, getCustomerOrders } from "../api/crmApi";
+import {
+  getCustomers,
+  getCustomerOrders,
+  sendTelegramBroadcast,
+  sendTelegramMessageToOne,
+  getTelegramBroadcastCount,
+  getTelegramBroadcastHistory,
+} from "../api/crmApi";
+import { useSiteSettings } from "../context/SiteSettingsContext";
 
 function formatDate(dateString) {
   if (!dateString) return "—";
@@ -116,23 +124,114 @@ function getPaymentBadgeStyle(paymentMethod) {
 }
 
 export default function CustomersPage() {
+  const { siteSettings } = useSiteSettings();
+
   const [customers, setCustomers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingOrdersId, setLoadingOrdersId] = useState(null);
-  const [error, setError] = useState("");
+const [loading, setLoading] = useState(true);
+const [loadingOrdersId, setLoadingOrdersId] = useState(null);
+const [error, setError] = useState("");
+
+const [expandedCustomerId, setExpandedCustomerId] = useState(null);
+const [ordersByCustomer, setOrdersByCustomer] = useState({});
+const customersLoading = loading;
+const customersError = error;
+const customerOrdersLoading = loadingOrdersId === expandedCustomerId;
+const customerOrders = expandedCustomerId
+  ? ordersByCustomer[expandedCustomerId] || []
+  : [];
 
   const [search, setSearch] = useState("");
   const [orderType, setOrderType] = useState("all");
   const [telegram, setTelegram] = useState("all");
   const [inactiveDays, setInactiveDays] = useState("");
 
-  const [expandedCustomerId, setExpandedCustomerId] = useState(null);
-  const [ordersByCustomer, setOrdersByCustomer] = useState({});
 
   const [copyMessage, setCopyMessage] = useState("");
 
   const [minTotalSpent, setMinTotalSpent] = useState("");
   const [minLastOrderAmount, setMinLastOrderAmount] = useState("");
+
+  const [telegramMessage, setTelegramMessage] = useState("");
+  const [telegramSending, setTelegramSending] = useState(false);
+  const [telegramStatus, setTelegramStatus] = useState("");
+
+  const [showTelegramConfirm, setShowTelegramConfirm] = useState(false);
+
+  const [telegramRecipientsCount, setTelegramRecipientsCount] = useState(0);
+  const [telegramCounting, setTelegramCounting] = useState(false);
+
+  const [telegramHistory, setTelegramHistory] = useState([]);
+  const [telegramHistoryLoading, setTelegramHistoryLoading] = useState(false);
+  const [telegramHistoryError, setTelegramHistoryError] = useState("");
+
+  const [showTelegramComposer, setShowTelegramComposer] = useState(true);
+  const [showTelegramHistory, setShowTelegramHistory] = useState(false);
+  const [showCustomersList, setShowCustomersList] = useState(true);
+
+  const telegramTemplates = [
+    {
+      key: "come-back-30",
+      label: "30+ днів без замовлення",
+      text:
+        siteSettings?.telegramTemplates?.comeBack30 ||
+        `Привіт, {{name}}!
+  
+  Скучили за тобою 🙂
+  Повернись за улюбленими ролами — для тебе вже є привід оформити нове замовлення.`,
+    },
+    {
+      key: "week-promo",
+      label: "Акція тижня",
+      text:
+        siteSettings?.telegramTemplates?.weekPromo ||
+        `Привіт, {{name}}!
+  
+  У нас зараз діє вигідна пропозиція тижня.
+  Зазирни на сайт та обери щось смачне для себе 👌`,
+    },
+    {
+      key: "vip",
+      label: "Топ-клієнтам",
+      text:
+        siteSettings?.telegramTemplates?.vip ||
+        `Привіт, {{name}}!
+  
+  Дякуємо, що замовляєш у Karakatizza 🍣
+  
+  Для наших постійних клієнтів ми готуємо особливі пропозиції.`,
+    },
+    {
+      key: "new-menu",
+      label: "Новинки меню",
+      text:
+        siteSettings?.telegramTemplates?.newMenu ||
+        `Привіт, {{name}}!
+  
+  У меню з'явилися новинки.
+  Саме час спробувати щось нове до вечері 😉`,
+    },
+    {
+      key: "inactive-60",
+      label: "60+ днів тиша",
+      text:
+        siteSettings?.telegramTemplates?.inactive60 ||
+        `Привіт, {{name}}!
+  
+  Давно тебе не бачили в Karakatizza.
+  Можливо, саме сьогодні час повернутися за улюбленими ролами 🍣`,
+    },
+  ];
+
+  const collapseButtonStyle = {
+    border: "1px solid #e5e7eb",
+    borderRadius: "12px",
+    padding: "10px 14px",
+    background: "#fff",
+    color: "#334155",
+    fontSize: "14px",
+    fontWeight: 700,
+    cursor: "pointer",
+  };
 
   async function loadCustomers(overrides = {}) {
     try {
@@ -161,7 +260,25 @@ export default function CustomersPage() {
 
   useEffect(() => {
     loadCustomers();
+    loadTelegramBroadcastHistory();
   }, []);
+
+  const loadTelegramBroadcastHistory = async () => {
+    try {
+      setTelegramHistoryLoading(true);
+      setTelegramHistoryError("");
+
+      const result = await getTelegramBroadcastHistory(10);
+
+      setTelegramHistory(result?.items || []);
+    } catch (error) {
+      setTelegramHistoryError(
+        error?.message || "Не вдалося завантажити історію розсилок"
+      );
+    } finally {
+      setTelegramHistoryLoading(false);
+    }
+  };
 
   async function handleApplyFilters() {
     await loadCustomers();
@@ -286,6 +403,98 @@ export default function CustomersPage() {
       minLastOrderAmount: nextMinLastOrderAmount,
     });
   }
+
+  const applyTelegramTemplate = (templateText) => {
+    setTelegramMessage(templateText);
+    setTelegramStatus("");
+  };
+
+  const handleSendTelegramToOne = async (customer) => {
+    try {
+      if (!customer?.telegram_user_id) {
+        setTelegramStatus("У цього клієнта немає прив'язаного Telegram.");
+        return;
+      }
+
+      if (!telegramMessage.trim()) {
+        setTelegramStatus("Введи текст повідомлення.");
+        return;
+      }
+
+      setTelegramSending(true);
+      setTelegramStatus("");
+
+      const result = await sendTelegramMessageToOne({
+        telegramUserId: customer.telegram_user_id,
+        text: telegramMessage,
+      });
+
+      if (result?.success) {
+        setTelegramStatus("Повідомлення клієнту відправлено.");
+      } else {
+        setTelegramStatus("Не вдалося відправити повідомлення клієнту.");
+      }
+    } catch (error) {
+      setTelegramStatus(error?.message || "Помилка відправки повідомлення.");
+    } finally {
+      setTelegramSending(false);
+    }
+  };
+
+  const handleSendTelegramBroadcast = async () => {
+    try {
+      if (!telegramMessage.trim()) {
+        setTelegramStatus("Введи текст розсилки.");
+        return;
+      }
+
+      setTelegramStatus("");
+      setTelegramCounting(true);
+
+      const result = await getTelegramBroadcastCount({
+        search,
+        orderType,
+        inactiveDays,
+        minTotalSpent,
+        minLastOrderAmount,
+      });
+
+      setTelegramRecipientsCount(result?.count || 0);
+      setShowTelegramConfirm(true);
+    } catch (error) {
+      setTelegramStatus(error?.message || "Не вдалося порахувати отримувачів.");
+    } finally {
+      setTelegramCounting(false);
+    }
+  };
+
+  const handleConfirmTelegramBroadcast = async () => {
+    try {
+      setTelegramSending(true);
+      setTelegramStatus("");
+      await loadTelegramBroadcastHistory();
+
+      const result = await sendTelegramBroadcast({
+        text: telegramMessage,
+        search,
+        orderType,
+        inactiveDays,
+        minTotalSpent,
+        minLastOrderAmount,
+      });
+
+      setTelegramStatus(
+        `Розсилку завершено. Відправлено: ${result?.sentCount || 0}. Помилок: ${
+          result?.failedCount || 0
+        }.`
+      );
+    } catch (error) {
+      setTelegramStatus(error?.message || "Помилка під час розсилки.");
+    } finally {
+      setTelegramSending(false);
+      setShowTelegramConfirm(false);
+    }
+  };
 
   async function applyMoneyQuickFilter(type) {
     let nextSearch = search;
@@ -823,230 +1032,492 @@ export default function CustomersPage() {
 
       <div
         style={{
+          marginTop: "20px",
           background: "#fff",
-          borderRadius: "22px",
-          border: "1px solid #ececec",
-          overflow: "hidden",
+          border: "1px solid #f0f0f0",
+          borderRadius: "18px",
+          padding: "18px",
+          display: "grid",
+          gap: "12px",
         }}
       >
-        {loading ? (
-          <div style={{ padding: "28px", fontSize: "15px", color: "#666" }}>
-            Завантаження клієнтів...
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "12px",
+            flexWrap: "wrap",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "18px",
+              fontWeight: 700,
+              color: "#222",
+            }}
+          >
+            Telegram-розсилка
           </div>
-        ) : error ? (
-          <div style={{ padding: "28px", fontSize: "15px", color: "#c0392b" }}>
-            {error}
-          </div>
-        ) : customers.length === 0 ? (
-          <div style={{ padding: "28px", fontSize: "15px", color: "#666" }}>
-            Клієнтів не знайдено
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            {customers.map((customer) => {
-              const isExpanded = expandedCustomerId === customer.id;
-              const orders = ordersByCustomer[customer.id] || [];
 
-              return (
-                <div
-                  key={customer.id}
+          <button
+            type="button"
+            onClick={() => setShowTelegramComposer((prev) => !prev)}
+            style={collapseButtonStyle}
+          >
+            {showTelegramComposer ? "Сховати" : "Розгорнути"}
+          </button>
+        </div>
+
+        {showTelegramComposer ? (
+          <>
+            <div
+              style={{
+                display: "flex",
+                gap: "10px",
+                flexWrap: "wrap",
+              }}
+            >
+              {telegramTemplates.map((template) => (
+                <button
+                  key={template.key}
+                  type="button"
+                  onClick={() => applyTelegramTemplate(template.text)}
                   style={{
-                    borderBottom: "1px solid #f0f0f0",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "999px",
+                    padding: "10px 14px",
+                    background: "#fff",
+                    color: "#334155",
+                    fontSize: "14px",
+                    fontWeight: 700,
+                    cursor: "pointer",
                   }}
                 >
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1.4fr 1.2fr 1fr 1fr 1fr 1fr auto",
-                      gap: "12px",
-                      padding: "18px 20px",
-                      alignItems: "center",
-                    }}
-                  >
-                    <div>
-                      <div
-                        style={{
-                          fontSize: "16px",
-                          fontWeight: 800,
-                          color: "#1f2937",
-                        }}
-                      >
-                        {customer.name || "Без імені"}
-                      </div>
+                  {template.label}
+                </button>
+              ))}
+            </div>
 
+            <textarea
+              value={telegramMessage}
+              onChange={(e) => setTelegramMessage(e.target.value)}
+              placeholder="Введи текст повідомлення для Telegram..."
+              rows={5}
+              style={{
+                width: "100%",
+                border: "1px solid #e5e7eb",
+                borderRadius: "14px",
+                padding: "14px 16px",
+                fontSize: "15px",
+                resize: "vertical",
+                outline: "none",
+                fontFamily: "inherit",
+                boxSizing: "border-box",
+              }}
+            />
+
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                flexWrap: "wrap",
+              }}
+            >
+              <button
+                type="button"
+                onClick={handleSendTelegramBroadcast}
+                disabled={telegramSending || telegramCounting}
+                style={{
+                  border: "none",
+                  borderRadius: "12px",
+                  padding: "12px 18px",
+                  background: "#e57a34",
+                  color: "#fff",
+                  fontSize: "15px",
+                  fontWeight: 700,
+                  cursor:
+                    telegramSending || telegramCounting
+                      ? "not-allowed"
+                      : "pointer",
+                  opacity: telegramSending || telegramCounting ? 0.7 : 1,
+                }}
+              >
+                {telegramCounting
+                  ? "Підрахунок..."
+                  : telegramSending
+                  ? "Відправка..."
+                  : "Надіслати по фільтру"}
+              </button>
+            </div>
+
+            {telegramStatus ? (
+              <div
+                style={{
+                  fontSize: "14px",
+                  color: "#555",
+                  lineHeight: 1.5,
+                }}
+              >
+                {telegramStatus}
+              </div>
+            ) : null}
+          </>
+        ) : null}
+      </div>
+
+      <div
+        style={{
+          marginTop: "20px",
+          background: "#fff",
+          border: "1px solid #f0f0f0",
+          borderRadius: "18px",
+          padding: "18px",
+          display: "grid",
+          gap: "14px",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "12px",
+            flexWrap: "wrap",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "18px",
+              fontWeight: 700,
+              color: "#222",
+            }}
+          >
+            Список клієнтів
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowCustomersList((prev) => !prev)}
+            style={collapseButtonStyle}
+          >
+            {showCustomersList ? "Сховати" : "Розгорнути"}
+          </button>
+        </div>
+
+        {showCustomersList ? (
+          <>
+            {customersLoading ? (
+              <div
+                style={{
+                  padding: "16px",
+                  borderRadius: "14px",
+                  background: "#f8fafc",
+                  color: "#64748b",
+                  fontSize: "14px",
+                }}
+              >
+                Завантаження клієнтів...
+              </div>
+            ) : customersError ? (
+              <div
+                style={{
+                  padding: "16px",
+                  borderRadius: "14px",
+                  background: "#fef2f2",
+                  color: "#b91c1c",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                }}
+              >
+                {customersError}
+              </div>
+            ) : customers.length === 0 ? (
+              <div
+                style={{
+                  padding: "16px",
+                  borderRadius: "14px",
+                  background: "#f8fafc",
+                  color: "#64748b",
+                  fontSize: "14px",
+                }}
+              >
+                Клієнтів за цим фільтром не знайдено.
+              </div>
+            ) : (
+              <div
+                style={{
+                  display: "grid",
+                  gap: "12px",
+                }}
+              >
+                {customers.map((customer) => {
+                  const isExpanded = expandedCustomerId === customer.id;
+                  const hasTelegram = Boolean(customer.telegram_user_id);
+
+                  return (
+                    <div
+                      key={customer.id}
+                      style={{
+                        border: "1px solid #eef2f7",
+                        borderRadius: "16px",
+                        padding: "14px 16px",
+                        background: "#fcfcfd",
+                        display: "grid",
+                        gap: "12px",
+                      }}
+                    >
                       <div
                         style={{
-                          marginTop: "6px",
-                          display: "flex",
+                          display: "grid",
+                          gridTemplateColumns:
+                            "minmax(180px, 1.2fr) minmax(120px, 0.8fr) minmax(110px, 0.7fr) minmax(160px, 0.9fr) minmax(90px, 0.7fr) minmax(120px, 0.8fr) auto",
+                          gap: "12px",
                           alignItems: "center",
-                          gap: "8px",
-                          flexWrap: "wrap",
                         }}
                       >
-                        <div
-                          style={{
-                            fontSize: "13px",
-                            color: "#6b7280",
-                          }}
-                        >
-                          {customer.phone}
+                        <div>
+                          <div
+                            style={{
+                              fontSize: "18px",
+                              fontWeight: 700,
+                              color: "#222",
+                            }}
+                          >
+                            {customer.name || "Без імені"}
+                          </div>
+
+                          <div
+                            style={{
+                              marginTop: "4px",
+                              fontSize: "14px",
+                              color: "#666",
+                            }}
+                          >
+                            {customer.phone || "—"}
+                          </div>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() => handleCopySinglePhone(customer.phone)}
+                        <div>
+                          <div
+                            style={{
+                              fontSize: "18px",
+                              fontWeight: 700,
+                              color: "#222",
+                            }}
+                          >
+                            {customer.orders_count || 0} зам.
+                          </div>
+
+                          <div
+                            style={{
+                              marginTop: "4px",
+                              fontSize: "13px",
+                              color: "#777",
+                            }}
+                          >
+                            Середній чек: {customer.avg_check || 0} грн
+                          </div>
+                        </div>
+
+                        <div
                           style={{
-                            border: "none",
-                            borderRadius: "10px",
-                            padding: "5px 9px",
-                            background: "#f3f4f6",
-                            color: "#111827",
-                            fontSize: "12px",
+                            fontSize: "18px",
                             fontWeight: 700,
-                            cursor: "pointer",
+                            color: "#222",
                           }}
                         >
-                          Копія
-                        </button>
-                      </div>
-                    </div>
+                          {customer.total_spent || 0} грн
+                        </div>
 
-                    <div style={{ fontSize: "14px", color: "#374151" }}>
-                      <div style={{ fontWeight: 700 }}>
-                        {customer.orders_count} зам.
-                      </div>
-                      <div style={{ fontSize: "12px", color: "#888" }}>
-                        Середній чек: {formatMoney(customer.avg_check)}
-                      </div>
-                    </div>
+                        <div>
+                          <div
+                            style={{
+                              fontSize: "15px",
+                              fontWeight: 600,
+                              color: "#222",
+                            }}
+                          >
+                            {customer.last_order_at
+                              ? new Date(customer.last_order_at).toLocaleString(
+                                  "uk-UA"
+                                )
+                              : "Немає"}
+                          </div>
 
-                    <div style={{ fontSize: "14px", color: "#374151" }}>
-                      {formatMoney(customer.total_spent)}
-                    </div>
+                          <div
+                            style={{
+                              marginTop: "4px",
+                              fontSize: "13px",
+                              color: "#777",
+                            }}
+                          >
+                            {customer.last_order_at
+                              ? `${Math.max(
+                                  0,
+                                  Math.floor(
+                                    (Date.now() -
+                                      new Date(
+                                        customer.last_order_at
+                                      ).getTime()) /
+                                      (1000 * 60 * 60 * 24)
+                                  )
+                                )} дн. тому`
+                              : ""}
+                          </div>
+                        </div>
 
-                    <div style={{ fontSize: "14px", color: "#374151" }}>
-                      <div style={{ fontSize: "14px", color: "#374151" }}>
-                        <div>{formatDate(customer.last_order_at)}</div>
                         <div
                           style={{
-                            fontSize: "12px",
-                            color: "#888",
-                            marginTop: "3px",
+                            fontSize: "15px",
+                            fontWeight: 600,
+                            color: hasTelegram ? "#166534" : "#777",
                           }}
                         >
-                          {getDaysSince(customer.last_order_at) ?? "—"} дн. тому
+                          {hasTelegram ? "Є" : "Немає"}
                         </div>
-                      </div>
-                    </div>
 
-                    <div style={{ fontSize: "14px", color: "#374151" }}>
-                      {customer.is_telegram_subscribed ? "Є" : "Немає"}
-                    </div>
-
-                    <div style={{ fontSize: "14px", color: "#374151" }}>
-                      {(() => {
-                        const segment = getCustomerSegment(customer);
-
-                        return (
+                        <div>
                           <span
                             style={{
                               display: "inline-flex",
                               alignItems: "center",
                               justifyContent: "center",
-                              padding: "7px 10px",
+                              padding: "8px 10px",
                               borderRadius: "999px",
-                              background: segment.background,
-                              color: segment.color,
+                              background:
+                                Number(customer.orders_count || 0) > 1
+                                  ? "#ecfdf3"
+                                  : "#eff6ff",
+                              color:
+                                Number(customer.orders_count || 0) > 1
+                                  ? "#166534"
+                                  : "#1d4ed8",
                               fontSize: "13px",
-                              fontWeight: 800,
-                              whiteSpace: "nowrap",
+                              fontWeight: 700,
                             }}
                           >
-                            {segment.label}
+                            {Number(customer.orders_count || 0) > 1
+                              ? "Повторний"
+                              : "Новий"}
                           </span>
-                        );
-                      })()}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => handleToggleOrders(customer.id)}
-                      style={{
-                        border: "none",
-                        borderRadius: "12px",
-                        padding: "10px 14px",
-                        background: "#f3f4f6",
-                        color: "#111827",
-                        fontWeight: 700,
-                        cursor: "pointer",
-                      }}
-                    >
-                      {isExpanded ? "Сховати" : "Замовлення"}
-                    </button>
-                  </div>
-
-                  {isExpanded && (
-                    <div
-                      style={{
-                        background: "#fafafa",
-                        padding: "0 20px 20px",
-                      }}
-                    >
-                      {loadingOrdersId === customer.id ? (
-                        <div
-                          style={{
-                            padding: "14px 0",
-                            fontSize: "14px",
-                            color: "#666",
-                          }}
-                        >
-                          Завантаження замовлень...
                         </div>
-                      ) : orders.length === 0 ? (
-                        <div
-                          style={{
-                            padding: "14px 0",
-                            fontSize: "14px",
-                            color: "#666",
-                          }}
-                        >
-                          Замовлень немає
-                        </div>
-                      ) : (
+
                         <div
                           style={{
                             display: "flex",
-                            flexDirection: "column",
-                            gap: "12px",
-                            paddingTop: "10px",
+                            gap: "8px",
+                            justifyContent: "flex-end",
+                            flexWrap: "wrap",
                           }}
                         >
-                          {orders.map((order) => (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleToggleCustomerOrders(customer.id)
+                            }
+                            style={{
+                              border: "none",
+                              borderRadius: "12px",
+                              padding: "10px 14px",
+                              background: "#f3f4f6",
+                              color: "#222",
+                              fontSize: "14px",
+                              fontWeight: 700,
+                              cursor: "pointer",
+                            }}
+                          >
+                            {isExpanded ? "Сховати" : "Замовлення"}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleSendTelegramToOne(customer)}
+                            disabled={
+                              telegramSending || !customer.telegram_user_id
+                            }
+                            style={{
+                              border: "none",
+                              borderRadius: "12px",
+                              padding: "10px 14px",
+                              background: customer.telegram_user_id
+                                ? "#eef6ff"
+                                : "#f3f4f6",
+                              color: customer.telegram_user_id
+                                ? "#2563eb"
+                                : "#9ca3af",
+                              fontSize: "14px",
+                              fontWeight: 700,
+                              cursor:
+                                telegramSending || !customer.telegram_user_id
+                                  ? "not-allowed"
+                                  : "pointer",
+                            }}
+                          >
+                            Telegram
+                          </button>
+                        </div>
+                      </div>
+
+                      {isExpanded ? (
+                        <div
+                          style={{
+                            display: "grid",
+                            gap: "12px",
+                            paddingTop: "6px",
+                          }}
+                        >
+                          {customerOrdersLoading &&
+                          expandedCustomerId === customer.id ? (
                             <div
-                              key={order.id}
                               style={{
-                                background: "#fff",
-                                border: "1px solid #ececec",
-                                borderRadius: "16px",
-                                padding: "16px",
-                                boxShadow: "0 4px 14px rgba(0,0,0,0.04)",
+                                padding: "14px",
+                                borderRadius: "12px",
+                                background: "#f8fafc",
+                                color: "#64748b",
+                                fontSize: "14px",
                               }}
                             >
+                              Завантаження замовлень...
+                            </div>
+                          ) : customerOrders.length === 0 ? (
+                            <div
+                              style={{
+                                padding: "14px",
+                                borderRadius: "12px",
+                                background: "#f8fafc",
+                                color: "#64748b",
+                                fontSize: "14px",
+                              }}
+                            >
+                              Замовлень не знайдено.
+                            </div>
+                          ) : (
+                            customerOrders.map((order) => (
                               <div
+                                key={order.id}
                                 style={{
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                  gap: "16px",
-                                  flexWrap: "wrap",
-                                  alignItems: "flex-start",
+                                  border: "1px solid #e5e7eb",
+                                  borderRadius: "14px",
+                                  padding: "14px",
+                                  background: "#fff",
+                                  display: "grid",
+                                  gap: "10px",
                                 }}
                               >
-                                <div>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    gap: "12px",
+                                    flexWrap: "wrap",
+                                  }}
+                                >
                                   <div
                                     style={{
-                                      fontWeight: 800,
-                                      color: "#1f2937",
                                       fontSize: "16px",
+                                      fontWeight: 700,
+                                      color: "#222",
                                     }}
                                   >
                                     Замовлення #{order.id}
@@ -1054,146 +1525,467 @@ export default function CustomersPage() {
 
                                   <div
                                     style={{
-                                      marginTop: "4px",
-                                      color: "#6b7280",
-                                      fontSize: "13px",
+                                      fontSize: "15px",
+                                      fontWeight: 700,
+                                      color: "#222",
                                     }}
                                   >
-                                    {formatDate(order.created_at)}
+                                    {order.total_price || 0} грн
                                   </div>
                                 </div>
 
                                 <div
                                   style={{
-                                    fontWeight: 800,
-                                    color: "#111827",
-                                    fontSize: "16px",
+                                    display: "flex",
+                                    gap: "8px",
+                                    flexWrap: "wrap",
                                   }}
                                 >
-                                  {formatMoney(order.total_amount)}
+                                  <span
+                                    style={{
+                                      padding: "6px 9px",
+                                      borderRadius: "999px",
+                                      background: "#eff6ff",
+                                      color: "#1d4ed8",
+                                      fontSize: "12px",
+                                      fontWeight: 700,
+                                    }}
+                                  >
+                                    {order.mode === "pickup"
+                                      ? "Самовивіз"
+                                      : "Доставка"}
+                                  </span>
+
+                                  <span
+                                    style={{
+                                      padding: "6px 9px",
+                                      borderRadius: "999px",
+                                      background: "#f3f4f6",
+                                      color: "#334155",
+                                      fontSize: "12px",
+                                      fontWeight: 700,
+                                    }}
+                                  >
+                                    {order.payment_method === "cash"
+                                      ? "Готівка"
+                                      : order.payment_method === "card"
+                                      ? "Картка"
+                                      : order.payment_method === "bank_transfer"
+                                      ? "Переказ"
+                                      : order.payment_method || "Оплата"}
+                                  </span>
+
+                                  <span
+                                    style={{
+                                      padding: "6px 9px",
+                                      borderRadius: "999px",
+                                      background: "#f3f4f6",
+                                      color: "#334155",
+                                      fontSize: "12px",
+                                      fontWeight: 700,
+                                    }}
+                                  >
+                                    {order.status || "new"}
+                                  </span>
                                 </div>
-                              </div>
 
-                              <div
-                                style={{
-                                  marginTop: "12px",
-                                  display: "flex",
-                                  gap: "8px",
-                                  flexWrap: "wrap",
-                                }}
-                              >
-                                <span
+                                <div
                                   style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    padding: "7px 10px",
-                                    borderRadius: "999px",
-                                    fontSize: "12px",
-                                    fontWeight: 800,
-                                    ...getModeBadgeStyle(order.mode),
+                                    fontSize: "14px",
+                                    color: "#334155",
+                                    lineHeight: 1.6,
+                                    whiteSpace: "pre-wrap",
                                   }}
                                 >
-                                  {getModeLabel(order.mode)}
-                                </span>
-
-                                <span
-                                  style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    padding: "7px 10px",
-                                    borderRadius: "999px",
-                                    fontSize: "12px",
-                                    fontWeight: 800,
-                                    ...getPaymentBadgeStyle(
-                                      order.payment_method
-                                    ),
-                                  }}
-                                >
-                                  {getPaymentLabel(order.payment_method)}
-                                </span>
-
-                                <span
-                                  style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    padding: "7px 10px",
-                                    borderRadius: "999px",
-                                    fontSize: "12px",
-                                    fontWeight: 800,
-                                    background: "#f3f4f6",
-                                    color: "#374151",
-                                  }}
-                                >
-                                  {order.status || "new"}
-                                </span>
-                              </div>
-
-                              <div
-                                style={{
-                                  marginTop: "14px",
-                                  background: "#fafafa",
-                                  border: "1px solid #f0f0f0",
-                                  borderRadius: "14px",
-                                  padding: "12px 14px",
-                                  fontSize: "14px",
-                                  color: "#374151",
-                                  lineHeight: 1.5,
-                                }}
-                              >
-                                <strong style={{ color: "#111827" }}>
-                                  Склад замовлення:
-                                </strong>
-                                <div style={{ marginTop: "6px" }}>
+                                  <strong>Склад замовлення:</strong>
+                                  <br />
                                   {order.items_summary || "—"}
                                 </div>
-                              </div>
 
-                              <div
-                                style={{
-                                  marginTop: "12px",
-                                  display: "grid",
-                                  gridTemplateColumns:
-                                    "repeat(auto-fit, minmax(220px, 1fr))",
-                                  gap: "10px",
-                                  fontSize: "14px",
-                                  color: "#374151",
-                                }}
-                              >
-                                <div>
+                                <div
+                                  style={{
+                                    fontSize: "14px",
+                                    color: "#475569",
+                                    lineHeight: 1.6,
+                                  }}
+                                >
                                   <strong>Адреса:</strong>{" "}
                                   {order.address || "—"}
-                                </div>
-
-                                <div>
-                                  <strong>Підʼїзд:</strong>{" "}
+                                  {"  "}
+                                  <strong>Під'їзд:</strong>{" "}
                                   {order.entrance || "—"}
                                 </div>
                               </div>
-
-                              {order.comment ? (
-                                <div
-                                  style={{
-                                    marginTop: "10px",
-                                    fontSize: "14px",
-                                    color: "#374151",
-                                    lineHeight: 1.5,
-                                  }}
-                                >
-                                  <strong>Коментар:</strong> {order.comment}
-                                </div>
-                              ) : null}
-                            </div>
-                          ))}
+                            ))
+                          )}
                         </div>
-                      )}
+                      ) : null}
                     </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+                  );
+                })}
+              </div>
+            )}
+          </>
+        ) : null}
       </div>
+
+      <div
+        style={{
+          marginTop: "20px",
+          background: "#fff",
+          border: "1px solid #f0f0f0",
+          borderRadius: "18px",
+          padding: "18px",
+          display: "grid",
+          gap: "14px",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "12px",
+            flexWrap: "wrap",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "18px",
+              fontWeight: 700,
+              color: "#222",
+            }}
+          >
+            Історія Telegram-розсилок
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              gap: "10px",
+              flexWrap: "wrap",
+            }}
+          >
+            <button
+              type="button"
+              onClick={loadTelegramBroadcastHistory}
+              disabled={telegramHistoryLoading}
+              style={{
+                border: "1px solid #e5e7eb",
+                borderRadius: "12px",
+                padding: "10px 14px",
+                background: "#fff",
+                color: "#334155",
+                fontSize: "14px",
+                fontWeight: 700,
+                cursor: telegramHistoryLoading ? "not-allowed" : "pointer",
+              }}
+            >
+              {telegramHistoryLoading ? "Оновлення..." : "Оновити"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowTelegramHistory((prev) => !prev)}
+              style={collapseButtonStyle}
+            >
+              {showTelegramHistory ? "Сховати" : "Розгорнути"}
+            </button>
+          </div>
+        </div>
+
+        {showTelegramHistory ? (
+          <>
+            {telegramHistoryError ? (
+              <div
+                style={{
+                  padding: "12px 14px",
+                  borderRadius: "12px",
+                  background: "#fef2f2",
+                  color: "#b91c1c",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                }}
+              >
+                {telegramHistoryError}
+              </div>
+            ) : null}
+
+            {!telegramHistoryLoading && telegramHistory.length === 0 ? (
+              <div
+                style={{
+                  padding: "12px 14px",
+                  borderRadius: "12px",
+                  background: "#f8fafc",
+                  color: "#64748b",
+                  fontSize: "14px",
+                }}
+              >
+                Поки що розсилок не було.
+              </div>
+            ) : null}
+
+            <div
+              style={{
+                display: "grid",
+                gap: "12px",
+              }}
+            >
+              {telegramHistory.map((item) => (
+                <div
+                  key={item.id}
+                  style={{
+                    border: "1px solid #eef2f7",
+                    borderRadius: "16px",
+                    padding: "14px 16px",
+                    background: "#fcfcfd",
+                    display: "grid",
+                    gap: "10px",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: "12px",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: "14px",
+                        color: "#222",
+                        fontWeight: 700,
+                      }}
+                    >
+                      Розсилка #{item.id}
+                    </div>
+
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        color: "#777",
+                      }}
+                    >
+                      {new Date(item.created_at).toLocaleString("uk-UA")}
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      whiteSpace: "pre-wrap",
+                      fontSize: "14px",
+                      lineHeight: 1.6,
+                      color: "#334155",
+                      background: "#fff",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "12px",
+                      padding: "12px 14px",
+                    }}
+                  >
+                    {item.text}
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "10px",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <span
+                      style={{
+                        padding: "8px 10px",
+                        borderRadius: "999px",
+                        background: "#eff6ff",
+                        color: "#1d4ed8",
+                        fontSize: "13px",
+                        fontWeight: 700,
+                      }}
+                    >
+                      Отримувачів: {item.recipients_count}
+                    </span>
+
+                    <span
+                      style={{
+                        padding: "8px 10px",
+                        borderRadius: "999px",
+                        background: "#ecfdf3",
+                        color: "#166534",
+                        fontSize: "13px",
+                        fontWeight: 700,
+                      }}
+                    >
+                      Успішно: {item.sent_count}
+                    </span>
+
+                    <span
+                      style={{
+                        padding: "8px 10px",
+                        borderRadius: "999px",
+                        background: "#fef2f2",
+                        color: "#b91c1c",
+                        fontSize: "13px",
+                        fontWeight: 700,
+                      }}
+                    >
+                      Помилки: {item.failed_count}
+                    </span>
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      color: "#64748b",
+                      lineHeight: 1.6,
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    Фільтр: {JSON.stringify(item.filters || {}, null, 2)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : null}
+      </div>
+      {showTelegramConfirm ? (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15, 23, 42, 0.45)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+            zIndex: 1000,
+          }}
+          onClick={() => {
+            if (!telegramSending) {
+              setShowTelegramConfirm(false);
+            }
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              maxWidth: "560px",
+              background: "#fff",
+              borderRadius: "22px",
+              padding: "24px",
+              boxShadow: "0 20px 50px rgba(0,0,0,0.18)",
+              display: "grid",
+              gap: "14px",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "22px",
+                fontWeight: 800,
+                color: "#222",
+              }}
+            >
+              Підтвердити Telegram-розсилку
+            </div>
+
+            <div
+              style={{
+                fontSize: "14px",
+                color: "#666",
+                lineHeight: 1.6,
+              }}
+            >
+              Повідомлення буде відправлене Telegram-клієнтам за поточним
+              фільтром.
+            </div>
+
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "fit-content",
+                padding: "10px 14px",
+                borderRadius: "999px",
+                background: "#fff7ed",
+                color: "#c2410c",
+                fontSize: "14px",
+                fontWeight: 800,
+                border: "1px solid #fed7aa",
+              }}
+            >
+              Буде відправлено: {telegramRecipientsCount} клієнт(ам)
+            </div>
+
+            <div
+              style={{
+                background: "#f8fafc",
+                border: "1px solid #e5e7eb",
+                borderRadius: "16px",
+                padding: "14px 16px",
+                fontSize: "14px",
+                color: "#334155",
+                lineHeight: 1.6,
+                whiteSpace: "pre-wrap",
+              }}
+            >
+              {telegramMessage}
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "12px",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setShowTelegramConfirm(false)}
+                disabled={telegramSending}
+                style={{
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "12px",
+                  padding: "13px 16px",
+                  background: "#fff",
+                  color: "#222",
+                  fontSize: "15px",
+                  fontWeight: 700,
+                  cursor: telegramSending ? "not-allowed" : "pointer",
+                }}
+              >
+                Скасувати
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmTelegramBroadcast}
+                disabled={telegramSending || telegramRecipientsCount === 0}
+                style={{
+                  border: "none",
+                  borderRadius: "12px",
+                  padding: "13px 16px",
+                  background: "#e57a34",
+                  color: "#fff",
+                  fontSize: "15px",
+                  fontWeight: 700,
+                  cursor:
+                    telegramSending || telegramRecipientsCount === 0
+                      ? "not-allowed"
+                      : "pointer",
+                  opacity:
+                    telegramSending || telegramRecipientsCount === 0 ? 0.7 : 1,
+                }}
+              >
+                {telegramSending ? "Відправка..." : "Підтвердити відправку"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
