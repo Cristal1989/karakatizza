@@ -956,4 +956,50 @@ router.get("/telegram-gifts/history/:phone", async (req, res) => {
   }
 });
 
+router.get("/customers/:id/bonus-history", async (req, res) => {
+  try {
+    const customerId = Number(req.params.id);
+
+    if (!customerId) {
+      return res.status(400).json({
+        success: false,
+        message: "Некоректний ID клієнта",
+      });
+    }
+
+    const result = await pool.query(
+      `
+        SELECT
+          id,
+          customer_id,
+          phone_normalized,
+          gift_roll_id,
+          gift_roll_title,
+          status,
+          source,
+          comment,
+          issued_at,
+          used_at,
+          created_at,
+          updated_at
+        FROM telegram_gifts
+        WHERE customer_id = $1
+        ORDER BY created_at DESC, id DESC
+      `,
+      [customerId]
+    );
+
+    return res.json({
+      success: true,
+      gifts: result.rows,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Не вдалося завантажити історію бонусів",
+      error: error?.message || "Unknown error",
+    });
+  }
+});
+
 export default router;

@@ -6,8 +6,10 @@ import {
   sendTelegramMessageToOne,
   getTelegramBroadcastCount,
   getTelegramBroadcastHistory,
+  getCustomerBonusHistory,
 } from "../api/crmApi";
 import { useSiteSettings } from "../context/SiteSettingsContext";
+import { FaTelegramPlane } from "react-icons/fa";
 
 function formatDate(dateString) {
   if (!dateString) return "—";
@@ -169,6 +171,10 @@ export default function CustomersPage() {
 
   const [activeQuickFilter, setActiveQuickFilter] = useState("all");
 
+  const [customerBonusHistory, setCustomerBonusHistory] = useState({});
+  const [bonusHistoryLoading, setBonusHistoryLoading] = useState({});
+  const [bonusHistoryError, setBonusHistoryError] = useState({});
+
   const telegramTemplates = [
     {
       key: "come-back-30",
@@ -256,6 +262,37 @@ export default function CustomersPage() {
       setError(err.message || "Помилка завантаження клієнтів");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadCustomerBonusHistory(customerId) {
+    try {
+      setBonusHistoryLoading((prev) => ({
+        ...prev,
+        [customerId]: true,
+      }));
+
+      setBonusHistoryError((prev) => ({
+        ...prev,
+        [customerId]: "",
+      }));
+
+      const data = await getCustomerBonusHistory(customerId);
+
+      setCustomerBonusHistory((prev) => ({
+        ...prev,
+        [customerId]: data.gifts || [],
+      }));
+    } catch (error) {
+      setBonusHistoryError((prev) => ({
+        ...prev,
+        [customerId]: error.message || "Помилка завантаження історії бонусів",
+      }));
+    } finally {
+      setBonusHistoryLoading((prev) => ({
+        ...prev,
+        [customerId]: false,
+      }));
     }
   }
 
@@ -559,24 +596,67 @@ export default function CustomersPage() {
 
     setExpandedCustomerId(customerId);
 
-    if (ordersByCustomer[customerId]) {
+    const hasOrders = Boolean(ordersByCustomer[customerId]);
+    const hasBonusHistory = Boolean(bonusHistoryByCustomer[customerId]);
+
+    if (hasOrders && hasBonusHistory) {
       return;
     }
 
     try {
       setLoadingOrdersId(customerId);
+      setLoadingBonusHistoryId(customerId);
 
-      const data = await getCustomerOrders(customerId);
+      const [ordersData, bonusData] = await Promise.all([
+        hasOrders
+          ? Promise.resolve({ orders: ordersByCustomer[customerId] })
+          : getCustomerOrders(customerId),
+        hasBonusHistory
+          ? Promise.resolve({ gifts: bonusHistoryByCustomer[customerId] })
+          : getCustomerBonusHistory(customerId),
+      ]);
 
-      setOrdersByCustomer((prev) => ({
-        ...prev,
-        [customerId]: data.orders || [],
-      }));
+      if (!hasOrders) {
+        setOrdersByCustomer((prev) => ({
+          ...prev,
+          [customerId]: ordersData.orders || [],
+        }));
+      }
+
+      if (!hasBonusHistory) {
+        setBonusHistoryByCustomer((prev) => ({
+          ...prev,
+          [customerId]: bonusData.gifts || [],
+        }));
+      }
     } catch (err) {
-      setError(err.message || "Помилка завантаження замовлень");
+      setError(err.message || "Помилка завантаження даних клієнта");
     } finally {
       setLoadingOrdersId(null);
+      setLoadingBonusHistoryId(null);
     }
+  }
+
+  function formatBonusStatus(status) {
+    if (status === "issued") return "Активний";
+    if (status === "used") return "Використаний";
+    if (status === "cancelled") return "Скасований";
+    return status || "—";
+  }
+
+  function formatBonusSource(source) {
+    if (source === "telegram") return "Telegram";
+    if (source === "admin") return "Адмінка";
+    return source || "—";
+  }
+
+  function formatDateTime(value) {
+    if (!value) return "—";
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "—";
+
+    return date.toLocaleString("uk-UA");
   }
 
   const stats = useMemo(() => {
@@ -1429,12 +1509,14 @@ export default function CustomersPage() {
 
                         <div
                           style={{
-                            fontSize: "15px",
-                            fontWeight: 600,
-                            color: hasTelegram ? "#166534" : "#777",
+                            fontSize: "18px",
+                            color: hasTelegram ? "#229ED9" : "#777",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
                           }}
                         >
-                          {hasTelegram ? "Є" : "Немає"}
+                          {hasTelegram ? <FaTelegramPlane /> : "Немає"}
                         </div>
 
                         <div>
@@ -1674,6 +1756,137 @@ export default function CustomersPage() {
                                   {"  "}
                                   <strong>Під'їзд:</strong>{" "}
                                   {order.entrance || "—"}
+                                </div>
+                                <div
+                                  style={{
+                                    marginTop: "16px",
+                                    borderTop: "1px solid #eee",
+                                    paddingTop: "16px",
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      fontSize: "18px",
+                                      fontWeight: 800,
+                                      marginBottom: "12px",
+                                      color: "#1f2937",
+                                    }}
+                                  >
+                                    🎁 Історія бонусів
+                                  </div>
+
+                                  {bonusHistoryLoading[customer.id] ? (
+                                    <div
+                                      style={{
+                                        color: "#777",
+                                        fontSize: "14px",
+                                      }}
+                                    >
+                                      Завантаження історії бонусів...
+                                    </div>
+                                  ) : bonusHistoryError[customer.id] ? (
+                                    <div
+                                      style={{
+                                        color: "#b91c1c",
+                                        fontSize: "14px",
+                                      }}
+                                    >
+                                      {bonusHistoryError[customer.id]}
+                                    </div>
+                                  ) : (customerBonusHistory[customer.id] || [])
+                                      .length === 0 ? (
+                                    <div
+                                      style={{
+                                        color: "#777",
+                                        fontSize: "14px",
+                                      }}
+                                    >
+                                      Для цього клієнта бонусів поки немає.
+                                    </div>
+                                  ) : (
+                                    <div
+                                      style={{ display: "grid", gap: "10px" }}
+                                    >
+                                      {(
+                                        customerBonusHistory[customer.id] || []
+                                      ).map((gift) => (
+                                        <div
+                                          key={gift.id}
+                                          style={{
+                                            border: "1px solid #e5e7eb",
+                                            borderRadius: "12px",
+                                            padding: "12px 14px",
+                                            background: "#fff",
+                                          }}
+                                        >
+                                          <div
+                                            style={{
+                                              display: "flex",
+                                              justifyContent: "space-between",
+                                              gap: "12px",
+                                              flexWrap: "wrap",
+                                              marginBottom: "8px",
+                                            }}
+                                          >
+                                            <div
+                                              style={{
+                                                fontWeight: 700,
+                                                color: "#111827",
+                                              }}
+                                            >
+                                              {gift.gift_roll_title ||
+                                                "Бонус без назви"}
+                                            </div>
+
+                                            <div
+                                              style={{
+                                                fontSize: "13px",
+                                                fontWeight: 700,
+                                                color:
+                                                  gift.status === "issued"
+                                                    ? "#166534"
+                                                    : gift.status === "used"
+                                                    ? "#92400e"
+                                                    : "#6b7280",
+                                              }}
+                                            >
+                                              {formatBonusStatus(gift.status)}
+                                            </div>
+                                          </div>
+
+                                          <div
+                                            style={{
+                                              fontSize: "14px",
+                                              color: "#4b5563",
+                                              display: "grid",
+                                              gap: "4px",
+                                            }}
+                                          >
+                                            <div>
+                                              Джерело:{" "}
+                                              {formatBonusSource(gift.source)}
+                                            </div>
+                                            <div>
+                                              Видано:{" "}
+                                              {formatDateTime(
+                                                gift.issued_at ||
+                                                  gift.created_at
+                                              )}
+                                            </div>
+                                            <div>
+                                              Використано:{" "}
+                                              {formatDateTime(gift.used_at)}
+                                            </div>
+                                            {gift.comment ? (
+                                              <div>
+                                                Коментар: {gift.comment}
+                                              </div>
+                                            ) : null}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             ))

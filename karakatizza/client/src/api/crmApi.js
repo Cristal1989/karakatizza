@@ -235,3 +235,21 @@ export async function getTelegramCheckoutStatus(phone) {
 
   return data;
 }
+
+export async function getCustomerBonusHistory(customerId) {
+  const res = await fetch(`${API_BASE_URL}/api/crm/customers/${customerId}/bonus-history`);
+  const text = await res.text();
+
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error(`Сервер повернув не JSON: ${text.slice(0, 120)}`);
+  }
+
+  if (!res.ok) {
+    throw new Error(data.message || "Не вдалося завантажити історію бонусів");
+  }
+
+  return data;
+}
