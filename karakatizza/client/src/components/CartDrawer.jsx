@@ -577,7 +577,7 @@ export default function CartDrawer() {
           position: "fixed",
           top: 0,
           right: 0,
-          width: isMobile ? "100vw" : "420px",
+          width: isMobile ? "100%" : "420px",
           maxWidth: "100%",
           height: "100vh",
           backgroundColor: "#ffffff",

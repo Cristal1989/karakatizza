@@ -1635,261 +1635,267 @@ export default function CustomersPage() {
                               Замовлень не знайдено.
                             </div>
                           ) : (
-                            customerOrders.map((order) => (
+                            <div>
                               <div
-                                key={order.id}
-                                style={{
-                                  border: "1px solid #e5e7eb",
-                                  borderRadius: "14px",
-                                  padding: "14px",
-                                  background: "#fff",
-                                  display: "grid",
-                                  gap: "10px",
-                                }}
-                              >
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                    gap: "12px",
-                                    flexWrap: "wrap",
-                                  }}
-                                >
-                                  <div
                                     style={{
-                                      fontSize: "16px",
-                                      fontWeight: 700,
-                                      color: "#222",
+                                      marginTop: "16px",
+                                      borderTop: "1px solid #eee",
+                                      paddingTop: "16px",
                                     }}
                                   >
-                                    Замовлення #{order.id}
-                                  </div>
-
-                                  <div
-                                    style={{
-                                      fontSize: "15px",
-                                      fontWeight: 700,
-                                      color: "#222",
-                                    }}
-                                  >
-                                    {order.total_price || 0} грн
-                                  </div>
-                                </div>
-
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    gap: "8px",
-                                    flexWrap: "wrap",
-                                  }}
-                                >
-                                  <span
-                                    style={{
-                                      padding: "6px 9px",
-                                      borderRadius: "999px",
-                                      background: "#eff6ff",
-                                      color: "#1d4ed8",
-                                      fontSize: "12px",
-                                      fontWeight: 700,
-                                    }}
-                                  >
-                                    {order.mode === "pickup"
-                                      ? "Самовивіз"
-                                      : "Доставка"}
-                                  </span>
-
-                                  <span
-                                    style={{
-                                      padding: "6px 9px",
-                                      borderRadius: "999px",
-                                      background: "#f3f4f6",
-                                      color: "#334155",
-                                      fontSize: "12px",
-                                      fontWeight: 700,
-                                    }}
-                                  >
-                                    {order.payment_method === "cash"
-                                      ? "Готівка"
-                                      : order.payment_method === "card"
-                                      ? "Картка"
-                                      : order.payment_method === "bank_transfer"
-                                      ? "Переказ"
-                                      : order.payment_method || "Оплата"}
-                                  </span>
-
-                                  <span
-                                    style={{
-                                      padding: "6px 9px",
-                                      borderRadius: "999px",
-                                      background: "#f3f4f6",
-                                      color: "#334155",
-                                      fontSize: "12px",
-                                      fontWeight: 700,
-                                    }}
-                                  >
-                                    {order.status || "new"}
-                                  </span>
-                                </div>
-
-                                <div
-                                  style={{
-                                    fontSize: "14px",
-                                    color: "#334155",
-                                    lineHeight: 1.6,
-                                    whiteSpace: "pre-wrap",
-                                  }}
-                                >
-                                  <strong>Склад замовлення:</strong>
-                                  <br />
-                                  {order.items_summary || "—"}
-                                </div>
-
-                                <div
-                                  style={{
-                                    fontSize: "14px",
-                                    color: "#475569",
-                                    lineHeight: 1.6,
-                                  }}
-                                >
-                                  <strong>Адреса:</strong>{" "}
-                                  {order.address || "—"}
-                                  {"  "}
-                                  <strong>Під'їзд:</strong>{" "}
-                                  {order.entrance || "—"}
-                                </div>
-                                <div
-                                  style={{
-                                    marginTop: "16px",
-                                    borderTop: "1px solid #eee",
-                                    paddingTop: "16px",
-                                  }}
-                                >
-                                  <div
-                                    style={{
-                                      fontSize: "18px",
-                                      fontWeight: 800,
-                                      marginBottom: "12px",
-                                      color: "#1f2937",
-                                    }}
-                                  >
-                                    🎁 Історія бонусів
-                                  </div>
-
-                                  {bonusHistoryLoading[customer.id] ? (
                                     <div
                                       style={{
-                                        color: "#777",
-                                        fontSize: "14px",
+                                        fontSize: "18px",
+                                        fontWeight: 800,
+                                        marginBottom: "12px",
+                                        color: "#1f2937",
                                       }}
                                     >
-                                      Завантаження історії бонусів...
+                                      🎁 Історія бонусів
                                     </div>
-                                  ) : bonusHistoryError[customer.id] ? (
-                                    <div
-                                      style={{
-                                        color: "#b91c1c",
-                                        fontSize: "14px",
-                                      }}
-                                    >
-                                      {bonusHistoryError[customer.id]}
-                                    </div>
-                                  ) : (customerBonusHistory[customer.id] || [])
-                                      .length === 0 ? (
-                                    <div
-                                      style={{
-                                        color: "#777",
-                                        fontSize: "14px",
-                                      }}
-                                    >
-                                      Для цього клієнта бонусів поки немає.
-                                    </div>
-                                  ) : (
-                                    <div
-                                      style={{ display: "grid", gap: "10px" }}
-                                    >
-                                      {(
+
+                                    {bonusHistoryLoading[customer.id] ? (
+                                      <div
+                                        style={{
+                                          color: "#777",
+                                          fontSize: "14px",
+                                        }}
+                                      >
+                                        Завантаження історії бонусів...
+                                      </div>
+                                    ) : bonusHistoryError[customer.id] ? (
+                                      <div
+                                        style={{
+                                          color: "#b91c1c",
+                                          fontSize: "14px",
+                                        }}
+                                      >
+                                        {bonusHistoryError[customer.id]}
+                                      </div>
+                                    ) : (
                                         customerBonusHistory[customer.id] || []
-                                      ).map((gift) => (
-                                        <div
-                                          key={gift.id}
-                                          style={{
-                                            border: "1px solid #e5e7eb",
-                                            borderRadius: "12px",
-                                            padding: "12px 14px",
-                                            background: "#fff",
-                                          }}
-                                        >
+                                      ).length === 0 ? (
+                                      <div
+                                        style={{
+                                          color: "#777",
+                                          fontSize: "14px",
+                                        }}
+                                      >
+                                        Для цього клієнта бонусів поки немає.
+                                      </div>
+                                    ) : (
+                                      <div
+                                        style={{ display: "grid", gap: "10px" }}
+                                      >
+                                        {(
+                                          customerBonusHistory[customer.id] ||
+                                          []
+                                        ).map((gift) => (
                                           <div
+                                            key={gift.id}
                                             style={{
-                                              display: "flex",
-                                              justifyContent: "space-between",
-                                              gap: "12px",
-                                              flexWrap: "wrap",
-                                              marginBottom: "8px",
+                                              border: "1px solid #e5e7eb",
+                                              borderRadius: "12px",
+                                              padding: "12px 14px",
+                                              background: "#fff",
                                             }}
                                           >
                                             <div
                                               style={{
-                                                fontWeight: 700,
-                                                color: "#111827",
+                                                display: "flex",
+                                                justifyContent: "space-between",
+                                                gap: "12px",
+                                                flexWrap: "wrap",
+                                                marginBottom: "8px",
                                               }}
                                             >
-                                              {gift.gift_roll_title ||
-                                                "Бонус без назви"}
-                                            </div>
-
-                                            <div
-                                              style={{
-                                                fontSize: "13px",
-                                                fontWeight: 700,
-                                                color:
-                                                  gift.status === "issued"
-                                                    ? "#166534"
-                                                    : gift.status === "used"
-                                                    ? "#92400e"
-                                                    : "#6b7280",
-                                              }}
-                                            >
-                                              {formatBonusStatus(gift.status)}
-                                            </div>
-                                          </div>
-
-                                          <div
-                                            style={{
-                                              fontSize: "14px",
-                                              color: "#4b5563",
-                                              display: "grid",
-                                              gap: "4px",
-                                            }}
-                                          >
-                                            <div>
-                                              Джерело:{" "}
-                                              {formatBonusSource(gift.source)}
-                                            </div>
-                                            <div>
-                                              Видано:{" "}
-                                              {formatDateTime(
-                                                gift.issued_at ||
-                                                  gift.created_at
-                                              )}
-                                            </div>
-                                            <div>
-                                              Використано:{" "}
-                                              {formatDateTime(gift.used_at)}
-                                            </div>
-                                            {gift.comment ? (
-                                              <div>
-                                                Коментар: {gift.comment}
+                                              <div
+                                                style={{
+                                                  fontWeight: 700,
+                                                  color: "#111827",
+                                                }}
+                                              >
+                                                {gift.gift_roll_title ||
+                                                  "Бонус без назви"}
                                               </div>
-                                            ) : null}
+
+                                              <div
+                                                style={{
+                                                  fontSize: "13px",
+                                                  fontWeight: 700,
+                                                  color:
+                                                    gift.status === "issued"
+                                                      ? "#166534"
+                                                      : gift.status === "used"
+                                                      ? "#92400e"
+                                                      : "#6b7280",
+                                                }}
+                                              >
+                                                {formatBonusStatus(gift.status)}
+                                              </div>
+                                            </div>
+
+                                            <div
+                                              style={{
+                                                fontSize: "14px",
+                                                color: "#4b5563",
+                                                display: "grid",
+                                                gap: "4px",
+                                              }}
+                                            >
+                                              <div>
+                                                Джерело:{" "}
+                                                {formatBonusSource(gift.source)}
+                                              </div>
+                                              <div>
+                                                Видано:{" "}
+                                                {formatDateTime(
+                                                  gift.issued_at ||
+                                                    gift.created_at
+                                                )}
+                                              </div>
+                                              <div>
+                                                Використано:{" "}
+                                                {formatDateTime(gift.used_at)}
+                                              </div>
+                                              {gift.comment ? (
+                                                <div>
+                                                  Коментар: {gift.comment}
+                                                </div>
+                                              ) : null}
+                                            </div>
                                           </div>
-                                        </div>
-                                      ))}
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                              {customerOrders.map((order) => (
+                                <div
+                                  key={order.id}
+                                  style={{
+                                    border: "1px solid #e5e7eb",
+                                    borderRadius: "14px",
+                                    padding: "14px",
+                                    background: "#fff",
+                                    display: "grid",
+                                    gap: "10px",
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      justifyContent: "space-between",
+                                      gap: "12px",
+                                      flexWrap: "wrap",
+                                    }}
+                                  >
+                                    <div
+                                      style={{
+                                        fontSize: "16px",
+                                        fontWeight: 700,
+                                        color: "#222",
+                                      }}
+                                    >
+                                      Замовлення #{order.id}
                                     </div>
-                                  )}
+
+                                    <div
+                                      style={{
+                                        fontSize: "15px",
+                                        fontWeight: 700,
+                                        color: "#222",
+                                      }}
+                                    >
+                                      {order.total_price || 0} грн
+                                    </div>
+                                  </div>
+
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      gap: "8px",
+                                      flexWrap: "wrap",
+                                    }}
+                                  >
+                                    <span
+                                      style={{
+                                        padding: "6px 9px",
+                                        borderRadius: "999px",
+                                        background: "#eff6ff",
+                                        color: "#1d4ed8",
+                                        fontSize: "12px",
+                                        fontWeight: 700,
+                                      }}
+                                    >
+                                      {order.mode === "pickup"
+                                        ? "Самовивіз"
+                                        : "Доставка"}
+                                    </span>
+
+                                    <span
+                                      style={{
+                                        padding: "6px 9px",
+                                        borderRadius: "999px",
+                                        background: "#f3f4f6",
+                                        color: "#334155",
+                                        fontSize: "12px",
+                                        fontWeight: 700,
+                                      }}
+                                    >
+                                      {order.payment_method === "cash"
+                                        ? "Готівка"
+                                        : order.payment_method === "card"
+                                        ? "Картка"
+                                        : order.payment_method ===
+                                          "bank_transfer"
+                                        ? "Переказ"
+                                        : order.payment_method || "Оплата"}
+                                    </span>
+
+                                    <span
+                                      style={{
+                                        padding: "6px 9px",
+                                        borderRadius: "999px",
+                                        background: "#f3f4f6",
+                                        color: "#334155",
+                                        fontSize: "12px",
+                                        fontWeight: 700,
+                                      }}
+                                    >
+                                      {order.status || "new"}
+                                    </span>
+                                  </div>
+
+                                  <div
+                                    style={{
+                                      fontSize: "14px",
+                                      color: "#334155",
+                                      lineHeight: 1.6,
+                                      whiteSpace: "pre-wrap",
+                                    }}
+                                  >
+                                    <strong>Склад замовлення:</strong>
+                                    <br />
+                                    {order.items_summary || "—"}
+                                  </div>
+
+                                  <div
+                                    style={{
+                                      fontSize: "14px",
+                                      color: "#475569",
+                                      lineHeight: 1.6,
+                                    }}
+                                  >
+                                    <strong>Адреса:</strong>{" "}
+                                    {order.address || "—"}
+                                    {"  "}
+                                    <strong>Під'їзд:</strong>{" "}
+                                    {order.entrance || "—"}
+                                  </div>
+                                  
                                 </div>
-                              </div>
-                            ))
+                              ))}
+                            </div>
                           )}
                         </div>
                       ) : null}

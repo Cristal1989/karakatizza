@@ -139,8 +139,8 @@ const instagramLink = contacts?.instagramLink || "";
         style={{
           position: "fixed",
           inset: 0,
-          width: "100vw",
-          height: "100dvh",
+          width: "100%",
+          height: "100%",
           background: "rgb(47, 49, 54)",
           backdropFilter: "blur(3px)",
           WebkitBackdropFilter: "blur(3px)",
@@ -155,8 +155,8 @@ const instagramLink = contacts?.instagramLink || "";
         style={{
           position: "fixed",
           inset: 0,
-          width: "100vw",
-          height: "100dvh",
+          width: "100%",
+          height: "100%",
           background: "#f7f5f0",
           zIndex: 9999,
           transform: isOpen ? "translateX(0)" : "translateX(100%)",
