@@ -8,29 +8,18 @@ const TELEGRAM_SUPPORT_URL = "https://t.me/karakatizza_sushi";
 const TELEGRAM_SUPPORT_USERNAME = "@karakatizza_sushi";
 
 let botInstance = null;
+const pendingPhones = new Map();
 
-function buildGuestKeyboard() {
-  return {
-    keyboard: [
-      [{ text: "Підтвердити номер", request_contact: true }],
-      [{ text: "Мій бонус" }],
-      [{ text: "Допомога" }],
-    ],
-    resize_keyboard: true,
-    persistent: true,
-  };
-}
+function normalizePhone(phone = "") {
+  const digits = String(phone).replace(/\D/g, "");
 
-function buildLinkedKeyboard() {
-  return {
-    keyboard: [
-      [{ text: "Мій бонус" }],
-      [{ text: "Акції" }],
-      [{ text: "Допомога" }],
-    ],
-    resize_keyboard: true,
-    persistent: true,
-  };
+  if (!digits) return "";
+
+  if (digits.startsWith("380")) return `+${digits}`;
+  if (digits.startsWith("80")) return `+3${digits}`;
+  if (digits.startsWith("0")) return `+38${digits}`;
+
+  return phone.startsWith("+") ? phone : `+${digits}`;
 }
 
 function buildMainKeyboard(isLinked = false) {
@@ -69,6 +58,20 @@ async function getCustomerByTelegramUserId(telegramUserId) {
 
   const data = await response.json();
   return data?.customer || null;
+}
+
+async function tryLinkTelegramByPhone({
+  phone,
+  telegramUserId,
+  telegramUsername = "",
+  telegramFirstName = "",
+}) {
+  return await postJson(`${API_BASE_URL}/api/crm/telegram/link`, {
+    phone,
+    telegramUserId,
+    telegramUsername,
+    telegramFirstName,
+  });
 }
 
 async function postJson(url, body) {
@@ -219,17 +222,46 @@ async function handlePromotions(bot, msg) {
 async function handleMyBonus(bot, msg) {
   const chatId = msg.chat.id;
   const telegramUserId = msg.from?.id ? String(msg.from.id) : "";
+  const telegramUsername = msg.from?.username || "";
+  const telegramFirstName = msg.from?.first_name || "";
 
   try {
-    const customer = await getCustomerByTelegramUserId(telegramUserId);
-    const isLinked = Boolean(customer?.telegram_user_id);
+    let customer = await getCustomerByTelegramUserId(telegramUserId);
+    let isLinked = Boolean(customer?.telegram_user_id);
+
+    if (!customer) {
+      const pendingPhone = pendingPhones.get(telegramUserId);
+
+      if (pendingPhone) {
+        try {
+          const linkResult = await tryLinkTelegramByPhone({
+            phone: pendingPhone,
+            telegramUserId,
+            telegramUsername,
+            telegramFirstName,
+          });
+
+          if (linkResult?.success && linkResult?.customer) {
+            customer = linkResult.customer;
+            isLinked = Boolean(customer?.telegram_user_id);
+            pendingPhones.delete(telegramUserId);
+          }
+        } catch (linkError) {
+          if (linkError?.message !== "Клієнта з таким номером не знайдено") {
+            console.error("TELEGRAM RE-LINK FROM PENDING PHONE ERROR:", linkError);
+          }
+        }
+      }
+    }
 
     if (!customer) {
       await bot.sendMessage(
         chatId,
         `Я ще не бачу прив'язаний номер телефону 🙁
 
-Натисни "Підтвердити номер", щоб я зміг знайти твій профіль і перевірити бонус.`,
+Натисни "Підтвердити номер", щоб я зміг знайти твій профіль і перевірити бонус.
+
+Якщо ти вже підтверджував номер, але оформив перше замовлення тільки після цього — просто натисни "Підтвердити номер" ще раз.`,
         {
           reply_markup: buildMainKeyboard(false),
         }
@@ -238,11 +270,7 @@ async function handleMyBonus(bot, msg) {
     }
 
     const bonusSettings = await getJson(`${API_BASE_URL}/gift-roll/settings`);
-    const activeGiftResponse = await getJson(
-      `${API_BASE_URL}/api/crm/telegram-gifts/active/${encodeURIComponent(
-        customer.phone
-      )}`
-    );
+    const activeGiftResponse = await getJson(`${API_BASE_URL}/api/crm/telegram-gifts/active/${encodeURIComponent(customer.phone)}`);
 
     const activeGift = activeGiftResponse?.gift || null;
 
@@ -316,8 +344,7 @@ ${customText || "Для тебе діє спеціальна пропозиці�
     let usedGift = null;
 
     try {
-      const usedGiftResponse = await getJson(
-        `${API_BASE_URL}/api/crm/telegram-gifts/history/${encodeURIComponent(
+      const usedGiftResponse = await getJson(`${API_BASE_URL}/api/crm/telegram-gifts/history/${encodeURIComponent(
           customer.phone
         )}`
       );
@@ -430,7 +457,7 @@ async function handleContact(bot, msg) {
       chatId,
       'Не вдалося отримати номер телефону. Спробуй ще раз через кнопку "Підтвердити номер".',
       {
-        reply_markup: buildMainKeyboard(),
+        reply_markup: buildMainKeyboard(false),
       }
     );
     return;
@@ -441,15 +468,18 @@ async function handleContact(bot, msg) {
       chatId,
       "Будь ласка, надішли саме свій номер через кнопку Telegram, а не чужий контакт.",
       {
-        reply_markup: buildMainKeyboard(),
+        reply_markup: buildMainKeyboard(false),
       }
     );
     return;
   }
 
+  const normalizedPhone = normalizePhone(contact.phone_number);
+  pendingPhones.set(telegramUserId, normalizedPhone);
+
   try {
-    const linkResult = await postJson(`${API_BASE_URL}/api/crm/telegram/link`, {
-      phone: contact.phone_number,
+    const linkResult = await tryLinkTelegramByPhone({
+      phone: normalizedPhone,
       telegramUserId,
       telegramUsername,
       telegramFirstName,
@@ -460,13 +490,14 @@ async function handleContact(bot, msg) {
         chatId,
         "Не вдалося прив'язати Telegram до клієнта. Спробуй пізніше.",
         {
-          reply_markup: buildMainKeyboard(),
+          reply_markup: buildMainKeyboard(false),
         }
       );
       return;
     }
 
     const customer = linkResult.customer;
+    pendingPhones.delete(telegramUserId);
 
     let issueResult = null;
     try {
@@ -509,9 +540,9 @@ Telegram успішно прив'язаний до профілю.
       await bot.sendMessage(
         chatId,
         `Номер підтверджено ✅
-    
-    Telegram уже прив'язаний до твого профілю.
-    🎁 Бонус за підписку вже був нарахований раніше. Повторно ця акція не надається.`,
+
+Telegram уже прив'язаний до твого профілю.
+🎁 Бонус за підписку вже був нарахований раніше. Повторно ця акція не надається.`,
         {
           reply_markup: buildMainKeyboard(true),
         }
@@ -526,7 +557,7 @@ Telegram успішно прив'язаний до профілю.
 Telegram прив'язаний до твого профілю.
 Якщо бонус зараз не відобразився, ми перевіримо це вручну.`,
       {
-        reply_markup: buildMainKeyboard(),
+        reply_markup: buildMainKeyboard(true),
       }
     );
   } catch (error) {
@@ -534,12 +565,14 @@ Telegram прив'язаний до твого профілю.
 
     const messageText =
       error?.message === "Клієнта з таким номером не знайдено"
-        ? `Я не знайшов замовлень з цим номером у базі 😕
-Перевір, чи саме цей номер ти вказував при оформленні замовлення.`
+        ? `Я поки не знайшов замовлень з цим номером у базі 😕
+Перевір, чи саме цей номер ти вказував при оформленні замовлення.
+
+Якщо ти оформиш перше замовлення пізніше — просто натисни "Мій бонус" або ще раз "Підтвердити номер", і я спробую знайти тебе знову.`
         : "Сталася помилка під час підтвердження номера. Спробуй трохи пізніше.";
 
     await bot.sendMessage(chatId, messageText, {
-      reply_markup: buildMainKeyboard(),
+      reply_markup: buildMainKeyboard(false),
     });
   }
 }
