@@ -1,3 +1,5 @@
+import { getAdminHeaders } from "./auth";
+
 export const API_BASE_URL =
   import.meta.env.VITE_API_URL || "https://karakatizza-production.up.railway.app";
 
@@ -26,6 +28,7 @@ export async function getProducts(isAdmin = false) {
 
   const res = await fetch(url, {
     cache: "no-store",
+    headers: isAdmin ? getAdminHeaders() : {},
   });
 
   const text = await res.text();
@@ -47,6 +50,7 @@ export async function getProducts(isAdmin = false) {
 export async function createProduct(formData) {
   const res = await fetch(`${API_BASE_URL}/products`, {
     method: "POST",
+    headers: getAdminHeaders(),
     body: formData,
   });
 
@@ -69,6 +73,7 @@ export async function createProduct(formData) {
 export async function updateProduct(id, formData) {
   const res = await fetch(`${API_BASE_URL}/products/${id}`, {
     method: "PUT",
+    headers: getAdminHeaders(),
     body: formData,
   });
 
@@ -91,6 +96,7 @@ export async function updateProduct(id, formData) {
 export async function deleteProduct(id) {
   const res = await fetch(`${API_BASE_URL}/products/${id}`, {
     method: "DELETE",
+    headers: getAdminHeaders(),
   });
 
   const text = await res.text();

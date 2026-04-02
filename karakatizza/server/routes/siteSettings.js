@@ -1,5 +1,6 @@
 import express from "express";
 import { pool } from "../db.js";
+import requireAdminAuth from "../middleware/requireAdminAuth.js";
 
 const router = express.Router();
 
@@ -132,7 +133,7 @@ telegram_promo_text
   }
 });
 
-router.put("/working-hours", async (req, res) => {
+router.put("/working-hours", requireAdminAuth, async (req, res) => {
   try {
     const { openTime, closeTime, closedToday, allowOrdersAfterHours } =
       req.body;
@@ -185,7 +186,7 @@ router.put("/working-hours", async (req, res) => {
   }
 });
 
-router.put("/contacts", async (req, res) => {
+router.put("/contacts", requireAdminAuth, async (req, res) => {
   try {
     const {
       phonePrimary,
@@ -251,7 +252,7 @@ router.put("/contacts", async (req, res) => {
   }
 });
 
-router.put("/delivery", async (req, res) => {
+router.put("/delivery", requireAdminAuth, async (req, res) => {
   try {
     const {
       deliveryEnabled,
@@ -351,7 +352,7 @@ router.put("/delivery", async (req, res) => {
   }
 });
 
-router.put("/payment", async (req, res) => {
+router.put("/payment", requireAdminAuth, async (req, res) => {
   try {
     const {
       cardOnlineEnabled,
@@ -412,7 +413,7 @@ router.put("/payment", async (req, res) => {
   }
 });
 
-router.put("/texts", async (req, res) => {
+router.put("/texts", requireAdminAuth, async (req, res) => {
   try {
     const {
       pickupSelectedText,
@@ -478,7 +479,7 @@ router.put("/texts", async (req, res) => {
   }
 });
 
-router.put("/popup", async (req, res) => {
+router.put("/popup", requireAdminAuth, async (req, res) => {
   try {
     const { showOutsideWorkingHours, outsideHoursText, closedTodayText } =
       req.body;
@@ -521,7 +522,7 @@ router.put("/popup", async (req, res) => {
   }
 });
 
-router.put("/telegram-templates", async (req, res) => {
+router.put("/telegram-templates", requireAdminAuth, async (req, res) => {
   try {
     const { comeBack30, weekPromo, vip, newMenu, inactive60 } = req.body || {};
 
@@ -574,7 +575,7 @@ router.put("/telegram-templates", async (req, res) => {
   }
 });
 
-router.put("/telegram-promo", async (req, res) => {
+router.put("/telegram-promo", requireAdminAuth, async (req, res) => {
   try {
     const {
       title = "🔥 Актуальні акції Karakatizza",

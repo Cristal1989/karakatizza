@@ -1,10 +1,11 @@
 import express from "express";
+import requireAdminAuth from "../middleware/requireAdminAuth.js";
 
 export default function promotionsRoutes(pool) {
   const router = express.Router();
 
   // Получить настройки акции
-  router.get("/settings", async (req, res) => {
+  router.get("/settings", requireAdminAuth, async (req, res) => {
     try {
       const result = await pool.query(`
         SELECT 
@@ -25,7 +26,7 @@ export default function promotionsRoutes(pool) {
   });
 
   // Обновить настройки акции
-  router.put("/settings", async (req, res) => {
+  router.put("/settings", requireAdminAuth, async (req, res) => {
     try {
       const { discountPercent, triggerSum, isActive } = req.body;
 

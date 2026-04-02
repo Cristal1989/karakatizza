@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "./productsApi";
+import { getAdminHeaders } from "./auth";
 
 export async function getCustomers(params = {}) {
   const searchParams = new URLSearchParams();
@@ -32,6 +33,7 @@ export async function getCustomers(params = {}) {
 
   const response = await fetch(url, {
     cache: "no-store",
+    headers: getAdminHeaders(),
   });
 
   const data = await response.json();
@@ -48,6 +50,7 @@ export async function getCustomerOrders(customerId) {
     `${API_BASE_URL}/api/crm/customers/${customerId}/orders`,
     {
       cache: "no-store",
+      headers: getAdminHeaders(),
     }
   );
 
@@ -66,9 +69,9 @@ export async function sendTelegramMessageToOne({
 }) {
   const response = await fetch(`${API_BASE_URL}/api/crm/telegram/send-one`, {
     method: "POST",
-    headers: {
+    headers: getAdminHeaders({
       "Content-Type": "application/json",
-    },
+    }),
     body: JSON.stringify({
       telegramUserId,
       text,
@@ -94,9 +97,9 @@ export async function sendTelegramBroadcast({
 }) {
   const response = await fetch(`${API_BASE_URL}/api/crm/telegram/send-broadcast`, {
     method: "POST",
-    headers: {
+    headers: getAdminHeaders({
       "Content-Type": "application/json",
-    },
+    }),
     body: JSON.stringify({
       text,
       search,
@@ -125,9 +128,9 @@ export async function getTelegramBroadcastCount({
 }) {
   const response = await fetch(`${API_BASE_URL}/api/crm/telegram/broadcast-count`, {
     method: "POST",
-    headers: {
+    headers: getAdminHeaders({
       "Content-Type": "application/json",
-    },
+    }),
     body: JSON.stringify({
       search,
       orderType,
@@ -148,7 +151,10 @@ export async function getTelegramBroadcastCount({
 
 export async function getTelegramBroadcastHistory(limit = 20) {
   const response = await fetch(
-    `${API_BASE_URL}/api/crm/telegram/broadcast-history?limit=${limit}`
+    `${API_BASE_URL}/api/crm/telegram/broadcast-history?limit=${limit}`,
+    {
+      headers: getAdminHeaders(),
+    }
   );
 
   const data = await response.json();
@@ -163,9 +169,9 @@ export async function getTelegramBroadcastHistory(limit = 20) {
 export async function issueTestTelegramBonus(payload) {
   const res = await fetch(`${API_BASE_URL}/api/crm/telegram-gifts/issue-test`, {
     method: "POST",
-    headers: {
+    headers: getAdminHeaders({
       "Content-Type": "application/json",
-    },
+    }),
     body: JSON.stringify(payload),
   });
 
@@ -188,9 +194,9 @@ export async function issueTestTelegramBonus(payload) {
 export async function useActiveTelegramBonus(payload) {
   const res = await fetch(`${API_BASE_URL}/api/crm/telegram-gifts/use-active`, {
     method: "POST",
-    headers: {
+    headers: getAdminHeaders({
       "Content-Type": "application/json",
-    },
+    }),
     body: JSON.stringify(payload),
   });
 
@@ -237,7 +243,12 @@ export async function getTelegramCheckoutStatus(phone) {
 }
 
 export async function getCustomerBonusHistory(customerId) {
-  const res = await fetch(`${API_BASE_URL}/api/crm/customers/${customerId}/bonus-history`);
+  const res = await fetch(
+    `${API_BASE_URL}/api/crm/customers/${customerId}/bonus-history`,
+    {
+      headers: getAdminHeaders(),
+    }
+  );
   const text = await res.text();
 
   let data;

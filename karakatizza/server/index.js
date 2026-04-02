@@ -22,6 +22,8 @@ import {
 } from "./services/crmService.js";
 import crmRoutes from "./routes/crmRoutes.js";
 import { startTelegramBot } from "./bot.js";
+import adminAuthRoutes from "./routes/adminAuth.js";
+import requireAdminAuth from "./middleware/requireAdminAuth.js";
 
 dotenv.config();
 
@@ -94,7 +96,7 @@ app.use("/promotions", promotionsRoutes(pool));
 app.use("/gift-roll", giftRollRoutes(pool));
 app.use("/api/crm", crmRoutes);
 app.use("/site-settings", siteSettingsRoutes);
-``;
+app.use("/admin-auth", adminAuthRoutes);
 
 const storage = new CloudinaryStorage({
   cloudinary,
@@ -230,7 +232,7 @@ app.get("/banners", async (req, res) => {
   }
 });
 
-app.post("/products", upload.single("image"), async (req, res) => {
+app.post("/products", requireAdminAuth, upload.single("image"), async (req, res) => {
   try {
     const {
       name,
@@ -352,7 +354,7 @@ VALUES (
 });
 
 app.post(
-  "/banners",
+  "/banners", requireAdminAuth,
   upload.fields([
     { name: "image", maxCount: 1 },
     { name: "mobileImage", maxCount: 1 },
@@ -413,7 +415,7 @@ app.post(
   }
 );
 
-app.put("/products/:id", (req, res) => {
+app.put("/products/:id", requireAdminAuth, (req, res) => {
   upload.single("image")(req, res, async (uploadError) => {
     if (uploadError) {
       console.error("UPLOAD PRODUCT ERROR:", uploadError);
@@ -582,7 +584,7 @@ app.put("/products/:id", (req, res) => {
 });
 
 app.put(
-  "/banners/:id",
+  "/banners/:id", requireAdminAuth,
   upload.fields([
     { name: "image", maxCount: 1 },
     { name: "mobileImage", maxCount: 1 },
@@ -699,7 +701,7 @@ app.put(
   }
 );
 
-app.delete("/products/:id", async (req, res) => {
+app.delete("/products/:id",  requireAdminAuth, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -749,7 +751,7 @@ app.delete("/products/:id", async (req, res) => {
   }
 });
 
-app.delete("/banners/:id", async (req, res) => {
+app.delete("/banners/:id", requireAdminAuth, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -825,7 +827,7 @@ app.post("/banners/:id/click", async (req, res) => {
   }
 });
 
-app.put("/banners/reorder", async (req, res) => {
+app.put("/banners/reorder", requireAdminAuth, async (req, res) => {
   try {
     const { items } = req.body;
 
@@ -1132,14 +1134,12 @@ app.use((err, req, res, next) => {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// путь к фронту (ВАЖНО проверить!)
 const clientDistPath = path.join(__dirname, "../client/dist");
 
 // раздача статики
 app.use(express.static(clientDistPath));
 
-// fallback — самое важное
+// fallback
 app.get("*", (req, res) => {
   res.sendFile(path.join(clientDistPath, "index.html"));
 });

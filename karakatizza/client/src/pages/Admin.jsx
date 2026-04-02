@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Navigate } from "react-router-dom";
 import {
   getSiteSettings,
   updateWorkingHours,
@@ -59,9 +60,16 @@ const categoryOptions = [
   { value: "drinks", label: "Напої" },
   { value: "extras", label: "Додатково" },
 ];
-const API_BASE = import.meta.env.VITE_API_URL || "https://karakatizza-production.up.railway.app";
+const API_BASE =
+  import.meta.env.VITE_API_URL ||
+  "https://karakatizza-production.up.railway.app";
 
 export default function Admin() {
+  const token = localStorage.getItem("adminToken");
+
+  if (!token) {
+    return <Navigate to="/admin-login" replace />;
+  }
   const [activeSection, setActiveSection] = useState("products");
 
   const [form, setForm] = useState({
@@ -321,6 +329,11 @@ export default function Admin() {
     lineHeight: 1.5,
   };
 
+  function handleLogout() {
+    localStorage.removeItem("adminToken");
+    window.location.href = "/admin-login";
+  }
+
   useEffect(() => {
     loadProducts();
     loadBanners();
@@ -470,23 +483,6 @@ export default function Admin() {
 
     loadWorkingHoursSettings();
   }, []);
-
-  async function saveSettings() {
-    try {
-      const res = await fetch(`${API_BASE}/site-settings`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(settings),
-      });
-
-      if (!res.ok) throw new Error();
-
-      alert("Збережено");
-    } catch (e) {
-      console.error("SAVE SETTINGS ERROR", e);
-      alert("Помилка збереження");
-    }
-  }
 
   async function loadProducts() {
     try {
@@ -1620,6 +1616,7 @@ export default function Admin() {
           alignItems: "start",
         }}
       >
+        
         <aside
           style={{
             background: "#111827",
@@ -1700,6 +1697,19 @@ export default function Admin() {
               Товарів у меню: <b style={{ color: "#fff" }}>{products.length}</b>
             </div>
           </div>
+          <button
+          onClick={handleLogout}
+          style={{
+            border: "none",
+            borderRadius: "10px",
+            background: "#eee",
+            padding: "10px 14px",
+            cursor: "pointer",
+            fontWeight: 700,
+          }}
+        >
+          Вийти
+        </button>
         </aside>
 
         <main style={{ display: "grid", gap: "24px" }}>

@@ -1,10 +1,11 @@
 import express from "express";
+import requireAdminAuth from "../middleware/requireAdminAuth.js";
 
 export default function giftRollRoutes(pool) {
   const router = express.Router();
 
   // Получить настройки welcome-бонуса / подарочного ролла
-  router.get("/settings", async (req, res) => {
+  router.get("/settings", requireAdminAuth, async (req, res) => {
     try {
       const result = await pool.query(`
         SELECT
@@ -72,7 +73,7 @@ export default function giftRollRoutes(pool) {
   });
 
   // Обновить настройки
-  router.put("/settings", async (req, res) => {
+  router.put("/settings", requireAdminAuth, async (req, res) => {
     try {
       const {
         triggerSum,

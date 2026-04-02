@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "./productsApi";
+import { getAdminHeaders } from "./auth";
 
 const BANNERS_CACHE_KEY = "banners_cache_v1";
 const BANNERS_CACHE_TTL = 1000 * 60 * 5;
@@ -39,6 +40,7 @@ export async function getBanners() {
 export async function createBanner(formData) {
   const res = await fetch(`${API_BASE_URL}/banners`, {
     method: "POST",
+    headers: getAdminHeaders(),
     body: formData,
   });
 
@@ -56,6 +58,7 @@ export async function createBanner(formData) {
 export async function updateBanner(id, formData) {
   const res = await fetch(`${API_BASE_URL}/banners/${id}`, {
     method: "PUT",
+    headers: getAdminHeaders(),
     body: formData,
   });
 
@@ -73,6 +76,7 @@ export async function updateBanner(id, formData) {
 export async function deleteBanner(id) {
   const res = await fetch(`${API_BASE_URL}/banners/${id}`, {
     method: "DELETE",
+    headers: getAdminHeaders(),
   });
 
   const data = await res.json();
@@ -103,9 +107,9 @@ export async function trackBannerClick(id) {
 export async function reorderBanners(items) {
   const res = await fetch(`${API_BASE_URL}/banners/reorder`, {
     method: "PUT",
-    headers: {
+    headers: getAdminHeaders({
       "Content-Type": "application/json",
-    },
+    }),
     body: JSON.stringify({ items }),
   });
 

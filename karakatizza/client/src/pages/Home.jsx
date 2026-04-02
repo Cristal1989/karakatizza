@@ -80,8 +80,8 @@ export default function Home() {
     async function loadSettings() {
       try {
         const res = await fetch(
-          (import.meta.env.VITE_API_URL || "https://karakatizza-production.up.railway.app") +
-            "/site-settings"
+          (import.meta.env.VITE_API_URL ||
+            "https://karakatizza-production.up.railway.app") + "/site-settings"
         );
 
         if (!res.ok) return;
@@ -214,16 +214,16 @@ export default function Home() {
 
   function isOutsideWorkingHours(openTime, closeTime) {
     if (!openTime || !closeTime) return false;
-  
+
     const now = new Date();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
-  
+
     const [openHours, openMinutes] = openTime.split(":").map(Number);
     const [closeHours, closeMinutes] = closeTime.split(":").map(Number);
-  
+
     const openTotal = openHours * 60 + openMinutes;
     const closeTotal = closeHours * 60 + closeMinutes;
-  
+
     return currentMinutes < openTotal || currentMinutes >= closeTotal;
   }
 
@@ -236,16 +236,16 @@ export default function Home() {
         console.error("LOAD SITE SETTINGS ERROR:", error);
       }
     };
-  
+
     loadSiteSettings();
   }, []);
 
   useEffect(() => {
     if (!siteSettings) return;
-  
+
     const workingHours = siteSettings.workingHours;
     const popup = siteSettings.popup;
-  
+
     if (workingHours?.closedToday) {
       setPopupText(
         popup?.closedTodayText ||
@@ -254,12 +254,12 @@ export default function Home() {
       setShowPopup(true);
       return;
     }
-  
+
     const outsideHours = isOutsideWorkingHours(
       workingHours?.openTime,
       workingHours?.closeTime
     );
-  
+
     if (outsideHours && popup?.showOutsideWorkingHours) {
       setPopupText(
         popup?.outsideHoursText ||
@@ -268,17 +268,16 @@ export default function Home() {
       setShowPopup(true);
       return;
     }
-  
+
     setShowPopup(false);
   }, [siteSettings]);
 
   return (
-    
     <div
       style={{
         minHeight: "100vh",
         background: "#fafafa",
-        overflowX: "hidden",
+        // overflowX: "hidden",
       }}
     >
       <Seo
@@ -299,9 +298,7 @@ export default function Home() {
           boxSizing: "border-box",
         }}
       >
-        <h1 style={{ display: "none" }}>
-  Доставка суші та ролів у Миколаєві
-</h1>
+        <h1 style={{ display: "none" }}>Доставка суші та ролів у Миколаєві</h1>
         <div
           id="menu"
           style={{

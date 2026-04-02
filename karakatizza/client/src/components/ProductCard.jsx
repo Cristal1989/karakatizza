@@ -17,8 +17,8 @@ function ProductCard({ product }) {
     category === "snacks" ||
     category === "extras" ||
     category === "sauces"
-      ? "16px"
-      : "8px";
+      ? "10px"
+      : "2px";
 
   const imageSrc = getImageUrl(product.image, {
     width: 900,
@@ -42,9 +42,9 @@ function ProductCard({ product }) {
       data-product-id={product.id}
       style={{
         background: "#fff",
-        borderRadius: "18px",
+        borderRadius: "16px",
         overflow: "hidden",
-        border: "1px solid #eee",
+        border: "1px solid #ececec",
         display: "flex",
         flexDirection: "column",
         height: "100%",
@@ -54,7 +54,7 @@ function ProductCard({ product }) {
         style={{
           position: "relative",
           width: "100%",
-          height: isMobile ? "180px" : "210px",
+          height: isMobile ? "150px" : "170px",
           overflow: "hidden",
           background: "#fff",
           borderBottom: "1px solid #f3f3f3",
@@ -68,10 +68,10 @@ function ProductCard({ product }) {
           <div
             style={{
               position: "absolute",
-              top: "10px",
-              left: "10px",
+              top: "8px",
+              left: "8px",
               display: "flex",
-              gap: "6px",
+              gap: "5px",
               zIndex: 3,
               flexWrap: "wrap",
             }}
@@ -81,9 +81,9 @@ function ProductCard({ product }) {
                 style={{
                   background: "#f08a4b",
                   color: "#fff",
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  padding: "4px 8px",
+                  fontSize: "10px",
+                  fontWeight: 800,
+                  padding: "4px 7px",
                   borderRadius: "999px",
                   lineHeight: 1,
                 }}
@@ -97,9 +97,9 @@ function ProductCard({ product }) {
                 style={{
                   background: "#1b8904",
                   color: "#fff",
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  padding: "4px 8px",
+                  fontSize: "10px",
+                  fontWeight: 800,
+                  padding: "4px 7px",
                   borderRadius: "999px",
                   lineHeight: 1,
                 }}
@@ -113,9 +113,9 @@ function ProductCard({ product }) {
                 style={{
                   background: "#e85d3f",
                   color: "#fff",
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  padding: "4px 8px",
+                  fontSize: "10px",
+                  fontWeight: 800,
+                  padding: "4px 7px",
                   borderRadius: "999px",
                   lineHeight: 1,
                 }}
@@ -129,9 +129,9 @@ function ProductCard({ product }) {
                 style={{
                   background: "#2563eb",
                   color: "#fff",
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  padding: "4px 8px",
+                  fontSize: "10px",
+                  fontWeight: 800,
+                  padding: "4px 7px",
                   borderRadius: "999px",
                   lineHeight: 1,
                 }}
@@ -162,9 +162,10 @@ function ProductCard({ product }) {
 
       <article
         style={{
-          padding: "8px 14px 8px",
+          padding: "10px 12px 12px",
           display: "flex",
           flexDirection: "column",
+          flex: 1,
         }}
       >
         <div
@@ -173,16 +174,21 @@ function ProductCard({ product }) {
             alignItems: "flex-start",
             justifyContent: "space-between",
             gap: "10px",
-            marginBottom: "6px",
+            marginBottom: "4px",
           }}
         >
           <h3
             style={{
-              fontSize: isMobile ? "20px" : "18px",
+              fontSize: isMobile ? "18px" : "18px",
               fontWeight: 800,
               color: "#222",
-              lineHeight: 1.2,
-              margin: "2px 0 0 0",
+              lineHeight: 1.15,
+              margin: 0,
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+              maxHeight: "42px",
             }}
           >
             {product.name}
@@ -190,11 +196,12 @@ function ProductCard({ product }) {
 
           <div
             style={{
-              fontSize: "13px",
-              color: "#8c8c8c",
+              fontSize: "12px",
+              color: "#9a9a9a",
               whiteSpace: "nowrap",
               flexShrink: 0,
               marginTop: "2px",
+              marginLeft: "8px",
             }}
           >
             {product.weight || ""}
@@ -203,12 +210,15 @@ function ProductCard({ product }) {
 
         <p
           style={{
-            fontSize: "15px",
+            fontSize: "14px",
             color: "#666",
-            lineHeight: 1.35,
-            height: "42px",
-            overflow: "hidden",
+            lineHeight: 1.3,
             margin: 0,
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+            minHeight: "38px",
           }}
         >
           {product.description || ""}
@@ -219,30 +229,29 @@ function ProductCard({ product }) {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            gap: "12px",
-            minHeight: "44px",
-            marginTop: "6px",
+            gap: "10px",
+            minHeight: "42px",
+            marginTop: "8px",
           }}
         >
           <div
             style={{
               display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              flexWrap: "nowrap",
-              minHeight: "28px",
+              flexDirection: "column",
+              alignItems: "flex-start",
+              justifyContent: "center",
+              minHeight: "44px",
               flex: 1,
               minWidth: 0,
             }}
           >
             <div
               style={{
-                fontSize: isMobile ? "20px" : "20px",
-                fontWeight: 800,
+                fontSize: isMobile ? "18px" : "19px",
+                fontWeight: 900,
                 color: showOldPrice ? "#d85a43" : "#111",
-                lineHeight: 1,
+                lineHeight: 1.05,
                 whiteSpace: "nowrap",
-                flexShrink: 0,
               }}
             >
               {product.price} грн
@@ -250,15 +259,16 @@ function ProductCard({ product }) {
 
             {showOldPrice && (
               <div
-                style={{
-                  fontSize: isMobile ? "13px" : "14px",
-                  fontWeight: 600,
-                  color: "#9b9b9b",
-                  textDecoration: "line-through",
-                  lineHeight: 1,
-                  whiteSpace: "nowrap",
-                  flexShrink: 0,
-                }}
+              style={{
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "#000",
+                textDecoration: "line-through",
+                lineHeight: 1,
+                marginTop: "2px",
+                opacity: 0.45,
+                whiteSpace: "nowrap",
+              }}
               >
                 {product.oldPrice} грн
               </div>
@@ -267,9 +277,9 @@ function ProductCard({ product }) {
 
           <div
             style={{
-              width: isMobile ? "118px" : "132px",
-              minWidth: isMobile ? "118px" : "132px",
-              height: "40px",
+              width: isMobile ? "106px" : "116px",
+              minWidth: isMobile ? "106px" : "116px",
+              height: "38px",
               display: "flex",
               justifyContent: "flex-end",
               alignItems: "center",
@@ -279,23 +289,24 @@ function ProductCard({ product }) {
             {quantityInCart > 0 ? (
               <div
                 style={{
-                  height: "40px",
+                  width: "100%",
+                  height: "38px",
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "space-between",
                   background: "#f3f4f6",
-                  borderRadius: "14px",
+                  borderRadius: "10px",
                   overflow: "hidden",
                 }}
               >
                 <button
                   onClick={() => decreaseCartItem(product.id)}
                   style={{
-                    width: "40px",
-                    height: "40px",
+                    width: "38px",
+                    height: "38px",
                     border: "none",
                     background: "transparent",
-                    fontSize: "22px",
+                    fontSize: "20px",
                     fontWeight: 700,
                     cursor: "pointer",
                   }}
@@ -305,10 +316,10 @@ function ProductCard({ product }) {
 
                 <div
                   style={{
-                    minWidth: "34px",
+                    minWidth: "30px",
                     textAlign: "center",
                     fontWeight: 800,
-                    fontSize: "16px",
+                    fontSize: "15px",
                   }}
                 >
                   {quantityInCart}
@@ -317,12 +328,12 @@ function ProductCard({ product }) {
                 <button
                   onClick={handleAddToCart}
                   style={{
-                    width: "40px",
-                    height: "40px",
+                    width: "38px",
+                    height: "38px",
                     border: "none",
-                    background: "#e85d3f",
+                    background: "#d96f3d",
                     color: "#fff",
-                    fontSize: "22px",
+                    fontSize: "20px",
                     fontWeight: 700,
                     cursor: "pointer",
                   }}
@@ -334,15 +345,15 @@ function ProductCard({ product }) {
               <button
                 onClick={handleAddToCart}
                 style={{
-                  // width: "100%",
-                  height: "40px",
+                  width: "100%",
+                  height: "38px",
                   border: "none",
-                  background: "#e85d3f",
+                  background: "#d96f3d",
                   color: "#fff",
-                  padding: isMobile ? "10px 30px" : "12px 26px",
-                  borderRadius: "12px",
-                  fontWeight: 700,
-                  fontSize: isMobile ? "13px" : "14px",
+                  padding: 0,
+                  borderRadius: "10px",
+                  fontWeight: 800,
+                  fontSize: "14px",
                   cursor: "pointer",
                   whiteSpace: "nowrap",
                   flexShrink: 0,

@@ -13,10 +13,11 @@ import {
 } from "../services/crmService.js";
 import { sendTelegramTextToUser, sendTelegramTextToMany } from "../bot.js";
 import { normalizeUaPhone } from "../utils/phone.js";
+import requireAdminAuth from "../middleware/requireAdminAuth.js";
 
 const router = express.Router();
 
-router.get("/customers", async (req, res) => {
+router.get("/customers",requireAdminAuth, async (req, res) => {
   try {
     const {
       search = "",
@@ -126,7 +127,7 @@ router.get("/customers", async (req, res) => {
   }
 });
 
-router.get("/customers/:id/orders", async (req, res) => {
+router.get("/customers/:id/orders",requireAdminAuth, async (req, res) => {
   try {
     const customerId = Number(req.params.id);
 
@@ -221,7 +222,7 @@ router.get("/customers/:id/orders", async (req, res) => {
   }
 });
 
-router.get("/telegram-gifts/active/:phone", async (req, res) => {
+router.get("/telegram-gifts/active/:phone",requireAdminAuth, async (req, res) => {
   try {
     const { phone } = req.params;
 
@@ -241,7 +242,7 @@ router.get("/telegram-gifts/active/:phone", async (req, res) => {
   }
 });
 
-router.post("/telegram-gifts/issue", async (req, res) => {
+router.post("/telegram-gifts/issue",requireAdminAuth, async (req, res) => {
   try {
     const {
       customerId = null,
@@ -282,7 +283,7 @@ router.post("/telegram-gifts/issue", async (req, res) => {
   }
 });
 
-router.post("/telegram-gifts/use", async (req, res) => {
+router.post("/telegram-gifts/use",requireAdminAuth, async (req, res) => {
   try {
     const { giftId } = req.body || {};
 
@@ -316,7 +317,7 @@ router.post("/telegram-gifts/use", async (req, res) => {
   }
 });
 
-router.post("/telegram/link", async (req, res) => {
+router.post("/telegram/link", requireAdminAuth, async (req, res) => {
   try {
     const {
       phone,
@@ -371,7 +372,7 @@ router.post("/telegram/link", async (req, res) => {
   }
 });
 
-router.get("/telegram/bonus/:telegramUserId", async (req, res) => {
+router.get("/telegram/bonus/:telegramUserId", requireAdminAuth, async (req, res) => {
   try {
     const { telegramUserId } = req.params;
 
@@ -407,7 +408,7 @@ router.get("/telegram/bonus/:telegramUserId", async (req, res) => {
   }
 });
 
-router.post("/telegram/send-one", async (req, res) => {
+router.post("/telegram/send-one", requireAdminAuth, async (req, res) => {
   try {
     const { telegramUserId, text } = req.body || {};
 
@@ -461,7 +462,7 @@ router.post("/telegram/send-one", async (req, res) => {
   }
 });
 
-router.post("/telegram/send-broadcast", async (req, res) => {
+router.post("/telegram/send-broadcast", requireAdminAuth, async (req, res) => {
   try {
     const {
       text,
@@ -528,7 +529,7 @@ router.post("/telegram/send-broadcast", async (req, res) => {
   }
 });
 
-router.post("/telegram/broadcast-count", async (req, res) => {
+router.post("/telegram/broadcast-count", requireAdminAuth, async (req, res) => {
   try {
     const {
       search = "",
@@ -561,7 +562,7 @@ router.post("/telegram/broadcast-count", async (req, res) => {
   }
 });
 
-router.get("/telegram/broadcast-history", async (req, res) => {
+router.get("/telegram/broadcast-history", requireAdminAuth, async (req, res) => {
   try {
     const limit = Number(req.query.limit || 20);
 
@@ -582,7 +583,7 @@ router.get("/telegram/broadcast-history", async (req, res) => {
   }
 });
 
-router.get("/telegram/customer/:telegramUserId", async (req, res) => {
+router.get("/telegram/customer/:telegramUserId", requireAdminAuth, async (req, res) => {
   try {
     const { telegramUserId } = req.params;
 
@@ -627,7 +628,7 @@ router.get("/telegram/customer/:telegramUserId", async (req, res) => {
   }
 });
 
-router.post("/telegram-gifts/issue-test", async (req, res) => {
+router.post("/telegram-gifts/issue-test", requireAdminAuth, async (req, res) => {
   try {
     const {
       customerId = null,
@@ -755,7 +756,7 @@ router.post("/telegram-gifts/issue-test", async (req, res) => {
   }
 });
 
-router.post("/telegram-gifts/use-active", async (req, res) => {
+router.post("/telegram-gifts/use-active", requireAdminAuth, async (req, res) => {
   try {
     const { phone = "" } = req.body || {};
 
@@ -913,7 +914,7 @@ router.get("/telegram-checkout-status/:phone", async (req, res) => {
   }
 });
 
-router.get("/telegram-gifts/history/:phone", async (req, res) => {
+router.get("/telegram-gifts/history/:phone", requireAdminAuth, async (req, res) => {
   try {
     const rawPhone = req.params.phone || "";
     const phoneNormalized = normalizeUaPhone(rawPhone);
@@ -962,7 +963,7 @@ router.get("/telegram-gifts/history/:phone", async (req, res) => {
   }
 });
 
-router.get("/customers/:id/bonus-history", async (req, res) => {
+router.get("/customers/:id/bonus-history", requireAdminAuth, async (req, res) => {
   try {
     const customerId = Number(req.params.id);
 

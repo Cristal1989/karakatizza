@@ -12,6 +12,7 @@ import ReturnPolicyPage from "./pages/ReturnPolicyPage";
 import NotFound from "./pages/NotFound";
 import CategoryPage from "./pages/CategoryPage";
 import CustomersPage from "./pages/CustomersPage";
+import AdminLogin from "./pages/AdminLogin";
 
 export default function App() {
   return (
@@ -31,6 +32,7 @@ export default function App() {
       <Route path="/baked-rolls" element={<CategoryPage />} />
       <Route path="/drinks" element={<CategoryPage />} />
       <Route path="/admin/customers" element={<CustomersPage />} />
+      <Route path="/admin-login" element={<AdminLogin />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

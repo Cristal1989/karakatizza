@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -11,6 +17,7 @@ body {
   font-family: "Inter", system-ui, -apple-system, sans-serif;
   background: #fafafa;
   color: #171717;
+  overflow-x: hidden;
 }
 
 
@@ -24,6 +31,11 @@ h3 {
 button {
   font-family: "Inter", system-ui, sans-serif;
   font-weight: 600;
+}
+
+img {
+  max-width: 100%;
+  display: block;
 }
 
 .container {
