@@ -13,10 +13,10 @@ export default function MobileCartBar() {
       onClick={openCart}
       style={{
         position: "fixed",
-        bottom: "12px",
+        bottom: "0px",
         left: "12px",
         right: "12px",
-        width: "auto",
+        maxWidth: "100%",
         transform: "none",
         background: "#e56a45",
         color: "#fff",
@@ -26,7 +26,7 @@ export default function MobileCartBar() {
         alignItems: "center",
         justifyContent: "space-between",
         gap: "12px",
-        boxShadow: "0 12px 30px rgba(0,0,0,0.22)",
+        // boxShadow: "0 12px 30px rgba(0,0,0,0.22)",
         zIndex: 100,
         cursor: "pointer",
       }}
