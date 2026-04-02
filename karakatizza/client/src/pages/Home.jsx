@@ -278,6 +278,7 @@ export default function Home() {
       style={{
         minHeight: "100vh",
         background: "#fafafa",
+        overflowX: "hidden",
       }}
     >
       <Seo
