@@ -2,8 +2,9 @@ import TelegramBot from "node-telegram-bot-api";
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const API_BASE_URL =
-  process.env.TELEGRAM_CRM_API_URL || "http://localhost:5000";
-  const TELEGRAM_SUPPORT_URL = "https://t.me/karakatizza_sushi";
+  process.env.TELEGRAM_CRM_API_URL ||
+  "https://karakatizza-production.up.railway.app";
+const TELEGRAM_SUPPORT_URL = "https://t.me/karakatizza_sushi";
 const TELEGRAM_SUPPORT_USERNAME = "@karakatizza_sushi";
 
 let botInstance = null;
@@ -327,7 +328,10 @@ ${customText || "Для тебе діє спеціальна пропозиці�
 
       usedGift = giftsHistory.find((item) => item.status === "used") || null;
     } catch (historyError) {
-      console.log("TELEGRAM BONUS HISTORY SKIPPED:", historyError?.message || historyError);
+      console.log(
+        "TELEGRAM BONUS HISTORY SKIPPED:",
+        historyError?.message || historyError
+      );
     }
 
     if (usedGift) {

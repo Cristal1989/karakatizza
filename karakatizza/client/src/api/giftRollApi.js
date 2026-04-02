@@ -1,5 +1,5 @@
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000";
+  import.meta.env.VITE_API_URL || "https://karakatizza-production.up.railway.app";
 
 export async function getGiftRollSettings() {
   const res = await fetch(`${API_BASE_URL}/gift-roll/settings`);

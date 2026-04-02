@@ -33,7 +33,6 @@ const phonePrimary = contacts?.phonePrimary || "";
         position: "relative",
         color: "#fff",
         borderBottom: "1px solid rgba(255,255,255,0.08)",
-        boxShadow: "0 4px 18px rgba(0,0,0,0.10)",
         padding: isMobile ? "12px 16px 14px" : "18px 32px",
         overflow: "visible",
       }}

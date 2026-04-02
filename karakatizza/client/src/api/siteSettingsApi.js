@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_BASE = import.meta.env.VITE_API_URL || "https://karakatizza-production.up.railway.app";
 
 export async function getSiteSettings() {
   const response = await fetch(`${API_BASE}/api/settings`);

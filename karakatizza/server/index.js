@@ -1147,7 +1147,7 @@ app.get("*", (req, res) => {
 initDb()
   .then(() => {
     app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
+      console.log(`Server running on PORT=${PORT}`);
     });
   })
   .catch((error) => {

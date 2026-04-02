@@ -195,11 +195,17 @@ router.get("/customers/:id/orders", async (req, res) => {
         gift_roll_id,
         gift_roll_title,
         created_at
-      FROM orders
-      WHERE customer_id = $1
-      ORDER BY created_at DESC, id DESC
+        FROM orders
+        WHERE customer_id = $1
+           OR phone = $2
+           OR phone_normalized = $3
+        ORDER BY created_at DESC, id DESC
       `,
-      [customerId]
+      [
+        customerId,
+        customerResult.rows[0].phone,
+        customerResult.rows[0].phone_normalized,
+      ]
     );
 
     res.json({

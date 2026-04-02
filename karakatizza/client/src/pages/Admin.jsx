@@ -59,7 +59,7 @@ const categoryOptions = [
   { value: "drinks", label: "Напої" },
   { value: "extras", label: "Додатково" },
 ];
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_BASE = import.meta.env.VITE_API_URL || "https://karakatizza-production.up.railway.app";
 
 export default function Admin() {
   const [activeSection, setActiveSection] = useState("products");
@@ -257,6 +257,23 @@ export default function Admin() {
   const [testBonusPhone, setTestBonusPhone] = useState("+380635170656");
   const [testBonusLoading, setTestBonusLoading] = useState(false);
   const [testBonusStatus, setTestBonusStatus] = useState("");
+
+  const selectedGiftProduct =
+    products.find(
+      (p) => String(p.id) === String(giftRollSettings.giftProductId)
+    ) || null;
+
+  function handleFillTelegramBonusFromGiftProduct() {
+    if (!selectedGiftProduct) return;
+
+    setBonusTitle(selectedGiftProduct.name || "");
+
+    setBonusDescription(
+      selectedGiftProduct.description || selectedGiftProduct.composition || ""
+    );
+
+    setBonusImage(selectedGiftProduct.image || "");
+  }
 
   const inputStyle = {
     width: "100%",
@@ -511,6 +528,7 @@ export default function Admin() {
   const loadGiftRollSettings = async () => {
     try {
       setGiftRollLoading(true);
+
       const data = await getGiftRollSettings();
 
       setGiftRollSettings({
@@ -519,12 +537,13 @@ export default function Admin() {
         isActive: data?.isActive ?? true,
         weekdaysOnly: data?.weekdaysOnly ?? true,
       });
-      setBonusType(settings.bonusType || "gift_product");
-      setBonusTitle(settings.bonusTitle || "");
-      setBonusDescription(settings.bonusDescription || "");
-      setBonusImage(settings.bonusImage || "");
-      setDiscountPercent(settings.discountPercent || "");
-      setCustomText(settings.customText || "");
+
+      setBonusType(data?.bonusType || "gift_product");
+      setBonusTitle(data?.bonusTitle || "");
+      setBonusDescription(data?.bonusDescription || "");
+      setBonusImage(data?.bonusImage || "");
+      setDiscountPercent(data?.discountPercent || "");
+      setCustomText(data?.customText || "");
     } catch (error) {
       console.error("GIFT ROLL SETTINGS LOAD ERROR:", error);
     } finally {
@@ -3118,6 +3137,46 @@ export default function Admin() {
                   >
                     Telegram бонус новачку
                   </h3>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "10px",
+                      flexWrap: "wrap",
+                      marginTop: "10px",
+                      marginBottom: "16px",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={handleFillTelegramBonusFromGiftProduct}
+                      style={{
+                        border: "none",
+                        borderRadius: "12px",
+                        padding: "10px 14px",
+                        background: "#eef6ff",
+                        color: "#2563eb",
+                        fontSize: "14px",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                    >
+                      Підтягнути дані з вибраного ролу
+                    </button>
+
+                    {selectedGiftProduct ? (
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          fontSize: "13px",
+                          color: "#6b7280",
+                        }}
+                      >
+                        Обрано: {selectedGiftProduct.name}
+                      </div>
+                    ) : null}
+                  </div>
 
                   <div
                     style={{

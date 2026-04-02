@@ -80,7 +80,7 @@ export default function Home() {
     async function loadSettings() {
       try {
         const res = await fetch(
-          (import.meta.env.VITE_API_URL || "http://localhost:5000") +
+          (import.meta.env.VITE_API_URL || "https://karakatizza-production.up.railway.app") +
             "/site-settings"
         );
 
