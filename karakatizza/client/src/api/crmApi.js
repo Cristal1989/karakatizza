@@ -257,3 +257,21 @@ export async function getCustomerBonusHistory(customerId) {
 
   return data;
 }
+
+export async function resetTelegramTestUser(phone) {
+  const res = await fetch(`${API_BASE_URL}/api/crm/telegram/reset-test-user`, {
+    method: "POST",
+    headers: getAdminHeaders({
+      "Content-Type": "application/json",
+    }),
+    body: JSON.stringify({ phone }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.message || "Не вдалося скинути тестові дані");
+  }
+
+  return data;
+}

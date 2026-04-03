@@ -34,7 +34,11 @@ import {
   updateGiftRollSettings,
 } from "../api/giftRollApi";
 import CustomersPage from "./CustomersPage";
-import { issueTestTelegramBonus, useActiveTelegramBonus } from "../api/crmApi";
+import {
+  issueTestTelegramBonus,
+  useActiveTelegramBonus,
+  resetTelegramTestUser,
+} from "../api/crmApi";
 
 const sidebarItems = [
   { key: "products", label: "Товари", icon: "🍣" },
@@ -282,6 +286,28 @@ export default function Admin() {
 
     setBonusImage(selectedGiftProduct.image || "");
   }
+
+  const handleResetTelegramTestUser = async () => {
+    try {
+      if (!testPhone?.trim()) {
+        alert("Введи номер телефону");
+        return;
+      }
+
+      const confirmed = window.confirm(
+        "Скинути Telegram-прив'язку і всі Telegram-бонуси для цього номера?"
+      );
+
+      if (!confirmed) return;
+
+      const result = await resetTelegramTestUser(testPhone.trim());
+
+      alert(result?.message || "Тестові дані скинуто");
+    } catch (error) {
+      console.error("RESET TELEGRAM TEST USER ERROR:", error);
+      alert(error.message || "Не вдалося скинути тестові дані");
+    }
+  };
 
   const inputStyle = {
     width: "100%",
@@ -1616,7 +1642,6 @@ export default function Admin() {
           alignItems: "start",
         }}
       >
-        
         <aside
           style={{
             background: "#111827",
@@ -1698,18 +1723,18 @@ export default function Admin() {
             </div>
           </div>
           <button
-          onClick={handleLogout}
-          style={{
-            border: "none",
-            borderRadius: "10px",
-            background: "#eee",
-            padding: "10px 14px",
-            cursor: "pointer",
-            fontWeight: 700,
-          }}
-        >
-          Вийти
-        </button>
+            onClick={handleLogout}
+            style={{
+              border: "none",
+              borderRadius: "10px",
+              background: "#eee",
+              padding: "10px 14px",
+              cursor: "pointer",
+              fontWeight: 700,
+            }}
+          >
+            Вийти
+          </button>
         </aside>
 
         <main style={{ display: "grid", gap: "24px" }}>
@@ -3681,6 +3706,22 @@ export default function Admin() {
                             }}
                           >
                             Списати активний бонус
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handleResetTelegramTestUser}
+                            style={{
+                              border: "1px solid #e5e5e5",
+                              background: "#fff",
+                              color: "#222",
+                              borderRadius: "12px",
+                              padding: "14px 18px",
+                              fontWeight: 700,
+                              cursor: "pointer",
+                            }}
+                          >
+                            Скинути тестові дані
                           </button>
                         </div>
 

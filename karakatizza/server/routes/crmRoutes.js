@@ -1009,4 +1009,63 @@ router.get("/customers/:id/bonus-history", async (req, res) => {
   }
 });
 
+router.post("/telegram/reset-test-user", requireAdminAuth, async (req, res) => {
+  try {
+    const { phone } = req.body;
+
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        message: "Не вказано номер телефону",
+      });
+    }
+
+    const phoneNormalized = normalizeUaPhone(phone);
+
+    if (!phoneNormalized) {
+      return res.status(400).json({
+        success: false,
+        message: "Некоректний номер телефону",
+      });
+    }
+
+    const clientResult = await pool.query(
+      `
+      UPDATE customers
+      SET
+        telegram_user_id = NULL,
+        telegram_username = NULL,
+        telegram_first_name = NULL,
+        is_telegram_subscribed = false,
+        is_phone_confirmed = false,
+        updated_at = NOW()
+      WHERE phone_normalized = $1
+         OR phone = $2
+      RETURNING id, name, phone, phone_normalized
+      `,
+      [phoneNormalized, phone]
+    );
+
+    await pool.query(
+      `
+      DELETE FROM telegram_gifts
+      WHERE phone_normalized = $1
+      `,
+      [phoneNormalized]
+    );
+
+    return res.json({
+      success: true,
+      message: "Тестові дані користувача скинуто",
+      customer: clientResult.rows[0] || null,
+    });
+  } catch (error) {
+    console.error("RESET TEST USER ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Помилка скидання тестових даних",
+    });
+  }
+});
+
 export default router;
