@@ -5,7 +5,7 @@ export default function giftRollRoutes(pool) {
   const router = express.Router();
 
   // Получить настройки welcome-бонуса / подарочного ролла
-  router.get("/settings", requireAdminAuth, async (req, res) => {
+  router.get("/settings", async (req, res) => {
     try {
       const result = await pool.query(`
         SELECT

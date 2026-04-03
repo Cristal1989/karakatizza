@@ -23,7 +23,7 @@ export async function getCustomers(params = {}) {
   if (params.minTotalSpent) {
     searchParams.set("minTotalSpent", params.minTotalSpent);
   }
-  
+
   if (params.minLastOrderAmount) {
     searchParams.set("minLastOrderAmount", params.minLastOrderAmount);
   }
@@ -33,7 +33,6 @@ export async function getCustomers(params = {}) {
 
   const response = await fetch(url, {
     cache: "no-store",
-    headers: getAdminHeaders(),
   });
 
   const data = await response.json();
@@ -50,23 +49,21 @@ export async function getCustomerOrders(customerId) {
     `${API_BASE_URL}/api/crm/customers/${customerId}/orders`,
     {
       cache: "no-store",
-      headers: getAdminHeaders(),
     }
   );
 
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data?.message || "Не вдалося завантажити замовлення клієнта");
+    throw new Error(
+      data?.message || "Не вдалося завантажити замовлення клієнта"
+    );
   }
 
   return data;
 }
 
-export async function sendTelegramMessageToOne({
-  telegramUserId,
-  text,
-}) {
+export async function sendTelegramMessageToOne({ telegramUserId, text }) {
   const response = await fetch(`${API_BASE_URL}/api/crm/telegram/send-one`, {
     method: "POST",
     headers: getAdminHeaders({
@@ -95,20 +92,23 @@ export async function sendTelegramBroadcast({
   minTotalSpent = "",
   minLastOrderAmount = "",
 }) {
-  const response = await fetch(`${API_BASE_URL}/api/crm/telegram/send-broadcast`, {
-    method: "POST",
-    headers: getAdminHeaders({
-      "Content-Type": "application/json",
-    }),
-    body: JSON.stringify({
-      text,
-      search,
-      orderType,
-      inactiveDays,
-      minTotalSpent,
-      minLastOrderAmount,
-    }),
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/api/crm/telegram/send-broadcast`,
+    {
+      method: "POST",
+      headers: getAdminHeaders({
+        "Content-Type": "application/json",
+      }),
+      body: JSON.stringify({
+        text,
+        search,
+        orderType,
+        inactiveDays,
+        minTotalSpent,
+        minLastOrderAmount,
+      }),
+    }
+  );
 
   const data = await response.json();
 
@@ -126,19 +126,22 @@ export async function getTelegramBroadcastCount({
   minTotalSpent = "",
   minLastOrderAmount = "",
 }) {
-  const response = await fetch(`${API_BASE_URL}/api/crm/telegram/broadcast-count`, {
-    method: "POST",
-    headers: getAdminHeaders({
-      "Content-Type": "application/json",
-    }),
-    body: JSON.stringify({
-      search,
-      orderType,
-      inactiveDays,
-      minTotalSpent,
-      minLastOrderAmount,
-    }),
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/api/crm/telegram/broadcast-count`,
+    {
+      method: "POST",
+      headers: getAdminHeaders({
+        "Content-Type": "application/json",
+      }),
+      body: JSON.stringify({
+        search,
+        orderType,
+        inactiveDays,
+        minTotalSpent,
+        minLastOrderAmount,
+      }),
+    }
+  );
 
   const data = await response.json();
 
@@ -194,9 +197,7 @@ export async function issueTestTelegramBonus(payload) {
 export async function useActiveTelegramBonus(payload) {
   const res = await fetch(`${API_BASE_URL}/api/crm/telegram-gifts/use-active`, {
     method: "POST",
-    headers: getAdminHeaders({
-      "Content-Type": "application/json",
-    }),
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
 
@@ -216,13 +217,10 @@ export async function useActiveTelegramBonus(payload) {
   return data;
 }
 
-
 export async function getTelegramCheckoutStatus(phone) {
   const encodedPhone = encodeURIComponent(phone || "");
 
-  const res = await fetch(
-    `${API_BASE_URL}/api/crm/telegram-checkout-status/${encodedPhone}`
-  );
+  const res = await fetch(`${API_BASE_URL}/api/crm/telegram-checkout-status/${encodedPhone}`);
 
   const text = await res.text();
 
@@ -243,12 +241,7 @@ export async function getTelegramCheckoutStatus(phone) {
 }
 
 export async function getCustomerBonusHistory(customerId) {
-  const res = await fetch(
-    `${API_BASE_URL}/api/crm/customers/${customerId}/bonus-history`,
-    {
-      headers: getAdminHeaders(),
-    }
-  );
+  const res = await fetch(`${API_BASE_URL}/api/crm/customers/${customerId}/bonus-history`);
   const text = await res.text();
 
   let data;
