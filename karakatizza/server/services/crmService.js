@@ -158,7 +158,7 @@ export async function saveOrderToCrm(pool, orderData) {
     )
     VALUES (
       $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-      $11, $12, $13, $14::jsonb, $15, $16::jsonb, $17, $18, $19, 'new', 'site', JSON.stringify(telegramBonusMeta || null)
+      $11, $12, $13, $14::jsonb, $15, $16::jsonb, $17, $18, $19, 'new', 'site', $20::jsonb)
     )
     RETURNING *
     `,
@@ -182,6 +182,7 @@ export async function saveOrderToCrm(pool, orderData) {
       Number(regularSticksCount || 0),
       Number(trainingSticksCount || 0),
       Number(sticksExtraPrice || 0),
+      JSON.stringify(telegramBonusMeta || null),
     ]
   );
 
