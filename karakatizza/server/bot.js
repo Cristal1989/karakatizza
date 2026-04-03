@@ -683,6 +683,25 @@ Telegram уже прив'язаний до твого профілю в Karakati
       return;
     }
 
+    if (text === "Підтвердити номер") {
+      await bot.sendMessage(
+        msg.chat.id,
+        "Натисни кнопку нижче, щоб Telegram надіслав твій номер телефону 👇",
+        {
+          reply_markup: {
+            keyboard: [
+              [{ text: "Підтвердити номер", request_contact: true }],
+              [{ text: "Мій бонус" }, { text: "Акції" }],
+              [{ text: "Написати нам" }, { text: "Допомога" }],
+            ],
+            resize_keyboard: true,
+            persistent: true,
+          },
+        }
+      );
+      return;
+    }
+
     if (msg.contact) {
       await handleContact(bot, msg);
       return;
