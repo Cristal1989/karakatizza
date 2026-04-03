@@ -89,7 +89,7 @@ export default function CategoryTabs({ activeCategory, onChange }) {
           aria-label="Прокрутити категорії вліво"
           style={{
             position: "absolute",
-            left: "4px",
+            left: "-20px",
             top: "37px",
             transform: "translateY(-50%)",
             width: "34px",
@@ -112,24 +112,24 @@ export default function CategoryTabs({ activeCategory, onChange }) {
         </button>
       )}
 
-<div
-  ref={tabsRef}
-  className="categoryTabs"
-  style={{
-    display: "flex",
-    gap: isMobile ? "12px" : "16px",
-    overflowX: "auto",
-    overflowY: "hidden",
-    maxWidth: "100%",
-    boxSizing: "border-box",
-    paddingLeft: isMobile ? "12px" : "42px",
-    paddingRight: isMobile ? "12px" : "42px",
-    paddingBottom: "8px",
-    scrollbarWidth: "none",
-    msOverflowStyle: "none",
-    WebkitOverflowScrolling: "touch",
-  }}
->
+      <div
+        ref={tabsRef}
+        className="categoryTabs"
+        style={{
+          display: "flex",
+          gap: isMobile ? "12px" : "16px",
+          overflowX: "auto",
+          overflowY: "hidden",
+          maxWidth: "100%",
+          boxSizing: "border-box",
+          paddingLeft: isMobile ? "12px" : "42px",
+          paddingRight: isMobile ? "12px" : "42px",
+          paddingBottom: "8px",
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+          WebkitOverflowScrolling: "touch",
+        }}
+      >
         {categories.map((category) => {
           const isActive = activeCategory === category.id;
 
@@ -204,7 +204,7 @@ export default function CategoryTabs({ activeCategory, onChange }) {
           aria-label="Прокрутити категорії вправо"
           style={{
             position: "absolute",
-            right: "4px",
+            right: "-20px",
             top: "37px",
             transform: "translateY(-50%)",
             width: "34px",
