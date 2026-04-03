@@ -289,19 +289,19 @@ export default function Admin() {
 
   const handleResetTelegramTestUser = async () => {
     try {
-      if (!testPhone?.trim()) {
+      if (!testBonusPhone?.trim()) {
         alert("Введи номер телефону");
         return;
       }
-
+  
       const confirmed = window.confirm(
         "Скинути Telegram-прив'язку і всі Telegram-бонуси для цього номера?"
       );
-
+  
       if (!confirmed) return;
-
-      const result = await resetTelegramTestUser(testPhone.trim());
-
+  
+      const result = await resetTelegramTestUser(testBonusPhone.trim());
+  
       alert(result?.message || "Тестові дані скинуто");
     } catch (error) {
       console.error("RESET TELEGRAM TEST USER ERROR:", error);

@@ -593,33 +593,6 @@ export function startTelegramBot() {
     polling: true,
   });
 
-  function buildGuestKeyboard() {
-    return {
-      keyboard: [
-        [{ text: "Підтвердити номер", request_contact: true }],
-        [{ text: "Мій бонус" }],
-        [{ text: "Допомога" }],
-      ],
-      resize_keyboard: true,
-      persistent: true,
-    };
-  }
-
-  function buildLinkedKeyboard() {
-    return {
-      keyboard: [
-        [{ text: "Мій бонус" }],
-        [{ text: "Акції" }],
-        [{ text: "Допомога" }],
-      ],
-      resize_keyboard: true,
-      persistent: true,
-    };
-  }
-
-  function buildMainKeyboard(isLinked = false) {
-    return isLinked ? buildLinkedKeyboard() : buildGuestKeyboard();
-  }
 
   async function getCustomerByTelegramUserId(telegramUserId) {
     if (!telegramUserId) return null;
