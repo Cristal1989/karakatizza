@@ -99,10 +99,11 @@ export default function Checkout() {
   const [telegramCheckoutLoading, setTelegramCheckoutLoading] = useState(false);
   const [telegramCheckoutError, setTelegramCheckoutError] = useState("");
 
-  const TELEGRAM_BOT_WEB_URL =
-    "https://t.me/crm_karakatizza_bot?start=checkout";
-  const TELEGRAM_BOT_APP_URL =
-    "tg://resolve?domain=crm_karakatizza_bot&start=checkout";
+  const TELEGRAM_BOT_START_PARAM = "return_checkout";
+
+  const TELEGRAM_BOT_APP_URL = `tg://resolve?domain=crm_karakatizza_bot&start=${TELEGRAM_BOT_START_PARAM}`;
+
+  const TELEGRAM_BOT_WEB_URL = `https://t.me/crm_karakatizza_bot?start=${TELEGRAM_BOT_START_PARAM}`;
 
   const checkoutPhoneValue = useMemo(() => {
     if (typeof formData !== "undefined" && formData?.phone != null) {

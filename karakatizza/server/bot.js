@@ -9,8 +9,8 @@ const TELEGRAM_SUPPORT_USERNAME = "@karakatizza_sushi";
 
 let botInstance = null;
 
-
 const pendingPhones = new Map();
+const pendingReturnUrls = new Map();
 
 function normalizePhone(phone = "") {
   const digits = String(phone).replace(/\D/g, "");
@@ -25,20 +25,42 @@ function normalizePhone(phone = "") {
 }
 
 function buildMainKeyboard(isPhoneConfirmed = false) {
-  const keyboard = [];
-
-  if (!isPhoneConfirmed) {
-    keyboard.push([{ text: "Підтвердити номер", request_contact: true }]);
-  }
-
-  keyboard.push([{ text: "Мій бонус" }, { text: "Акції" }]);
-  keyboard.push([{ text: "Написати нам" }, { text: "Допомога" }]);
+  const firstRow = isPhoneConfirmed
+    ? [{ text: "Мій бонус" }, { text: "Акції" }]
+    : [{ text: "Підтвердити номер", request_contact: true }];
 
   return {
-    keyboard,
+    keyboard: [
+      firstRow,
+      [{ text: "Написати нам" }, { text: "Допомога" }],
+    ],
     resize_keyboard: true,
     persistent: true,
   };
+}
+
+function getReturnUrl(startParam = "") {
+  const raw = String(startParam || "").trim();
+
+  if (!raw) {
+    return "https://karakatizza.vercel.app/checkout?from=telegram";
+  }
+
+  try {
+    const decoded = decodeURIComponent(raw);
+
+    if (decoded.startsWith("http://") || decoded.startsWith("https://")) {
+      return decoded;
+    }
+
+    if (decoded.startsWith("/")) {
+      return `https://karakatizza.vercel.app${decoded}`;
+    }
+
+    return "https://karakatizza.vercel.app/checkout?from=telegram";
+  } catch {
+    return "https://karakatizza.vercel.app/checkout?from=telegram";
+  }
 }
 
 async function getCustomerByTelegramUserId(telegramUserId) {
@@ -46,23 +68,23 @@ async function getCustomerByTelegramUserId(telegramUserId) {
 
   console.log("BOT LOOKUP START", { telegramUserId, API_BASE_URL });
 
-const response = await fetch(
-  `${API_BASE_URL}/api/crm/telegram/customer/${telegramUserId}`
-);
+  const response = await fetch(
+    `${API_BASE_URL}/api/crm/telegram/customer/${telegramUserId}`
+  );
 
-console.log("BOT LOOKUP STATUS", response.status);
+  console.log("BOT LOOKUP STATUS", response.status);
 
-const rawText = await response.text();
-console.log("BOT LOOKUP RAW", rawText);
+  const rawText = await response.text();
+  console.log("BOT LOOKUP RAW", rawText);
 
-if (!response.ok) {
-  return null;
-}
+  if (!response.ok) {
+    return null;
+  }
 
-const data = rawText ? JSON.parse(rawText) : null;
-console.log("BOT LOOKUP PARSED", data);
+  const data = rawText ? JSON.parse(rawText) : null;
+  console.log("BOT LOOKUP PARSED", data);
 
-return data?.customer || null;
+  return data?.customer || null;
 }
 
 async function tryLinkTelegramByPhone({
@@ -253,7 +275,10 @@ async function handleMyBonus(bot, msg) {
           }
         } catch (linkError) {
           if (linkError?.message !== "Клієнта з таким номером не знайдено") {
-            console.error("TELEGRAM RE-LINK FROM PENDING PHONE ERROR:", linkError);
+            console.error(
+              "TELEGRAM RE-LINK FROM PENDING PHONE ERROR:",
+              linkError
+            );
           }
         }
       }
@@ -275,7 +300,11 @@ async function handleMyBonus(bot, msg) {
     }
 
     const bonusSettings = await getJson(`${API_BASE_URL}/gift-roll/settings`);
-    const activeGiftResponse = await getJson(`${API_BASE_URL}/api/crm/telegram-gifts/active/${encodeURIComponent(customer.phone)}`);
+    const activeGiftResponse = await getJson(
+      `${API_BASE_URL}/api/crm/telegram-gifts/active/${encodeURIComponent(
+        customer.phone
+      )}`
+    );
 
     const activeGift = activeGiftResponse?.gift || null;
 
@@ -349,7 +378,8 @@ ${customText || "Для тебе діє спеціальна пропозиці�
     let usedGift = null;
 
     try {
-      const usedGiftResponse = await getJson(`${API_BASE_URL}/api/crm/telegram-gifts/history/${encodeURIComponent(
+      const usedGiftResponse = await getJson(
+        `${API_BASE_URL}/api/crm/telegram-gifts/history/${encodeURIComponent(
           customer.phone
         )}`
       );
@@ -504,7 +534,12 @@ async function handleContact(bot, msg) {
     const customer = linkResult.customer;
     pendingPhones.delete(telegramUserId);
 
+    const returnUrl =
+      pendingReturnUrls.get(telegramUserId) ||
+      "https://karakatizza.vercel.app/checkout?from=telegram";
+
     let issueResult = null;
+
     try {
       issueResult = await postJson(
         `${API_BASE_URL}/api/crm/telegram-gifts/issue`,
@@ -531,9 +566,18 @@ Telegram успішно прив'язаний до профілю.
 🎁 Одноразовий бонус за підписку нараховано.
 Він закріплений за твоїм номером і буде використаний при наступному замовленні.`,
         {
-          reply_markup: buildMainKeyboard(true),
+          reply_markup: {
+            keyboard: buildMainKeyboard(true).keyboard,
+            resize_keyboard: true,
+            persistent: true,
+            inline_keyboard: [
+              [{ text: "Повернутись до оформлення", url: returnUrl }],
+            ],
+          },
         }
       );
+
+      pendingReturnUrls.delete(telegramUserId);
       return;
     }
 
@@ -547,11 +591,20 @@ Telegram успішно прив'язаний до профілю.
         `Номер підтверджено ✅
 
 Telegram уже прив'язаний до твого профілю.
-🎁 Бонус за підписку вже був нарахований раніше. Повторно ця акція не надається.`,
+🎁 Бонус за підписку вже був нарахований раніше.`,
         {
-          reply_markup: buildMainKeyboard(true),
+          reply_markup: {
+            keyboard: buildMainKeyboard(true).keyboard,
+            resize_keyboard: true,
+            persistent: true,
+            inline_keyboard: [
+              [{ text: "Повернутись до оформлення", url: returnUrl }],
+            ],
+          },
         }
       );
+
+      pendingReturnUrls.delete(telegramUserId);
       return;
     }
 
@@ -559,12 +612,20 @@ Telegram уже прив'язаний до твого профілю.
       chatId,
       `Номер підтверджено ✅
 
-Telegram прив'язаний до твого профілю.
-Якщо бонус зараз не відобразився, ми перевіримо це вручну.`,
+Telegram прив'язаний до твого профілю.`,
       {
-        reply_markup: buildMainKeyboard(true),
+        reply_markup: {
+          keyboard: buildMainKeyboard(true).keyboard,
+          resize_keyboard: true,
+          persistent: true,
+          inline_keyboard: [
+            [{ text: "Повернутись до оформлення", url: returnUrl }],
+          ],
+        },
       }
     );
+
+    pendingReturnUrls.delete(telegramUserId);
   } catch (error) {
     console.error("TELEGRAM CONTACT FLOW ERROR:", error);
 
@@ -573,7 +634,7 @@ Telegram прив'язаний до твого профілю.
         ? `Я поки не знайшов замовлень з цим номером у базі 😕
 Перевір, чи саме цей номер ти вказував при оформленні замовлення.
 
-Якщо ти оформиш перше замовлення пізніше — просто натисни "Мій бонус" або ще раз "Підтвердити номер", і я спробую знайти тебе знову.`
+Якщо ти оформиш перше замовлення пізніше — просто натисни "Мій бонус" або ще раз відкрий бота.`
         : "Сталася помилка під час підтвердження номера. Спробуй трохи пізніше.";
 
     await bot.sendMessage(chatId, messageText, {
@@ -596,40 +657,54 @@ export function startTelegramBot() {
     polling: true,
   });
 
-
   bot.onText(/\/start/, async (msg) => {
     try {
       const chatId = msg.chat.id;
       const telegramUserId = msg.from?.id ? String(msg.from.id) : "";
       const firstName = msg.from?.first_name || "друже";
-
+  
       const customer = await getCustomerByTelegramUserId(telegramUserId);
       const isLinked = Boolean(customer?.telegram_user_id);
-
+  
+      const text = msg.text || "";
+      const [, startParam = ""] = text.split(" ");
+      const returnUrl = getReturnUrl(startParam);
+  
+      if (telegramUserId) {
+        pendingReturnUrls.set(telegramUserId, returnUrl);
+      }
+  
       if (isLinked) {
         await bot.sendMessage(
           chatId,
           `Привіт, ${firstName}! 👋
-
-Telegram уже прив'язаний до твого профілю в Karakatizza.
-
-Що хочеш зробити далі?`,
+  
+  Telegram уже прив'язаний до твого профілю в Karakatizza.
+  
+  Що хочеш зробити далі?`,
           {
-            reply_markup: buildMainKeyboard(true),
+            reply_markup: {
+              keyboard: buildMainKeyboard(true).keyboard,
+              resize_keyboard: true,
+              persistent: true,
+              inline_keyboard: [
+                [{ text: "Повернутись до оформлення", url: returnUrl }],
+              ],
+            },
           }
         );
         return;
       }
-
+  
       await bot.sendMessage(
         chatId,
         `Привіт, ${firstName}! 👋
-
-Підтверди свій номер телефону, який ти вказував у замовленні в Karakatizza, і ми закріпимо за тобою Telegram-профіль.
-
-🎁 За перше підтвердження номера — одноразовий бонус до наступного замовлення.
-
-Натисни кнопку нижче:`,
+  
+  Підтверди свій номер телефону, який ти вказував у замовленні в Karakatizza, і ми закріпимо за тобою Telegram-профіль.
+  
+  🎁 За перше підтвердження номера — одноразовий бонус до наступного замовлення.
+  
+  Натисни кнопку нижче:`,
         {
           reply_markup: buildMainKeyboard(false),
         }
@@ -663,17 +738,6 @@ Telegram уже прив'язаний до твого профілю в Karakati
 
     if (text === "Акції") {
       await handlePromotions(bot, msg);
-      return;
-    }
-
-    if (text === "Підтвердити номер") {
-      await bot.sendMessage(
-        chatId,
-        'Будь ласка, натисни кнопку "Підтвердити номер" на клавіатурі нижче, щоб Telegram надіслав контакт.',
-        {
-          reply_markup: buildMainKeyboard(false),
-        }
-      );
       return;
     }
 
