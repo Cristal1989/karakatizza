@@ -89,7 +89,7 @@ export default function CategoryTabs({ activeCategory, onChange }) {
           aria-label="Прокрутити категорії вліво"
           style={{
             position: "absolute",
-            left: "-20px",
+            left: "2px",
             top: "37px",
             transform: "translateY(-50%)",
             width: "34px",
@@ -204,7 +204,7 @@ export default function CategoryTabs({ activeCategory, onChange }) {
           aria-label="Прокрутити категорії вправо"
           style={{
             position: "absolute",
-            right: "-20px",
+            right: "2px",
             top: "37px",
             transform: "translateY(-50%)",
             width: "34px",

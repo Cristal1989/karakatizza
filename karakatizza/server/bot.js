@@ -25,16 +25,17 @@ function normalizePhone(phone = "") {
 }
 
 function buildMainKeyboard(isPhoneConfirmed = false) {
-  const firstRow = isPhoneConfirmed
-    ? [{ text: "Мій бонус" }]
-    : [{ text: "Підтвердити номер", request_contact: true }];
+  const keyboard = [];
+
+  if (!isPhoneConfirmed) {
+    keyboard.push([{ text: "Підтвердити номер", request_contact: true }]);
+  }
+
+  keyboard.push([{ text: "Мій бонус" }, { text: "Акції" }]);
+  keyboard.push([{ text: "Написати нам" }, { text: "Допомога" }]);
 
   return {
-    keyboard: [
-      firstRow,
-      [{ text: "Мій бонус" }, { text: "Акції" }],
-      [{ text: "Написати нам" }, { text: "Допомога" }],
-    ],
+    keyboard,
     resize_keyboard: true,
     persistent: true,
   };
