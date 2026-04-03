@@ -132,35 +132,35 @@ export async function saveOrderToCrm(pool, orderData) {
 
   const result = await pool.query(
     `
-    INSERT INTO orders (
-      customer_id,
-      phone,
-      phone_normalized,
-      name,
-      mode,
-      address,
-      resolved_address,
-      entrance,
-      comment,
-      payment_method,
-      need_exact_time,
-      exact_time,
-      total_amount,
-      items_json,
-      items_summary,
-      condiments_json,
-      regular_sticks_count,
-      training_sticks_count,
-      sticks_extra_price,
-      status,
-      source,
-      telegram_bonus_meta
-    )
-    VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-      $11, $12, $13, $14::jsonb, $15, $16::jsonb, $17, $18, $19, 'new', 'site', $20::jsonb)
-    )
-    RETURNING *
+      INSERT INTO orders (
+        customer_id,
+        phone,
+        phone_normalized,
+        name,
+        mode,
+        address,
+        resolved_address,
+        entrance,
+        comment,
+        payment_method,
+        need_exact_time,
+        exact_time,
+        total_amount,
+        items_json,
+        items_summary,
+        condiments_json,
+        regular_sticks_count,
+        training_sticks_count,
+        sticks_extra_price,
+        status,
+        source,
+        telegram_bonus_meta
+      )
+      VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+        $11, $12, $13, $14::jsonb, $15, $16::jsonb, $17, $18, $19, 'new', 'site', $20::jsonb
+      )
+      RETURNING *
     `,
     [
       customer.id,
