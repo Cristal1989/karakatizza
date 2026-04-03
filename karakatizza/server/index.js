@@ -31,7 +31,11 @@ const app = express();
 app.use(compression());
 
 await initDb();
-startTelegramBot();
+if (process.env.ENABLE_TELEGRAM_BOT === "true") {
+  startTelegramBot();
+} else {
+  console.log("Telegram bot disabled");
+}
 
 app.use(
   cors({

@@ -273,11 +273,11 @@ export default function Home() {
   }, [siteSettings]);
 
   return (
+    
     <div
       style={{
         minHeight: "100vh",
         background: "#fafafa",
-        // overflowX: "hidden",
       }}
     >
       <Seo
@@ -286,8 +286,8 @@ export default function Home() {
         url="https://karakatizza.com/"
         jsonLd={jsonLd}
       />
+
       <Header />
-      {/* <CartToast /> */}
 
       <main
         style={{
@@ -387,13 +387,17 @@ export default function Home() {
                   </h2>
                   {section.id === "rolls" && (
                     <div
-                      style={{
-                        display: "flex",
-                        gap: "8px",
-                        overflowX: "auto",
-                        paddingBottom: "4px",
-                        marginBottom: "6px",
-                      }}
+                    style={{
+                      display: "flex",
+                      gap: "8px",
+                      overflowX: "auto",
+                      overflowY: "hidden",
+                      WebkitOverflowScrolling: "touch",
+                      scrollbarWidth: "none",
+                      paddingBottom: "4px",
+                      paddingRight: "12px",
+                      marginBottom: "6px",
+                    }}
                     >
                       {[
                         { key: "all", label: "Усі" },

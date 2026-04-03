@@ -89,7 +89,7 @@ export default function CartDrawer() {
   const deliveryAddressNotFoundText =
     texts?.deliveryAddressNotFoundText || "Уточніть адресу у оператора";
 
-    const orderDisabledText =
+  const orderDisabledText =
     texts?.orderDisabledText ||
     "Наразі оформлення замовлення тимчасово недоступне";
 
@@ -475,9 +475,7 @@ export default function CartDrawer() {
 
   if (isFreeReached) {
     deliveryTitle = "У вас безкоштовна доставка";
-    deliveryHint = deliveryInfo
-      ? ""
-      : deliveryAddressHint;
+    deliveryHint = deliveryInfo ? "" : deliveryAddressHint;
   }
 
   if (deliveryInfo && deliveryInfo.addressFound === false) {
@@ -579,7 +577,7 @@ export default function CartDrawer() {
           right: 0,
           width: isMobile ? "100%" : "420px",
           maxWidth: "100%",
-          height: "100vh",
+          height: "100dvh",
           backgroundColor: "#ffffff",
           zIndex: 100,
           boxShadow: "-8px 0 30px rgba(0,0,0,0.15)",
@@ -590,11 +588,12 @@ export default function CartDrawer() {
       >
         <div
           style={{
-            padding: "20px",
+            padding: isMobile ? "14px 16px 12px" : "20px",
             borderBottom: "1px solid #eeeeee",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            gap: "12px",
             flexShrink: 0,
             background: "#fff",
           }}
@@ -603,17 +602,20 @@ export default function CartDrawer() {
             <h2
               style={{
                 margin: 0,
-                fontSize: "24px",
+                fontSize: isMobile ? "20px" : "24px",
+                fontWeight: 800,
                 color: "#222",
+                lineHeight: 1.1,
               }}
             >
               Кошик
             </h2>
             <p
               style={{
-                margin: "6px 0 0 0",
-                color: "#666",
-                fontSize: "14px",
+                margin: "4px 0 0",
+                color: "#777",
+                fontSize: isMobile ? "13px" : "14px",
+                lineHeight: 1.3,
               }}
             >
               Перевірте замовлення перед оформленням
@@ -625,9 +627,12 @@ export default function CartDrawer() {
             style={{
               border: "none",
               backgroundColor: "#f2f2f2",
-              borderRadius: "10px",
-              padding: "10px 14px",
+              borderRadius: "12px",
+              padding: isMobile ? "8px 12px" : "10px 14px",
               cursor: "pointer",
+              color: "#4f6fd8",
+              fontWeight: 600,
+              flexShrink: 0,
             }}
           >
             Закрити
@@ -636,7 +641,7 @@ export default function CartDrawer() {
 
         <div
           style={{
-            padding: "16px 20px 0",
+            padding: isMobile ? "12px 16px 0" : "16px 20px 0",
             flexShrink: 0,
             background: "#fff",
           }}
@@ -647,12 +652,12 @@ export default function CartDrawer() {
               alignItems: "center",
               justifyContent: "space-between",
               gap: "10px",
-              marginBottom: "12px",
+              marginBottom: isMobile ? "10px" : "12px",
             }}
           >
             <div
               style={{
-                fontSize: "14px",
+                fontSize: isMobile ? "13px" : "14px",
                 fontWeight: 700,
                 color: "#3b3b3b",
               }}
@@ -728,20 +733,20 @@ export default function CartDrawer() {
           ) : checkoutMode !== "pickup" ? (
             <div
               style={{
-                backgroundColor: isFreeReached ? "#e8f7ed" : "#f7f3eb",
-                border: `1px solid ${isFreeReached ? "#b7e4c7" : "#eed7b0"}`,
-                borderRadius: "14px",
-                padding: "14px",
+                backgroundColor: isFreeReached ? "#edf9f1" : "#f8f4ec",
+                border: `1px solid ${isFreeReached ? "#c9ead3" : "#ead8b6"}`,
+                borderRadius: "16px",
+                padding: isMobile ? "12px" : "14px",
                 display: "grid",
-                gap: "10px",
+                gap: isMobile ? "8px" : "10px",
               }}
             >
               <div
                 style={{
-                  fontSize: "14px",
-                  fontWeight: "700",
+                  fontSize: isMobile ? "15px" : "14px",
+                  fontWeight: 700,
                   color: "#222",
-                  lineHeight: 1.35,
+                  lineHeight: 1.3,
                 }}
               >
                 {deliveryTitle}
@@ -750,8 +755,8 @@ export default function CartDrawer() {
               <div
                 style={{
                   width: "100%",
-                  height: "10px",
-                  backgroundColor: "#f0f0f0",
+                  height: "8px",
+                  backgroundColor: "#ececec",
                   borderRadius: "999px",
                   overflow: "hidden",
                 }}
@@ -769,8 +774,8 @@ export default function CartDrawer() {
 
               <div
                 style={{
-                  fontSize: "13px",
-                  color: "#666",
+                  fontSize: "12px",
+                  color: "#777",
                 }}
               >
                 Поріг безкоштовної доставки: {currentMinOrder} грн
@@ -779,10 +784,10 @@ export default function CartDrawer() {
               {deliveryHint ? (
                 <div
                   style={{
-                    fontSize: "13px",
+                    fontSize: "12px",
                     color: isFreeReached ? "#2e7d32" : "#666",
                     fontWeight: isFreeReached ? "700" : "400",
-                    lineHeight: 1.35,
+                    lineHeight: 1.3,
                   }}
                 >
                   {deliveryHint}
@@ -792,9 +797,9 @@ export default function CartDrawer() {
               {deliveryText && (
                 <div
                   style={{
-                    fontSize: "13px",
-                    color: "#666",
-                    lineHeight: 1.4,
+                    fontSize: "12px",
+                    color: "#777",
+                    lineHeight: 1.35,
                   }}
                 >
                   {deliveryText}
@@ -828,10 +833,10 @@ export default function CartDrawer() {
                   style={{
                     width: "100%",
                     boxSizing: "border-box",
-                    padding: "13px 14px",
-                    borderRadius: "12px",
+                    padding: "12px 14px",
+                    borderRadius: "14px",
                     border: "1px solid #ddd",
-                    fontSize: "15px",
+                    fontSize: "16px",
                     outline: "none",
                     background: "#fff",
                   }}
@@ -844,22 +849,23 @@ export default function CartDrawer() {
                 disabled={!deliveryAddress?.trim() || deliveryLoading}
                 style={{
                   border: "none",
-                  borderRadius: "12px",
+                  borderRadius: "14px",
                   padding: "13px 14px",
                   background:
                     !deliveryAddress?.trim() || deliveryLoading
                       ? "#cccccc"
                       : "#e56a45",
                   color: "#fff",
-                  fontSize: "15px",
+                  fontSize: "16px",
                   fontWeight: "700",
+                  minHeight: "48px",
                   cursor:
                     !deliveryAddress?.trim() || deliveryLoading
                       ? "default"
                       : "pointer",
                 }}
               >
-                {deliveryLoading ? "Завантаження..." : "Ввести"}
+                {deliveryLoading ? "Завантаження..." : "Пошук"}
               </button>
             </div>
           ) : (
@@ -885,10 +891,10 @@ export default function CartDrawer() {
             flex: 1,
             minHeight: 0,
             overflowY: "auto",
-            padding: "20px",
+            padding: isMobile ? "16px" : "20px",
             display: "flex",
             flexDirection: "column",
-            gap: "20px",
+            gap: isMobile ? "16px" : "20px",
             WebkitOverflowScrolling: "touch",
           }}
         >
@@ -905,7 +911,7 @@ export default function CartDrawer() {
             </div>
           ) : (
             <>
-              <div style={{ display: "grid", gap: "14px" }}>
+              <div style={{ display: "grid", gap: isMobile ? "12px" : "14px" }}>
                 {cartItems.map((item) => (
                   <div
                     key={
@@ -915,7 +921,7 @@ export default function CartDrawer() {
                     style={{
                       border: "1px solid #ececec",
                       borderRadius: "16px",
-                      padding: "14px",
+                      padding: isMobile ? "12px" : "14px",
                       backgroundColor: "#fafafa",
                       display: "block",
                     }}
@@ -1445,34 +1451,54 @@ export default function CartDrawer() {
 
         <div
           style={{
-            borderTop: "1px solid #eeeeee",
-            padding: "18px 20px calc(28px + env(safe-area-inset-bottom))",
             flexShrink: 0,
             background: "#fff",
+            padding: isMobile
+              ? "14px 16px calc(env(safe-area-inset-bottom, 0px) + 10px)"
+              : "18px 20px 20px",
+            borderTop: "1px solid #f0f0f0",
           }}
         >
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "10px",
-              fontSize: "22px",
-              fontWeight: "800",
+              alignItems: "baseline",
+              gap: "12px",
+              marginBottom: isMobile ? "12px" : "14px",
               color: "#111",
             }}
           >
-            <span>Разом</span>
-            <span>{finalTotal} грн</span>
+            <span
+              style={{
+                fontSize: isMobile ? "18px" : "20px",
+                fontWeight: 800,
+                lineHeight: 1.1,
+              }}
+            >
+              Разом
+            </span>
+
+            <span
+              style={{
+                fontSize: isMobile ? "18px" : "20px",
+                fontWeight: 800,
+                lineHeight: 1.1,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {finalTotal} грн
+            </span>
           </div>
           {checkoutMode === "pickup" && pickupDiscount > 0 && (
             <div
-              style={{
-                marginBottom: "10px",
-                fontSize: "12px",
-                color: "#16a34a",
-                fontWeight: 700,
-              }}
+            style={{
+              marginBottom: "10px",
+              fontSize: "12px",
+              color: "#15803d",
+              fontWeight: 700,
+              lineHeight: 1.35,
+            }}
             >
               Знижка за самовивіз: -{pickupDiscount} грн
             </div>
@@ -1482,12 +1508,13 @@ export default function CartDrawer() {
             pickupDiscount === 0 &&
             hasAnyPromoInCart && (
               <div
-                style={{
-                  fontSize: "12px",
-                  color: "#a16207",
-                  fontWeight: 700,
-                  marginBottom: "10px",
-                }}
+              style={{
+                fontSize: "12px",
+                color: "#a16207",
+                fontWeight: 700,
+                marginBottom: "10px",
+                lineHeight: 1.35,
+              }}
               >
                 Знижка не діє з акціями
               </div>
@@ -1506,12 +1533,19 @@ export default function CartDrawer() {
               style={{
                 textAlign: "center",
                 textDecoration: "none",
-                backgroundColor: cartItems.length ? "#e53935" : "#cccccc",
+                backgroundColor: cartItems.length ? "#df4b3f" : "#d5d5d5",
                 color: "#fff",
-                borderRadius: "12px",
-                padding: "14px",
+                borderRadius: "14px",
+                padding: isMobile ? "13px 14px" : "14px",
                 fontSize: "16px",
-                fontWeight: "700",
+                fontWeight: 800,
+                minHeight: "48px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: cartItems.length
+                  ? "0 8px 18px rgba(223,75,63,0.18)"
+                  : "none",
                 pointerEvents: cartItems.length ? "auto" : "none",
               }}
             >
@@ -1521,13 +1555,14 @@ export default function CartDrawer() {
             <button
               onClick={clearCart}
               style={{
-                backgroundColor: "#f3f3f3",
-                color: "#222",
+                backgroundColor: "#f5f5f5",
+                color: "#333",
                 border: "none",
-                borderRadius: "12px",
-                padding: "14px",
+                borderRadius: "14px",
+                padding: isMobile ? "12px 14px" : "14px",
                 fontSize: "15px",
-                fontWeight: "700",
+                fontWeight: 700,
+                minHeight: "46px",
                 cursor: "pointer",
               }}
             >

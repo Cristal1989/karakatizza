@@ -8,6 +8,20 @@ const TELEGRAM_SUPPORT_URL = "https://t.me/karakatizza_sushi";
 const TELEGRAM_SUPPORT_USERNAME = "@karakatizza_sushi";
 
 let botInstance = null;
+
+export function startTelegramBot() {
+  if (botInstance) {
+    console.log("Telegram bot already started");
+    return botInstance;
+  }
+
+  // создание бота
+  botInstance = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
+
+  console.log("Telegram bot started");
+  return botInstance;
+}
+
 const pendingPhones = new Map();
 
 function normalizePhone(phone = "") {
