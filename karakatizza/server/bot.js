@@ -24,21 +24,14 @@ function normalizePhone(phone = "") {
   return phone.startsWith("+") ? phone : `+${digits}`;
 }
 
-function buildMainKeyboard(isLinked = false) {
-  if (isLinked) {
-    return {
-      keyboard: [
-        [{ text: "Мій бонус" }, { text: "Акції" }],
-        [{ text: "Написати нам" }, { text: "Допомога" }],
-      ],
-      resize_keyboard: true,
-      persistent: true,
-    };
-  }
+function buildMainKeyboard(isPhoneConfirmed = false) {
+  const firstRow = isPhoneConfirmed
+    ? [{ text: "Мій бонус" }]
+    : [{ text: "Підтвердити номер", request_contact: true }];
 
   return {
     keyboard: [
-      [{ text: "Підтвердити номер" }],
+      firstRow,
       [{ text: "Мій бонус" }, { text: "Акції" }],
       [{ text: "Написати нам" }, { text: "Допомога" }],
     ],
@@ -674,18 +667,10 @@ Telegram уже прив'язаний до твого профілю в Karakati
 
     if (text === "Підтвердити номер") {
       await bot.sendMessage(
-        msg.chat.id,
-        "Натисни кнопку нижче, щоб Telegram надіслав твій номер телефону 👇",
+        chatId,
+        'Будь ласка, натисни кнопку "Підтвердити номер" на клавіатурі нижче, щоб Telegram надіслав контакт.',
         {
-          reply_markup: {
-            keyboard: [
-              [{ text: "Підтвердити номер", request_contact: true }],
-              [{ text: "Мій бонус" }, { text: "Акції" }],
-              [{ text: "Написати нам" }, { text: "Допомога" }],
-            ],
-            resize_keyboard: true,
-            persistent: true,
-          },
+          reply_markup: buildMainKeyboard(false),
         }
       );
       return;
