@@ -612,6 +612,11 @@ router.get("/telegram/customer/:telegramUserId", async (req, res) => {
       `,
       [String(telegramUserId)]
     );
+    console.log("CRM TELEGRAM CUSTOMER LOOKUP", {
+      telegramUserId,
+      found: Boolean(result.rows[0]),
+      customer: result.rows[0] || null,
+    });
 
     return res.json({
       success: true,

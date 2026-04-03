@@ -50,16 +50,25 @@ function buildMainKeyboard(isLinked = false) {
 async function getCustomerByTelegramUserId(telegramUserId) {
   if (!telegramUserId) return null;
 
-  const response = await fetch(
-    `${API_BASE_URL}/api/crm/telegram/customer/${telegramUserId}`
-  );
+  console.log("BOT LOOKUP START", { telegramUserId, API_BASE_URL });
 
-  if (!response.ok) {
-    return null;
-  }
+const response = await fetch(
+  `${API_BASE_URL}/api/crm/telegram/customer/${telegramUserId}`
+);
 
-  const data = await response.json();
-  return data?.customer || null;
+console.log("BOT LOOKUP STATUS", response.status);
+
+const rawText = await response.text();
+console.log("BOT LOOKUP RAW", rawText);
+
+if (!response.ok) {
+  return null;
+}
+
+const data = rawText ? JSON.parse(rawText) : null;
+console.log("BOT LOOKUP PARSED", data);
+
+return data?.customer || null;
 }
 
 async function tryLinkTelegramByPhone({
@@ -593,26 +602,6 @@ export function startTelegramBot() {
     polling: true,
   });
 
-
-  async function getCustomerByTelegramUserId(telegramUserId) {
-    if (!telegramUserId) return null;
-
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/crm/telegram/customer/${telegramUserId}`
-      );
-
-      if (!response.ok) {
-        return null;
-      }
-
-      const data = await response.json();
-      return data?.customer || null;
-    } catch (error) {
-      console.error("GET CUSTOMER BY TELEGRAM USER ID ERROR:", error);
-      return null;
-    }
-  }
 
   bot.onText(/\/start/, async (msg) => {
     try {
