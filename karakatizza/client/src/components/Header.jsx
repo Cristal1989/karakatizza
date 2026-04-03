@@ -81,7 +81,7 @@ const phonePrimary = contacts?.phonePrimary || "";
                 objectFit: "contain",
                 transform: isMobile ? "translateY(8px)" : "translateY(24px)",
                 flexShrink: 0,
-                zIndex: "999",
+                zIndex: "49",
               }}
             />
           </a>

@@ -232,64 +232,68 @@ app.get("/banners", async (req, res) => {
   }
 });
 
-app.post("/products", requireAdminAuth, upload.single("image"), async (req, res) => {
-  try {
-    const {
-      name,
-      price,
-      category,
-      description,
-      popular,
-      promoType,
-      priority,
-      discountOfferEligible,
-      freeSoySauce,
-      freeGinger,
-      freeWasabi,
-      weight,
-      isVisible,
-      isHit,
-      isNew,
-      isWeeklyOffer,
-      oldPrice,
-      rollType,
-    } = req.body;
+app.post(
+  "/products",
+  requireAdminAuth,
+  upload.single("image"),
+  async (req, res) => {
+    try {
+      const {
+        name,
+        price,
+        category,
+        description,
+        popular,
+        promoType,
+        priority,
+        discountOfferEligible,
+        freeSoySauce,
+        freeGinger,
+        freeWasabi,
+        weight,
+        isVisible,
+        isHit,
+        isNew,
+        isWeeklyOffer,
+        oldPrice,
+        rollType,
+      } = req.body;
 
-    if (!name || !price || !category) {
-      return res.status(400).json({
-        message: "Необхідні поля: name, price, category",
-      });
-    }
+      if (!name || !price || !category) {
+        return res.status(400).json({
+          message: "Необхідні поля: name, price, category",
+        });
+      }
 
-    const imageUrl = req.file?.path || "";
+      const imageUrl = req.file?.path || "";
 
-    const newProduct = {
-      id: uuidv4(),
-      name,
-      price: Number(price),
-      category,
-      description: description || "",
-      image: imageUrl,
-      popular: popular === "true",
-      promoType: promoType || "none",
-      priority: Number(priority) || 10,
-      discountOfferEligible: discountOfferEligible === "true",
-      freeSoySauce: Number(freeSoySauce || 0),
-      freeGinger: Number(freeGinger || 0),
-      freeWasabi: Number(freeWasabi || 0),
+      const newProduct = {
+        id: uuidv4(),
+        name,
+        price: Number(price),
+        category,
+        description: description || "",
+        image: imageUrl,
+        popular: popular === "true",
+        promoType: promoType || "none",
+        priority: Number(priority) || 10,
+        discountOfferEligible: discountOfferEligible === "true",
+        freeSoySauce: Number(freeSoySauce || 0),
+        freeGinger: Number(freeGinger || 0),
+        freeWasabi: Number(freeWasabi || 0),
 
-      weight: weight || "",
-      isVisible: isVisible === undefined ? true : isVisible === "true",
-      isHit: isHit === "true",
-      isNew: isNew === "true",
-      isWeeklyOffer: isWeeklyOffer === "true",
-      oldPrice:
-        oldPrice !== undefined && oldPrice !== "" ? Number(oldPrice) : null,
-      rollType: rollType || "",
-    };
+        weight: weight || "",
+        isVisible: isVisible === undefined ? true : isVisible === "true",
+        isHit: isHit === "true",
+        isNew: isNew === "true",
+        isWeeklyOffer: isWeeklyOffer === "true",
+        oldPrice:
+          oldPrice !== undefined && oldPrice !== "" ? Number(oldPrice) : null,
+        rollType: rollType || "",
+      };
 
-    await pool.query(
-      `
+      await pool.query(
+        `
       INSERT INTO products (
   id,
   name,
@@ -317,44 +321,46 @@ VALUES (
   $10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20
 )
       `,
-      [
-        newProduct.id,
-        newProduct.name,
-        newProduct.price,
-        newProduct.category,
-        newProduct.description,
-        newProduct.image,
-        newProduct.popular,
-        newProduct.promoType,
-        newProduct.priority,
-        newProduct.discountOfferEligible,
-        newProduct.freeSoySauce,
-        newProduct.freeGinger,
-        newProduct.freeWasabi,
-        newProduct.weight,
-        newProduct.isVisible,
-        newProduct.isHit,
-        newProduct.isNew,
-        newProduct.isWeeklyOffer,
-        newProduct.oldPrice,
-        rollType || "",
-      ]
-    );
+        [
+          newProduct.id,
+          newProduct.name,
+          newProduct.price,
+          newProduct.category,
+          newProduct.description,
+          newProduct.image,
+          newProduct.popular,
+          newProduct.promoType,
+          newProduct.priority,
+          newProduct.discountOfferEligible,
+          newProduct.freeSoySauce,
+          newProduct.freeGinger,
+          newProduct.freeWasabi,
+          newProduct.weight,
+          newProduct.isVisible,
+          newProduct.isHit,
+          newProduct.isNew,
+          newProduct.isWeeklyOffer,
+          newProduct.oldPrice,
+          rollType || "",
+        ]
+      );
 
-    return res.status(201).json({
-      success: true,
-      product: newProduct,
-    });
-  } catch (error) {
-    console.error("POST /products ERROR:", error);
-    return res.status(500).json({
-      message: "Не вдалося створити товар",
-    });
+      return res.status(201).json({
+        success: true,
+        product: newProduct,
+      });
+    } catch (error) {
+      console.error("POST /products ERROR:", error);
+      return res.status(500).json({
+        message: "Не вдалося створити товар",
+      });
+    }
   }
-});
+);
 
 app.post(
-  "/banners", requireAdminAuth,
+  "/banners",
+  requireAdminAuth,
   upload.fields([
     { name: "image", maxCount: 1 },
     { name: "mobileImage", maxCount: 1 },
@@ -584,7 +590,8 @@ app.put("/products/:id", requireAdminAuth, (req, res) => {
 });
 
 app.put(
-  "/banners/:id", requireAdminAuth,
+  "/banners/:id",
+  requireAdminAuth,
   upload.fields([
     { name: "image", maxCount: 1 },
     { name: "mobileImage", maxCount: 1 },
@@ -701,7 +708,7 @@ app.put(
   }
 );
 
-app.delete("/products/:id",  requireAdminAuth, async (req, res) => {
+app.delete("/products/:id", requireAdminAuth, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -880,7 +887,7 @@ app.post("/order", async (req, res) => {
     } = req.body;
 
     let sticksText = "";
-    
+
     const calculatedTotal =
       items.reduce((sum, item) => {
         const paidQuantity = item.paidQuantity ?? item.quantity ?? 0;
@@ -1010,17 +1017,17 @@ app.post("/order", async (req, res) => {
 
     if (activeTelegramGift) {
       let bonusBlock = `\n🎁 Бонус до замовлення:\n`;
-    
+
       bonusBlock += `Назва: ${activeTelegramGift.gift_roll_title || "Бонус"}\n`;
-    
+
       if (activeTelegramGift.gift_roll_id) {
         bonusBlock += `Код: ${activeTelegramGift.gift_roll_id}\n`;
       }
-    
+
       if (activeTelegramGift.comment) {
         bonusBlock += `Коментар: ${activeTelegramGift.comment}\n`;
       }
-    
+
       message += bonusBlock;
     }
 
@@ -1087,10 +1094,23 @@ app.post("/order", async (req, res) => {
       });
 
       try {
+        console.log("ORDER AUTO USE CHECK", {
+          hasOrder: Boolean(crmResult?.order),
+          orderId: crmResult?.order?.id || null,
+          hasActiveTelegramGift: Boolean(activeTelegramGift),
+          activeTelegramGiftId: activeTelegramGift?.id || null,
+          activeTelegramGiftStatus: activeTelegramGift?.status || null,
+          phone,
+        });
         if (crmResult?.order && activeTelegramGift) {
+          console.log("ORDER AUTO USE START", {
+            giftId: activeTelegramGift.id,
+            orderId: crmResult.order?.id,
+            phone,
+          });
           try {
             await markTelegramGiftUsed(pool, activeTelegramGift.id);
-        
+
             console.log("TELEGRAM GIFT AUTO USED", {
               giftId: activeTelegramGift.id,
               phone,
@@ -1098,7 +1118,11 @@ app.post("/order", async (req, res) => {
               orderId: crmResult.order?.id,
             });
           } catch (giftUseError) {
-            console.error("TELEGRAM GIFT AUTO USE ERROR:", giftUseError);
+            console.error("ORDER AUTO USE ERROR", giftUseError);
+            console.error(
+              "ORDER AUTO USE ERROR MESSAGE",
+              giftUseError?.message
+            );
           }
         }
       } catch (giftUseError) {

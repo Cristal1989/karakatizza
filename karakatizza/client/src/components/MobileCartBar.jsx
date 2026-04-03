@@ -29,6 +29,7 @@ export default function MobileCartBar() {
         // boxShadow: "0 12px 30px rgba(0,0,0,0.22)",
         zIndex: 100,
         cursor: "pointer",
+        
       }}
     >
       <div

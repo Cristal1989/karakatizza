@@ -336,6 +336,7 @@ export async function issueTelegramGift(
 }
 
 export async function markTelegramGiftUsed(pool, giftId) {
+  console.log("MARK GIFT USED START", { giftId });
   const result = await pool.query(
     `
       UPDATE telegram_gifts
@@ -361,6 +362,11 @@ export async function markTelegramGiftUsed(pool, giftId) {
     `,
     [giftId]
   );
+  console.log("MARK GIFT USED RESULT", {
+    giftId,
+    rows: result.rows.length,
+    gift: result.rows[0] || null,
+  });
 
   return result.rows[0] || null;
 }
