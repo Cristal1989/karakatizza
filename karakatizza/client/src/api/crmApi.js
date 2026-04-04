@@ -218,26 +218,38 @@ export async function useActiveTelegramBonus(payload) {
 }
 
 export async function getTelegramCheckoutStatus(phone) {
-  const encodedPhone = encodeURIComponent(phone || "");
+  const normalizedPhone = encodeURIComponent(String(phone || "").trim());
 
-  const res = await fetch(`${API_BASE_URL}/api/crm/telegram-checkout-status/${encodedPhone}`);
+  const response = await fetch(
+    `${API_BASE_URL}/api/crm/telegram-checkout-status/${normalizedPhone}`,
+    {
+      cache: "no-store",
+    }
+  );
 
-  const text = await res.text();
+  const text = await response.text();
 
-  let data;
+  let data = null;
   try {
-    data = JSON.parse(text);
+    data = text ? JSON.parse(text) : null;
   } catch {
-    throw new Error(`Сервер вернул не JSON: ${text.slice(0, 200)}`);
+    throw new Error(`Сервер повернув не JSON: ${text.slice(0, 120)}`);
   }
 
-  if (!res.ok) {
+  if (!response.ok) {
     throw new Error(
-      data?.message || "Не вдалося отримати Telegram-статус для checkout"
+      data?.message || "Не вдалося перевірити Telegram-бонус для цього номера"
     );
   }
 
-  return data;
+  return {
+    success: Boolean(data?.success),
+    customer: data?.customer || null,
+    activeGift: data?.activeGift || null,
+    telegramLinked: Boolean(data?.customer?.telegram_user_id),
+    phoneConfirmed: Boolean(data?.customer?.is_phone_confirmed),
+    telegramSubscribed: Boolean(data?.customer?.is_telegram_subscribed),
+  };
 }
 
 export async function getCustomerBonusHistory(customerId) {
