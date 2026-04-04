@@ -46,21 +46,10 @@ function buildCheckoutReturnUrl(draftToken = "") {
   const baseUrl = "https://karakatizza.vercel.app/checkout";
 
   if (!draftToken) {
-    return baseUrl;
+    return `${baseUrl}?tg=1`;
   }
 
-  return `${baseUrl}?draft=${encodeURIComponent(draftToken)}&tg=`;
-}
-
-function getReturnUrl(startParam = "") {
-  const safeParam = String(startParam || "").trim();
-
-  const returnMap = {
-    return_checkout: "https://karakatizza.vercel.app/checkout",
-    return_cart: "https://karakatizza.vercel.app/",
-  };
-
-  return returnMap[safeParam] || "https://karakatizza.vercel.app/";
+  return `${baseUrl}?draft=${encodeURIComponent(draftToken)}&tg=1`;
 }
 
 async function getCustomerByTelegramUserId(telegramUserId) {
@@ -502,12 +491,17 @@ async function handleContact(bot, msg) {
   const telegramFirstName = msg.from?.first_name || "";
   const contact = msg.contact;
 
+  const draftToken = pendingReturnDrafts.get(telegramUserId) || "";
+  const returnUrl = buildCheckoutReturnUrl(draftToken);
+
   if (!contact?.phone_number) {
     await bot.sendMessage(
       chatId,
       'Не вдалося отримати номер телефону. Спробуй ще раз через кнопку "Підтвердити номер".',
       {
-        reply_markup: buildMainKeyboard(false),
+        reply_markup: draftToken
+          ? buildReturnInlineKeyboard(returnUrl)
+          : buildMainKeyboard(false),
       }
     );
     return;
@@ -518,7 +512,9 @@ async function handleContact(bot, msg) {
       chatId,
       "Будь ласка, надішли саме свій номер через кнопку Telegram, а не чужий контакт.",
       {
-        reply_markup: buildMainKeyboard(false),
+        reply_markup: draftToken
+          ? buildReturnInlineKeyboard(returnUrl)
+          : buildMainKeyboard(false),
       }
     );
     return;
@@ -540,7 +536,9 @@ async function handleContact(bot, msg) {
         chatId,
         "Не вдалося прив'язати Telegram до клієнта. Спробуй пізніше.",
         {
-          reply_markup: buildMainKeyboard(false),
+          reply_markup: draftToken
+            ? buildReturnInlineKeyboard(returnUrl)
+            : buildMainKeyboard(false),
         }
       );
       return;
@@ -548,13 +546,6 @@ async function handleContact(bot, msg) {
 
     const customer = linkResult.customer;
     pendingPhones.delete(telegramUserId);
-
-    const draftToken = pendingReturnDrafts.get(telegramUserId) || "";
-    const returnUrl = buildCheckoutReturnUrl(draftToken);
-
-    if (draftToken) {
-      pendingReturnDrafts.delete(telegramUserId);
-    }
 
     let issueResult = null;
 
@@ -577,12 +568,12 @@ async function handleContact(bot, msg) {
       await bot.sendMessage(
         chatId,
         `Готово ✅
-    
-    Твій номер підтверджено.
-    Telegram успішно прив'язаний до профілю.
-    
-    🎁 Одноразовий бонус за підписку нараховано.
-    Він закріплений за твоїм номером і буде використаний при наступному замовленні.`,
+
+Твій номер підтверджено.
+Telegram успішно прив'язаний до профілю.
+
+🎁 Одноразовий бонус за підписку нараховано.
+Він закріплений за твоїм номером і буде використаний при наступному замовленні.`,
         {
           reply_markup: buildReturnInlineKeyboard(returnUrl),
         }
@@ -600,15 +591,15 @@ async function handleContact(bot, msg) {
       await bot.sendMessage(
         chatId,
         `Номер підтверджено ✅
-      
-      Telegram уже прив'язаний до твого профілю.
-      
-      🎁 Бонус за підписку вже був нарахований раніше.`,
+
+Telegram уже прив'язаний до твого профілю.
+
+🎁 Бонус за підписку вже був нарахований раніше.`,
         {
           reply_markup: buildReturnInlineKeyboard(returnUrl),
         }
       );
-      
+
       pendingReturnDrafts.delete(telegramUserId);
       return;
     }
@@ -616,13 +607,13 @@ async function handleContact(bot, msg) {
     await bot.sendMessage(
       chatId,
       `Номер підтверджено ✅
-    
-    Telegram прив'язаний до твого профілю.`,
+
+Telegram прив'язаний до твого профілю.`,
       {
         reply_markup: buildReturnInlineKeyboard(returnUrl),
       }
     );
-    
+
     pendingReturnDrafts.delete(telegramUserId);
     return;
   } catch (error) {
@@ -636,13 +627,13 @@ async function handleContact(bot, msg) {
 Якщо ти оформиш перше замовлення пізніше — просто натисни "Мій бонус" або ще раз відкрий бота.`
         : "Сталася помилка під час підтвердження номера. Спробуй трохи пізніше.";
 
-        await bot.sendMessage(chatId, messageText, {
-          reply_markup: draftToken
-            ? buildReturnInlineKeyboard(returnUrl)
-            : buildMainKeyboard(false),
-        });
-        
-        return;
+    await bot.sendMessage(chatId, messageText, {
+      reply_markup: draftToken
+        ? buildReturnInlineKeyboard(returnUrl)
+        : buildMainKeyboard(false),
+    });
+
+    return;
   }
 }
 
@@ -665,50 +656,49 @@ export function startTelegramBot() {
       const chatId = msg.chat.id;
       const telegramUserId = msg.from?.id ? String(msg.from.id) : "";
       const firstName = msg.from?.first_name || "друже";
-
+  
       const startParam = match?.[1] || "";
       const draftToken = getDraftTokenFromStartParam(startParam);
-
+  
       if (telegramUserId && draftToken) {
         pendingReturnDrafts.set(telegramUserId, draftToken);
       }
-
+  
       const customer = await getCustomerByTelegramUserId(telegramUserId);
       const isLinked = Boolean(customer?.telegram_user_id);
-
+  
       if (isLinked) {
         const returnUrl = buildCheckoutReturnUrl(draftToken);
-      
+  
+        if (draftToken) {
+          await bot.sendMessage(
+            chatId,
+            `Привіт, ${firstName}! 👋
+  
+  Telegram уже прив'язаний до твого профілю в Karakatizza.
+  
+  Повернутися до оформлення замовлення:`,
+            {
+              reply_markup: buildReturnInlineKeyboard(returnUrl),
+            }
+          );
+  
+          pendingReturnDrafts.delete(telegramUserId);
+          return;
+        }
+  
         await bot.sendMessage(
           chatId,
           `Привіт, ${firstName}! 👋
-      
-      Telegram уже прив'язаний до твого профілю в Karakatizza.`,
+  
+  Telegram уже прив'язаний до твого профілю в Karakatizza.`,
           {
             reply_markup: buildMainKeyboard(true),
           }
         );
-      
-        if (draftToken) {
-          await bot.sendMessage(chatId, "Повернутися до оформлення замовлення:", {
-            reply_markup: {
-              inline_keyboard: [
-                [
-                  {
-                    text: "Відкрити checkout",
-                    url: returnUrl,
-                  },
-                ],
-              ],
-            },
-          });
-      
-          pendingReturnDrafts.delete(telegramUserId);
-        }
-      
         return;
       }
-
+  
       await bot.sendMessage(
         chatId,
         `Привіт, ${firstName}! 👋
