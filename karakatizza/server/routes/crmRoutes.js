@@ -318,11 +318,7 @@ router.post("/telegram-gifts/use", async (req, res) => {
 });
 
 router.post("/telegram/link", async (req, res) => {
-  console.log("CRM TELEGRAM LINK RESULT", {
-    telegramUserId,
-    phone,
-    customer: updatedResult.rows[0] || customer,
-  });
+  
   try {
     const {
       phone,
@@ -330,6 +326,12 @@ router.post("/telegram/link", async (req, res) => {
       telegramUsername = "",
       telegramFirstName = "",
     } = req.body || {};
+
+    console.log("CRM TELEGRAM LINK RESULT", {
+      telegramUserId,
+      phone,
+      customer: updatedResult.rows[0] || customer,
+    });
 
     if (!phone) {
       return res.status(400).json({
@@ -589,12 +591,13 @@ router.get("/telegram/broadcast-history", requireAdminAuth, async (req, res) => 
 });
 
 router.get("/telegram/customer/:telegramUserId", async (req, res) => {
-  console.log("CRM TELEGRAM CUSTOMER LOOKUP", {
-    telegramUserId,
-    rows: result.rows,
-  });
+  
   try {
     const { telegramUserId } = req.params;
+    console.log("CRM TELEGRAM CUSTOMER LOOKUP", {
+      telegramUserId,
+      rows: result.rows,
+    });
 
     if (!telegramUserId) {
       return res.status(400).json({
