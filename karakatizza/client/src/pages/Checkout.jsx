@@ -99,11 +99,13 @@ export default function Checkout() {
   const [telegramCheckoutLoading, setTelegramCheckoutLoading] = useState(false);
   const [telegramCheckoutError, setTelegramCheckoutError] = useState("");
 
-  const TELEGRAM_BOT_START_PARAM = "return_checkout";
+  const TELEGRAM_BOT_USERNAME = "crm_karakatizza_bot";
 
-  const TELEGRAM_BOT_APP_URL = `tg://resolve?domain=crm_karakatizza_bot&start=${TELEGRAM_BOT_START_PARAM}`;
+const TELEGRAM_BOT_APP_URL =
+  `tg://resolve?domain=${TELEGRAM_BOT_USERNAME}&start=return_checkout`;
 
-  const TELEGRAM_BOT_WEB_URL = `https://t.me/crm_karakatizza_bot?start=${TELEGRAM_BOT_START_PARAM}`;
+const TELEGRAM_BOT_WEB_URL =
+  `https://t.me/${TELEGRAM_BOT_USERNAME}?start=return_checkout`;
 
   const checkoutPhoneValue = useMemo(() => {
     if (typeof formData !== "undefined" && formData?.phone != null) {
@@ -1166,29 +1168,21 @@ export default function Checkout() {
                       </div>
 
                       <a
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-
-                          const isMobile = /Android|iPhone|iPad|iPod/i.test(
-                            navigator.userAgent
-                          );
-
-                          if (isMobile) {
-                            window.location.href = TELEGRAM_BOT_APP_URL;
-                            setTimeout(() => {
-                              window.location.href = TELEGRAM_BOT_WEB_URL;
-                            }, 700);
-                            return;
-                          }
-
-                          window.open(
-                            TELEGRAM_BOT_WEB_URL,
-                            "_blank",
-                            "noopener,noreferrer"
-                          );
-                        }}
+                         type="button"
+                         onClick={(e) => {
+                           e.preventDefault();
+                           e.stopPropagation();
+                       
+                           const openedAt = Date.now();
+                       
+                           window.location.href = TELEGRAM_BOT_APP_URL;
+                       
+                           setTimeout(() => {
+                             if (Date.now() - openedAt < 1800) {
+                               window.location.href = TELEGRAM_BOT_WEB_URL;
+                             }
+                           }, 900);
+                         }}
                         style={{
                           display: "inline-flex",
                           alignItems: "center",

@@ -40,27 +40,17 @@ function buildMainKeyboard(isPhoneConfirmed = false) {
 }
 
 function getReturnUrl(startParam = "") {
-  const raw = String(startParam || "").trim();
+  const safeParam = String(startParam || "").trim();
 
-  if (!raw) {
-    return "https://karakatizza.vercel.app/checkout?from=telegram";
-  }
+  const returnMap = {
+    return_checkout: "https://karakatizza.vercel.app/checkout",
+    return_cart: "https://karakatizza.vercel.app/",
+  };
 
-  try {
-    const decoded = decodeURIComponent(raw);
-
-    if (decoded.startsWith("http://") || decoded.startsWith("https://")) {
-      return decoded;
-    }
-
-    if (decoded.startsWith("/")) {
-      return `https://karakatizza.vercel.app${decoded}`;
-    }
-
-    return "https://karakatizza.vercel.app/checkout?from=telegram";
-  } catch {
-    return "https://karakatizza.vercel.app/checkout?from=telegram";
-  }
+  return (
+    returnMap[safeParam] ||
+    "https://karakatizza.vercel.app/"
+  );
 }
 
 async function getCustomerByTelegramUserId(telegramUserId) {
@@ -480,12 +470,30 @@ ${customText || "Спеціальна пропозиція вже була ви�
   }
 }
 
+function buildReturnInlineKeyboard(returnUrl) {
+  if (!returnUrl) return undefined;
+
+  return {
+    inline_keyboard: [
+      [
+        {
+          text: "Повернутися до оформлення",
+          url: returnUrl,
+        },
+      ],
+    ],
+  };
+}
+
 async function handleContact(bot, msg) {
   const chatId = msg.chat.id;
   const telegramUserId = String(msg.from?.id || "");
   const telegramUsername = msg.from?.username || "";
   const telegramFirstName = msg.from?.first_name || "";
   const contact = msg.contact;
+  const returnUrl =
+  pendingReturnUrls.get(telegramUserId) ||
+  "https://karakatizza.vercel.app/checkout";
 
   if (!contact?.phone_number) {
     await bot.sendMessage(
@@ -559,24 +567,21 @@ async function handleContact(bot, msg) {
       await bot.sendMessage(
         chatId,
         `Готово ✅
-
-Твій номер підтверджено.
-Telegram успішно прив'язаний до профілю.
-
-🎁 Одноразовий бонус за підписку нараховано.
-Він закріплений за твоїм номером і буде використаний при наступному замовленні.`,
+    
+    Твій номер підтверджено.
+    Telegram успішно прив'язаний до профілю.
+    
+    🎁 Одноразовий бонус за підписку нараховано.
+    Він закріплений за твоїм номером і буде використаний при наступному замовленні.`,
         {
-          reply_markup: {
-            keyboard: buildMainKeyboard(true).keyboard,
-            resize_keyboard: true,
-            persistent: true,
-            inline_keyboard: [
-              [{ text: "Повернутись до оформлення", url: returnUrl }],
-            ],
-          },
+          reply_markup: buildReturnInlineKeyboard(returnUrl),
         }
       );
-
+    
+      await bot.sendMessage(chatId, "Що хочеш зробити далі?", {
+        reply_markup: buildMainKeyboard(true),
+      });
+    
       pendingReturnUrls.delete(telegramUserId);
       return;
     }
@@ -589,21 +594,19 @@ Telegram успішно прив'язаний до профілю.
       await bot.sendMessage(
         chatId,
         `Номер підтверджено ✅
-
-Telegram уже прив'язаний до твого профілю.
-🎁 Бонус за підписку вже був нарахований раніше.`,
+    
+    Telegram уже прив'язаний до твого профілю.
+    
+    🎁 Бонус за підписку вже був нарахований раніше.`,
         {
-          reply_markup: {
-            keyboard: buildMainKeyboard(true).keyboard,
-            resize_keyboard: true,
-            persistent: true,
-            inline_keyboard: [
-              [{ text: "Повернутись до оформлення", url: returnUrl }],
-            ],
-          },
+          reply_markup: buildReturnInlineKeyboard(returnUrl),
         }
       );
-
+    
+      await bot.sendMessage(chatId, "Що хочеш зробити далі?", {
+        reply_markup: buildMainKeyboard(true),
+      });
+    
       pendingReturnUrls.delete(telegramUserId);
       return;
     }
@@ -611,21 +614,19 @@ Telegram уже прив'язаний до твого профілю.
     await bot.sendMessage(
       chatId,
       `Номер підтверджено ✅
-
-Telegram прив'язаний до твого профілю.`,
+    
+    Telegram прив'язаний до твого профілю.`,
       {
-        reply_markup: {
-          keyboard: buildMainKeyboard(true).keyboard,
-          resize_keyboard: true,
-          persistent: true,
-          inline_keyboard: [
-            [{ text: "Повернутись до оформлення", url: returnUrl }],
-          ],
-        },
+        reply_markup: buildReturnInlineKeyboard(returnUrl),
       }
     );
-
+    
+    await bot.sendMessage(chatId, "Що хочеш зробити далі?", {
+      reply_markup: buildMainKeyboard(true),
+    });
+    
     pendingReturnUrls.delete(telegramUserId);
+
   } catch (error) {
     console.error("TELEGRAM CONTACT FLOW ERROR:", error);
 
@@ -640,6 +641,7 @@ Telegram прив'язаний до твого профілю.`,
     await bot.sendMessage(chatId, messageText, {
       reply_markup: buildMainKeyboard(false),
     });
+    pendingReturnUrls.delete(telegramUserId);
   }
 }
 
@@ -663,16 +665,15 @@ export function startTelegramBot() {
       const telegramUserId = msg.from?.id ? String(msg.from.id) : "";
       const firstName = msg.from?.first_name || "друже";
   
-      const customer = await getCustomerByTelegramUserId(telegramUserId);
-      const isLinked = Boolean(customer?.telegram_user_id);
-  
-      const text = msg.text || "";
-      const [, startParam = ""] = text.split(" ");
+      const startParam = match?.[1] || "";
       const returnUrl = getReturnUrl(startParam);
   
       if (telegramUserId) {
         pendingReturnUrls.set(telegramUserId, returnUrl);
       }
+  
+      const customer = await getCustomerByTelegramUserId(telegramUserId);
+      const isLinked = Boolean(customer?.telegram_user_id);
   
       if (isLinked) {
         await bot.sendMessage(
@@ -683,14 +684,7 @@ export function startTelegramBot() {
   
   Що хочеш зробити далі?`,
           {
-            reply_markup: {
-              keyboard: buildMainKeyboard(true).keyboard,
-              resize_keyboard: true,
-              persistent: true,
-              inline_keyboard: [
-                [{ text: "Повернутись до оформлення", url: returnUrl }],
-              ],
-            },
+            reply_markup: buildMainKeyboard(true),
           }
         );
         return;

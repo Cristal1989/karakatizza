@@ -327,11 +327,6 @@ router.post("/telegram/link", async (req, res) => {
       telegramFirstName = "",
     } = req.body || {};
 
-    console.log("CRM TELEGRAM LINK RESULT", {
-      telegramUserId,
-      phone,
-      customer: updatedResult.rows[0] || customer,
-    });
 
     if (!phone) {
       return res.status(400).json({
