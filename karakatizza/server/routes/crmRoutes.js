@@ -594,10 +594,6 @@ router.get("/telegram/customer/:telegramUserId", async (req, res) => {
   
   try {
     const { telegramUserId } = req.params;
-    console.log("CRM TELEGRAM CUSTOMER LOOKUP", {
-      telegramUserId,
-      rows: result.rows,
-    });
 
     if (!telegramUserId) {
       return res.status(400).json({
