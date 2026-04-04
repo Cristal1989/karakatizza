@@ -103,41 +103,13 @@ export default function Checkout() {
 
   const TELEGRAM_BOT_USERNAME = "crm_karakatizza_bot";
 
-const TELEGRAM_BOT_APP_URL =
-  `tg://resolve?domain=${TELEGRAM_BOT_USERNAME}&start=return_checkout`;
+  const TELEGRAM_BOT_APP_URL = `tg://resolve?domain=${TELEGRAM_BOT_USERNAME}&start=return_checkout`;
 
-const TELEGRAM_BOT_WEB_URL =
-  `https://t.me/${TELEGRAM_BOT_USERNAME}?start=return_checkout`;
+  const TELEGRAM_BOT_WEB_URL = `https://t.me/${TELEGRAM_BOT_USERNAME}?start=return_checkout`;
 
   const checkoutPhoneValue = useMemo(() => {
-    if (typeof formData !== "undefined" && formData?.phone != null) {
-      return String(formData.phone);
-    }
-
-    if (typeof form !== "undefined" && form?.phone != null) {
-      return String(form.phone);
-    }
-
-    if (typeof customerData !== "undefined" && customerData?.phone != null) {
-      return String(customerData.phone);
-    }
-
-    if (typeof customerPhone !== "undefined" && customerPhone != null) {
-      return String(customerPhone);
-    }
-
-    if (typeof phone !== "undefined" && phone != null) {
-      return String(phone);
-    }
-
-    return "";
-  }, [
-    typeof formData !== "undefined" ? formData?.phone : null,
-    typeof form !== "undefined" ? form?.phone : null,
-    typeof customerData !== "undefined" ? customerData?.phone : null,
-    typeof customerPhone !== "undefined" ? customerPhone : null,
-    typeof phone !== "undefined" ? phone : null,
-  ]);
+    return String(form?.phone || "").trim();
+  }, [form?.phone]);
 
   function getCheckoutBonusText(activeGift) {
     if (!activeGift) return "";
@@ -528,15 +500,13 @@ const TELEGRAM_BOT_WEB_URL =
     extraSoyCount * 15 + extraGingerCount * 15 + extraWasabiCount * 10;
   const finalCheckoutTotal = checkoutTotalPrice + condimentsExtraPrice;
 
-
-
   useEffect(() => {
     try {
       const raw = localStorage.getItem(CHECKOUT_DRAFT_KEY);
       if (!raw) return;
-  
+
       const draft = JSON.parse(raw);
-  
+
       setForm((prev) => ({
         ...prev,
         name: draft.name || "",
@@ -548,8 +518,11 @@ const TELEGRAM_BOT_WEB_URL =
         needExactTime: Boolean(draft.needExactTime),
         exactTime: draft.exactTime || "",
       }));
-  
-      if (draft.checkoutMode === "pickup" || draft.checkoutMode === "delivery") {
+
+      if (
+        draft.checkoutMode === "pickup" ||
+        draft.checkoutMode === "delivery"
+      ) {
         setCheckoutMode(draft.checkoutMode);
       }
     } catch (error) {
@@ -570,7 +543,7 @@ const TELEGRAM_BOT_WEB_URL =
         needExactTime: form.needExactTime,
         exactTime: form.exactTime,
       };
-  
+
       localStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify(draft));
     } catch (error) {
       console.error("CHECKOUT DRAFT SAVE ERROR:", error);
@@ -605,9 +578,18 @@ const TELEGRAM_BOT_WEB_URL =
   }, [confirmedAddress, checkoutMode]);
 
   useEffect(() => {
-    const cleanPhone = (checkoutPhoneValue || "").trim();
+    const cleanPhone = String(checkoutPhoneValue || "").trim();
+    const digits = cleanPhone.replace(/\D/g, "");
+    const isCompleteUaPhone = digits.length === 12 && digits.startsWith("380");
 
-    if (!cleanPhone || cleanPhone.length < 10) {
+    if (!cleanPhone) {
+      setTelegramCheckoutStatus(null);
+      setTelegramCheckoutError("");
+      setTelegramCheckoutLoading(false);
+      return;
+    }
+
+    if (!isCompleteUaPhone) {
       setTelegramCheckoutStatus(null);
       setTelegramCheckoutError("");
       setTelegramCheckoutLoading(false);
@@ -620,7 +602,7 @@ const TELEGRAM_BOT_WEB_URL =
         setTelegramCheckoutError("");
 
         const data = await getTelegramCheckoutStatus(cleanPhone);
-        setTelegramCheckoutStatus(data);
+        setTelegramCheckoutStatus(data || null);
       } catch (error) {
         console.error("CHECKOUT TELEGRAM STATUS ERROR:", error);
         setTelegramCheckoutStatus(null);
@@ -1136,21 +1118,14 @@ const TELEGRAM_BOT_WEB_URL =
                 <input
                   type="tel"
                   value={form.phone}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      phone: e.target.value,
-                    }))
-                  }
+                  onChange={handlePhoneChange}
                   placeholder="+380"
                   style={fieldStyle}
                 />
               </div>
               {telegramCheckoutLoading ||
               telegramCheckoutError ||
-              (telegramCheckoutStatus &&
-                (telegramCheckoutStatus.telegramLinked === false ||
-                  Boolean(telegramCheckoutStatus.activeGift))) ? (
+              telegramCheckoutStatus ? (
                 <div
                   style={{
                     marginTop: 10,
@@ -1230,16 +1205,14 @@ const TELEGRAM_BOT_WEB_URL =
                       </div>
 
                       <a
-                         type="button"
-                         onClick={(e) => {
-                           e.preventDefault();
-                           e.stopPropagation();
-                       
-                           const openedAt = Date.now();
-                       
-                           window.location.href = TELEGRAM_BOT_APP_URL;
-                       
-                           try {
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+
+                          const openedAt = Date.now();
+
+                          try {
                             localStorage.setItem(
                               CHECKOUT_DRAFT_KEY,
                               JSON.stringify({
@@ -1255,15 +1228,20 @@ const TELEGRAM_BOT_WEB_URL =
                               })
                             );
                           } catch (error) {
-                            console.error("CHECKOUT DRAFT PRE-TELEGRAM SAVE ERROR:", error);
+                            console.error(
+                              "CHECKOUT DRAFT PRE-TELEGRAM SAVE ERROR:",
+                              error
+                            );
                           }
 
-                           setTimeout(() => {
-                             if (Date.now() - openedAt < 1800) {
-                               window.location.href = TELEGRAM_BOT_WEB_URL;
-                             }
-                           }, 900);
-                         }}
+                          window.location.href = TELEGRAM_BOT_APP_URL;
+
+                          setTimeout(() => {
+                            if (Date.now() - openedAt < 1800) {
+                              window.location.href = TELEGRAM_BOT_WEB_URL;
+                            }
+                          }, 900);
+                        }}
                         style={{
                           display: "inline-flex",
                           alignItems: "center",
