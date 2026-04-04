@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { createOrder } from "../api/ordersApi";
 import {
@@ -67,6 +67,11 @@ export default function Checkout() {
 
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const isTelegramReturn = searchParams.get("tg") === "1";
+  const [
+    skipTelegramBonusForThisCheckout,
+    setSkipTelegramBonusForThisCheckout,
+  ] = useState(isTelegramReturn);
 
   const { cartItems, clearCart, totalPrice } = useCart();
   const {
@@ -503,6 +508,11 @@ export default function Checkout() {
     extraSoyCount * 15 + extraGingerCount * 15 + extraWasabiCount * 10;
   const finalCheckoutTotal = checkoutTotalPrice + condimentsExtraPrice;
 
+  const activeTelegramGift = telegramCheckoutStatus?.activeGift || null;
+
+  const shouldApplyTelegramGift =
+    Boolean(activeTelegramGift) && !skipTelegramBonusForThisCheckout;
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem(CHECKOUT_DRAFT_KEY);
@@ -585,14 +595,7 @@ export default function Checkout() {
     const digits = cleanPhone.replace(/\D/g, "");
     const isCompleteUaPhone = digits.length === 12 && digits.startsWith("380");
 
-    if (!cleanPhone) {
-      setTelegramCheckoutStatus(null);
-      setTelegramCheckoutError("");
-      setTelegramCheckoutLoading(false);
-      return;
-    }
-
-    if (!isCompleteUaPhone) {
+    if (!cleanPhone || !isCompleteUaPhone) {
       setTelegramCheckoutStatus(null);
       setTelegramCheckoutError("");
       setTelegramCheckoutLoading(false);
@@ -716,18 +719,18 @@ export default function Checkout() {
 
   useEffect(() => {
     const draftToken = searchParams.get("draft");
-  
+
     if (!draftToken) return;
-  
+
     let isMounted = true;
-  
+
     async function restoreDraftFromServer() {
       try {
         const response = await getCheckoutDraft(draftToken);
         const draft = response?.draft;
-  
+
         if (!isMounted || !draft) return;
-  
+
         setForm((prev) => ({
           ...prev,
           name: draft.name ?? prev.name,
@@ -741,13 +744,16 @@ export default function Checkout() {
               : prev.needExactTime,
           exactTime: draft.exactTime ?? prev.exactTime,
         }));
-  
-        if (draft.checkoutMode === "pickup" || draft.checkoutMode === "delivery") {
+
+        if (
+          draft.checkoutMode === "pickup" ||
+          draft.checkoutMode === "delivery"
+        ) {
           setCheckoutMode(draft.checkoutMode);
         }
-  
+
         await deleteCheckoutDraft(draftToken);
-  
+
         const nextParams = new URLSearchParams(searchParams);
         nextParams.delete("draft");
         nextParams.delete("tg");
@@ -756,27 +762,21 @@ export default function Checkout() {
         console.error("RESTORE CHECKOUT DRAFT ERROR:", error);
       }
     }
-  
+
     restoreDraftFromServer();
-  
+
     return () => {
       isMounted = false;
     };
   }, [searchParams, setSearchParams, setCheckoutMode]);
 
-  function getCheckoutBonusText(activeGift) {
-    if (!activeGift) return "";
+  useEffect(() => {
+    if (!isTelegramReturn) return;
 
-    if (activeGift.giftRollTitle) {
-      return activeGift.giftRollTitle;
-    }
-
-    if (activeGift.giftRollId) {
-      return activeGift.giftRollId;
-    }
-
-    return "Активний бонус";
-  }
+    const url = new URL(window.location.href);
+    url.searchParams.delete("tg");
+    window.history.replaceState({}, "", url.toString());
+  }, [isTelegramReturn]);
 
   const handleNameChange = (e) => {
     const value = e.target.value;
@@ -849,7 +849,7 @@ export default function Checkout() {
   async function handleOpenTelegramForCheckout(e) {
     e.preventDefault();
     e.stopPropagation();
-  
+
     try {
       const payload = {
         name: form.name,
@@ -861,28 +861,28 @@ export default function Checkout() {
         needExactTime: form.needExactTime === true,
         exactTime: form.exactTime,
       };
-  
+
       try {
         localStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify(payload));
       } catch (error) {
         console.error("CHECKOUT LOCAL DRAFT SAVE ERROR:", error);
       }
-  
+
       const draftResponse = await createCheckoutDraft(payload);
       const token = draftResponse?.token;
-  
+
       if (!token) {
         throw new Error("Не вдалося отримати token чернетки");
       }
-  
+
       const startParam = `checkout_${token}`;
       const appUrl = `tg://resolve?domain=${TELEGRAM_BOT_USERNAME}&start=${startParam}`;
       const webUrl = `https://t.me/${TELEGRAM_BOT_USERNAME}?start=${startParam}`;
-  
+
       const openedAt = Date.now();
-  
+
       window.location.href = appUrl;
-  
+
       setTimeout(() => {
         if (Date.now() - openedAt < 1800) {
           window.location.href = webUrl;
@@ -1333,8 +1333,16 @@ export default function Checkout() {
                   !telegramCheckoutError &&
                   telegramCheckoutStatus &&
                   telegramCheckoutStatus.telegramLinked === true &&
-                  telegramCheckoutStatus.activeGift ? (
-                    <div>
+                  activeTelegramGift ? (
+                    <div
+                      style={{
+                        marginTop: 12,
+                        padding: "14px 16px",
+                        borderRadius: 18,
+                        border: "1px solid #dbe4f0",
+                        background: "#f8fafc",
+                      }}
+                    >
                       <div
                         style={{
                           fontSize: 14,
@@ -1355,34 +1363,36 @@ export default function Checkout() {
                           fontWeight: 600,
                         }}
                       >
-                        {getCheckoutBonusText(
-                          telegramCheckoutStatus.activeGift
-                        )}
+                        {getCheckoutBonusText(activeTelegramGift)}
                       </div>
 
-                      {telegramCheckoutStatus.activeGift.comment ? (
+                      {activeTelegramGift?.comment ? (
                         <div
                           style={{
-                            marginTop: 2,
+                            marginTop: 4,
                             fontSize: 12,
                             color: "#64748b",
                             lineHeight: 1.45,
                           }}
                         >
-                          {telegramCheckoutStatus.activeGift.comment}
+                          {activeTelegramGift.comment}
                         </div>
                       ) : null}
 
                       <div
                         style={{
-                          marginTop: 4,
-                          fontSize: 12,
-                          fontWeight: 700,
-                          color: "#16a34a",
+                          marginTop: 8,
+                          fontSize: 13,
                           lineHeight: 1.45,
+                          fontWeight: 700,
+                          color: skipTelegramBonusForThisCheckout
+                            ? "#a16207"
+                            : "#2f855a",
                         }}
                       >
-                        Бонус буде використаний у цьому замовленні.
+                        {skipTelegramBonusForThisCheckout
+                          ? "Бонус активовано, але буде доступний лише для наступного замовлення."
+                          : "Бонус буде використаний у цьому замовленні."}
                       </div>
                     </div>
                   ) : null}
