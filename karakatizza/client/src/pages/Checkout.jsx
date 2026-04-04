@@ -109,7 +109,35 @@ const TELEGRAM_BOT_APP_URL =
 const TELEGRAM_BOT_WEB_URL =
   `https://t.me/${TELEGRAM_BOT_USERNAME}?start=return_checkout`;
 
-  const checkoutPhoneValue = String(form?.phone || "");
+  const checkoutPhoneValue = useMemo(() => {
+    if (typeof formData !== "undefined" && formData?.phone != null) {
+      return String(formData.phone);
+    }
+
+    if (typeof form !== "undefined" && form?.phone != null) {
+      return String(form.phone);
+    }
+
+    if (typeof customerData !== "undefined" && customerData?.phone != null) {
+      return String(customerData.phone);
+    }
+
+    if (typeof customerPhone !== "undefined" && customerPhone != null) {
+      return String(customerPhone);
+    }
+
+    if (typeof phone !== "undefined" && phone != null) {
+      return String(phone);
+    }
+
+    return "";
+  }, [
+    typeof formData !== "undefined" ? formData?.phone : null,
+    typeof form !== "undefined" ? form?.phone : null,
+    typeof customerData !== "undefined" ? customerData?.phone : null,
+    typeof customerPhone !== "undefined" ? customerPhone : null,
+    typeof phone !== "undefined" ? phone : null,
+  ]);
 
   function getCheckoutBonusText(activeGift) {
     if (!activeGift) return "";
