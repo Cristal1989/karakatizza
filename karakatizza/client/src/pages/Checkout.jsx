@@ -551,14 +551,14 @@ const TELEGRAM_BOT_WEB_URL =
   useEffect(() => {
     try {
       const draft = {
-        name,
-        phone,
-        address,
-        entrance,
-        comment,
-        checkoutMode,
-        needExactTime,
-        exactTime,
+        name: form.name,
+        phone: form.phone,
+        address: form.address,
+        entrance: form.entrance,
+        comment: form.comment,
+        paymentMethod: form.paymentMethod,
+        needExactTime: form.needExactTime,
+        exactTime: form.exactTime,
       };
   
       localStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify(draft));
@@ -1245,7 +1245,7 @@ const TELEGRAM_BOT_WEB_URL =
                           } catch (error) {
                             console.error("CHECKOUT DRAFT PRE-TELEGRAM SAVE ERROR:", error);
                           }
-                          
+
                            setTimeout(() => {
                              if (Date.now() - openedAt < 1800) {
                                window.location.href = TELEGRAM_BOT_WEB_URL;
