@@ -318,6 +318,11 @@ router.post("/telegram-gifts/use", async (req, res) => {
 });
 
 router.post("/telegram/link", async (req, res) => {
+  console.log("CRM TELEGRAM LINK RESULT", {
+    telegramUserId,
+    phone,
+    customer: updatedResult.rows[0] || customer,
+  });
   try {
     const {
       phone,
@@ -584,6 +589,10 @@ router.get("/telegram/broadcast-history", requireAdminAuth, async (req, res) => 
 });
 
 router.get("/telegram/customer/:telegramUserId", async (req, res) => {
+  console.log("CRM TELEGRAM CUSTOMER LOOKUP", {
+    telegramUserId,
+    rows: result.rows,
+  });
   try {
     const { telegramUserId } = req.params;
 
