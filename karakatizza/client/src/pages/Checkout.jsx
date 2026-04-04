@@ -59,14 +59,16 @@ export default function Checkout() {
   const checkoutExactTimeLabel =
     texts?.checkoutExactTimeLabel || "Потрібно на певний час";
 
-  const checkoutSuccessHint =
-    texts?.checkoutSuccessHint ||
-    "Дякуємо за замовлення! Ми скоро зв’яжемося з вами.";
+   
+  const [telegramCheckoutStatus, setTelegramCheckoutStatus] = useState(null);
+  const [telegramCheckoutLoading, setTelegramCheckoutLoading] = useState(false);
+  const [telegramCheckoutError, setTelegramCheckoutError] = useState(""); 
+
 
   const CHECKOUT_DRAFT_KEY = "kara_checkout_draft_v1";
 
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const TELEGRAM_RETURN_FLAG_KEY = "kara_telegram_return_checkout";
 
@@ -140,10 +142,6 @@ export default function Checkout() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  const [telegramCheckoutStatus, setTelegramCheckoutStatus] = useState(null);
-  const [telegramCheckoutLoading, setTelegramCheckoutLoading] = useState(false);
-  const [telegramCheckoutError, setTelegramCheckoutError] = useState("");
 
   const TELEGRAM_BOT_USERNAME = "crm_karakatizza_bot";
 
@@ -798,12 +796,12 @@ export default function Checkout() {
   }, [searchParams, setSearchParams, setCheckoutMode]);
 
   useEffect(() => {
-    if (!isTelegramReturn) return;
-
+    if (!isTelegramReturnFromUrl) return;
+  
     const url = new URL(window.location.href);
     url.searchParams.delete("tg");
     window.history.replaceState({}, "", url.toString());
-  }, [isTelegramReturn]);
+  }, [isTelegramReturnFromUrl]);
 
   const handleNameChange = (e) => {
     const value = e.target.value;
