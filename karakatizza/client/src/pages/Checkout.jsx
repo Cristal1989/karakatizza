@@ -109,35 +109,7 @@ const TELEGRAM_BOT_APP_URL =
 const TELEGRAM_BOT_WEB_URL =
   `https://t.me/${TELEGRAM_BOT_USERNAME}?start=return_checkout`;
 
-  const checkoutPhoneValue = useMemo(() => {
-    if (typeof formData !== "undefined" && formData?.phone != null) {
-      return String(formData.phone);
-    }
-
-    if (typeof form !== "undefined" && form?.phone != null) {
-      return String(form.phone);
-    }
-
-    if (typeof customerData !== "undefined" && customerData?.phone != null) {
-      return String(customerData.phone);
-    }
-
-    if (typeof customerPhone !== "undefined" && customerPhone != null) {
-      return String(customerPhone);
-    }
-
-    if (typeof phone !== "undefined" && phone != null) {
-      return String(phone);
-    }
-
-    return "";
-  }, [
-    typeof formData !== "undefined" ? formData?.phone : null,
-    typeof form !== "undefined" ? form?.phone : null,
-    typeof customerData !== "undefined" ? customerData?.phone : null,
-    typeof customerPhone !== "undefined" ? customerPhone : null,
-    typeof phone !== "undefined" ? phone : null,
-  ]);
+  const checkoutPhoneValue = String(form?.phone || "");
 
   function getCheckoutBonusText(activeGift) {
     if (!activeGift) return "";
@@ -528,6 +500,8 @@ const TELEGRAM_BOT_WEB_URL =
     extraSoyCount * 15 + extraGingerCount * 15 + extraWasabiCount * 10;
   const finalCheckoutTotal = checkoutTotalPrice + condimentsExtraPrice;
 
+
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem(CHECKOUT_DRAFT_KEY);
@@ -535,14 +509,21 @@ const TELEGRAM_BOT_WEB_URL =
   
       const draft = JSON.parse(raw);
   
-      setName(draft.name || "");
-      setPhone(draft.phone || "");
-      setAddress(draft.address || "");
-      setEntrance(draft.entrance || "");
-      setComment(draft.comment || "");
-      setCheckoutMode(draft.checkoutMode || "delivery");
-      setNeedExactTime(Boolean(draft.needExactTime));
-      setExactTime(draft.exactTime || "");
+      setForm((prev) => ({
+        ...prev,
+        name: draft.name || "",
+        phone: draft.phone || "+380",
+        address: draft.address || "",
+        entrance: draft.entrance || "",
+        comment: draft.comment || "",
+        paymentMethod: draft.paymentMethod || prev.paymentMethod,
+        needExactTime: Boolean(draft.needExactTime),
+        exactTime: draft.exactTime || "",
+      }));
+  
+      if (draft.checkoutMode === "pickup" || draft.checkoutMode === "delivery") {
+        setCheckoutMode(draft.checkoutMode);
+      }
     } catch (error) {
       console.error("CHECKOUT DRAFT LOAD ERROR:", error);
     }
@@ -557,6 +538,7 @@ const TELEGRAM_BOT_WEB_URL =
         entrance: form.entrance,
         comment: form.comment,
         paymentMethod: form.paymentMethod,
+        checkoutMode,
         needExactTime: form.needExactTime,
         exactTime: form.exactTime,
       };
@@ -566,14 +548,15 @@ const TELEGRAM_BOT_WEB_URL =
       console.error("CHECKOUT DRAFT SAVE ERROR:", error);
     }
   }, [
-    name,
-    phone,
-    address,
-    entrance,
-    comment,
+    form.name,
+    form.phone,
+    form.address,
+    form.entrance,
+    form.comment,
+    form.paymentMethod,
     checkoutMode,
-    needExactTime,
-    exactTime,
+    form.needExactTime,
+    form.exactTime,
   ]);
 
   useEffect(() => {
@@ -1232,14 +1215,15 @@ const TELEGRAM_BOT_WEB_URL =
                             localStorage.setItem(
                               CHECKOUT_DRAFT_KEY,
                               JSON.stringify({
-                                name,
-                                phone,
-                                address,
-                                entrance,
-                                comment,
+                                name: form.name,
+                                phone: form.phone,
+                                address: form.address,
+                                entrance: form.entrance,
+                                comment: form.comment,
+                                paymentMethod: form.paymentMethod,
                                 checkoutMode,
-                                needExactTime,
-                                exactTime,
+                                needExactTime: form.needExactTime,
+                                exactTime: form.exactTime,
                               })
                             );
                           } catch (error) {
