@@ -659,18 +659,13 @@ export function startTelegramBot() {
     polling: true,
   });
 
-  bot.onText(/\/start/, async (msg) => {
+  bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
     try {
       const chatId = msg.chat.id;
       const telegramUserId = msg.from?.id ? String(msg.from.id) : "";
       const firstName = msg.from?.first_name || "друже";
   
       const startParam = match?.[1] || "";
-      const returnUrl = getReturnUrl(startParam);
-  
-      if (telegramUserId) {
-        pendingReturnUrls.set(telegramUserId, returnUrl);
-      }
   
       const customer = await getCustomerByTelegramUserId(telegramUserId);
       const isLinked = Boolean(customer?.telegram_user_id);

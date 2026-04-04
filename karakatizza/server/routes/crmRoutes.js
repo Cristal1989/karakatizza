@@ -318,7 +318,6 @@ router.post("/telegram-gifts/use", async (req, res) => {
 });
 
 router.post("/telegram/link", async (req, res) => {
-  
   try {
     const {
       phone,
@@ -326,7 +325,6 @@ router.post("/telegram/link", async (req, res) => {
       telegramUsername = "",
       telegramFirstName = "",
     } = req.body || {};
-
 
     if (!phone) {
       return res.status(400).json({
@@ -564,29 +562,32 @@ router.post("/telegram/broadcast-count", requireAdminAuth, async (req, res) => {
   }
 });
 
-router.get("/telegram/broadcast-history", requireAdminAuth, async (req, res) => {
-  try {
-    const limit = Number(req.query.limit || 20);
+router.get(
+  "/telegram/broadcast-history",
+  requireAdminAuth,
+  async (req, res) => {
+    try {
+      const limit = Number(req.query.limit || 20);
 
-    const items = await getTelegramBroadcastHistory(pool, limit);
+      const items = await getTelegramBroadcastHistory(pool, limit);
 
-    return res.json({
-      success: true,
-      items,
-    });
-  } catch (error) {
-    console.error("CRM TELEGRAM BROADCAST HISTORY ERROR:", error);
+      return res.json({
+        success: true,
+        items,
+      });
+    } catch (error) {
+      console.error("CRM TELEGRAM BROADCAST HISTORY ERROR:", error);
 
-    return res.status(500).json({
-      success: false,
-      message: "Не вдалося отримати історію розсилок",
-      error: error?.message || "Unknown error",
-    });
+      return res.status(500).json({
+        success: false,
+        message: "Не вдалося отримати історію розсилок",
+        error: error?.message || "Unknown error",
+      });
+    }
   }
-});
+);
 
 router.get("/telegram/customer/:telegramUserId", async (req, res) => {
-  
   try {
     const { telegramUserId } = req.params;
 
@@ -636,50 +637,53 @@ router.get("/telegram/customer/:telegramUserId", async (req, res) => {
   }
 });
 
-router.post("/telegram-gifts/issue-test", requireAdminAuth, async (req, res) => {
-  try {
-    const {
-      customerId = null,
-      phone = "",
-      giftRollId = "telegram-test-bonus",
-      giftRollTitle = "Тестовий бонус",
-      comment = "Manual test bonus",
-    } = req.body || {};
+router.post(
+  "/telegram-gifts/issue-test",
+  requireAdminAuth,
+  async (req, res) => {
+    try {
+      const {
+        customerId = null,
+        phone = "",
+        giftRollId = "telegram-test-bonus",
+        giftRollTitle = "Тестовий бонус",
+        comment = "Manual test bonus",
+      } = req.body || {};
 
-    const phoneNormalized = normalizeUaPhone(phone);
+      const phoneNormalized = normalizeUaPhone(phone);
 
-    if (!phoneNormalized) {
-      return res.status(400).json({
-        success: false,
-        message: "Потрібен коректний номер телефону",
-      });
-    }
+      if (!phoneNormalized) {
+        return res.status(400).json({
+          success: false,
+          message: "Потрібен коректний номер телефону",
+        });
+      }
 
-    let resolvedCustomerId = customerId ? Number(customerId) : null;
+      let resolvedCustomerId = customerId ? Number(customerId) : null;
 
-    if (!resolvedCustomerId) {
-      const customerResult = await pool.query(
-        `
+      if (!resolvedCustomerId) {
+        const customerResult = await pool.query(
+          `
           SELECT id
           FROM customers
           WHERE phone_normalized = $1
           LIMIT 1
         `,
-        [phoneNormalized]
-      );
+          [phoneNormalized]
+        );
 
-      if (!customerResult.rows.length) {
-        return res.status(404).json({
-          success: false,
-          message: "Клієнта з таким номером не знайдено",
-        });
+        if (!customerResult.rows.length) {
+          return res.status(404).json({
+            success: false,
+            message: "Клієнта з таким номером не знайдено",
+          });
+        }
+
+        resolvedCustomerId = customerResult.rows[0].id;
       }
 
-      resolvedCustomerId = customerResult.rows[0].id;
-    }
-
-    const activeResult = await pool.query(
-      `
+      const activeResult = await pool.query(
+        `
         SELECT
           id,
           customer_id,
@@ -699,20 +703,20 @@ router.post("/telegram-gifts/issue-test", requireAdminAuth, async (req, res) => 
         ORDER BY created_at DESC
         LIMIT 1
       `,
-      [phoneNormalized]
-    );
+        [phoneNormalized]
+      );
 
-    if (activeResult.rows.length) {
-      return res.json({
-        success: true,
-        created: false,
-        reason: "active_gift_exists",
-        gift: activeResult.rows[0],
-      });
-    }
+      if (activeResult.rows.length) {
+        return res.json({
+          success: true,
+          created: false,
+          reason: "active_gift_exists",
+          gift: activeResult.rows[0],
+        });
+      }
 
-    const insertResult = await pool.query(
-      `
+      const insertResult = await pool.query(
+        `
         INSERT INTO telegram_gifts (
           customer_id,
           phone_normalized,
@@ -740,29 +744,30 @@ router.post("/telegram-gifts/issue-test", requireAdminAuth, async (req, res) => 
           created_at,
           updated_at
       `,
-      [
-        resolvedCustomerId,
-        phoneNormalized,
-        giftRollId || "telegram-test-bonus",
-        giftRollTitle || "Тестовий бонус",
-        comment || "Manual test bonus",
-      ]
-    );
+        [
+          resolvedCustomerId,
+          phoneNormalized,
+          giftRollId || "telegram-test-bonus",
+          giftRollTitle || "Тестовий бонус",
+          comment || "Manual test bonus",
+        ]
+      );
 
-    return res.json({
-      success: true,
-      created: true,
-      gift: insertResult.rows[0],
-    });
-  } catch (error) {
-    console.error("ISSUE TEST TELEGRAM GIFT ERROR:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Не вдалося видати тестовий бонус",
-      error: error?.message || "Unknown error",
-    });
+      return res.json({
+        success: true,
+        created: true,
+        gift: insertResult.rows[0],
+      });
+    } catch (error) {
+      console.error("ISSUE TEST TELEGRAM GIFT ERROR:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Не вдалося видати тестовий бонус",
+        error: error?.message || "Unknown error",
+      });
+    }
   }
-});
+);
 
 router.post("/telegram-gifts/use-active", async (req, res) => {
   try {
@@ -788,6 +793,14 @@ router.post("/telegram-gifts/use-active", async (req, res) => {
       `,
       [phoneNormalized]
     );
+    const isWelcomeGift = activeGift?.gift_roll_id === "telegram-welcome";
+
+    if (isWelcomeGift && Number(customer?.orders_count || 0) < 1) {
+      return res.status(400).json({
+        success: false,
+        message: "Welcome-бонус доступний лише з наступного замовлення",
+      });
+    }
 
     if (!activeResult.rows.length) {
       return res.json({
@@ -841,88 +854,103 @@ router.post("/telegram-gifts/use-active", async (req, res) => {
 
 router.get("/telegram-checkout-status/:phone", async (req, res) => {
   try {
-    const rawPhone = req.params.phone || "";
-    const phoneNormalized = normalizeUaPhone(rawPhone);
+    const { phone } = req.params;
+
+    const phoneNormalized = normalizeUaPhone(phone);
 
     if (!phoneNormalized) {
-      return res.json({
-        success: true,
-        phoneNormalized: null,
-        hasCustomer: false,
-        telegramLinked: false,
-        activeGift: null,
+      return res.status(400).json({
+        success: false,
+        message: "Некоректний номер телефону",
       });
     }
 
     const customerResult = await pool.query(
       `
-        SELECT
-          id,
-          name,
-          phone,
-          phone_normalized,
-          telegram_user_id,
-          telegram_username,
-          telegram_first_name,
-          is_telegram_subscribed,
-          is_phone_confirmed
-        FROM customers
-        WHERE phone_normalized = $1
-        LIMIT 1
+      SELECT
+        id,
+        name,
+        phone,
+        phone_normalized,
+        telegram_user_id,
+        telegram_username,
+        telegram_first_name,
+        is_telegram_subscribed,
+        is_phone_confirmed,
+        first_order_at,
+        last_order_at,
+        orders_count,
+        total_spent,
+        last_order_amount,
+        created_at,
+        updated_at
+      FROM customers
+      WHERE phone_normalized = $1
+      ORDER BY id DESC
+      LIMIT 1
       `,
       [phoneNormalized]
     );
 
     const customer = customerResult.rows[0] || null;
-    const telegramLinked = Boolean(customer?.telegram_user_id);
 
-    let activeGift = null;
-
-    try {
-      activeGift = await getActiveTelegramGiftByPhone(pool, phoneNormalized);
-    } catch (giftError) {
-      console.error("CHECKOUT ACTIVE GIFT ERROR:", giftError);
+    if (!customer) {
+      return res.json({
+        success: true,
+        customer: null,
+        activeGift: null,
+      });
     }
+
+    const giftResult = await pool.query(
+      `
+      SELECT
+        id,
+        customer_id,
+        phone_normalized,
+        gift_roll_id,
+        gift_roll_title,
+        status,
+        source,
+        comment,
+        issued_at,
+        used_at,
+        created_at,
+        updated_at
+      FROM telegram_gifts
+      WHERE phone_normalized = $1
+        AND status IN ('issued', 'reserved')
+      ORDER BY id DESC
+      LIMIT 1
+      `,
+      [phoneNormalized]
+    );
+
+    const activeGift = giftResult.rows[0] || null;
+
+    const isWelcomeGift = activeGift?.gift_roll_id === "telegram-welcome";
+
+    const canUseWelcomeGift = Number(customer.orders_count || 0) >= 1;
+
+    const visibleGift =
+      activeGift && (!isWelcomeGift || canUseWelcomeGift) ? activeGift : null;
 
     return res.json({
       success: true,
-      phoneNormalized,
-      hasCustomer: Boolean(customer),
-      telegramLinked,
-      customer: customer
-        ? {
-            id: customer.id,
-            name: customer.name,
-            phone: customer.phone,
-            telegramUsername: customer.telegram_username,
-            telegramFirstName: customer.telegram_first_name,
-            isTelegramSubscribed: customer.is_telegram_subscribed === true,
-            isPhoneConfirmed: customer.is_phone_confirmed === true,
-          }
-        : null,
-      activeGift: activeGift
-        ? {
-            id: activeGift.id,
-            giftRollId: activeGift.gift_roll_id,
-            giftRollTitle: activeGift.gift_roll_title,
-            comment: activeGift.comment,
-            status: activeGift.status,
-            source: activeGift.source,
-            issuedAt: activeGift.issued_at,
-          }
-        : null,
+      customer,
+      activeGift: visibleGift,
     });
   } catch (error) {
     console.error("TELEGRAM CHECKOUT STATUS ERROR:", error);
     return res.status(500).json({
       success: false,
-      message: "Не вдалося отримати статус Telegram для checkout",
+      message: "Не вдалося отримати статус Telegram-бонусу",
       error: error?.message || "Unknown error",
     });
   }
 });
 
-router.get("/telegram-gifts/history/:phone",  async (req, res) => {
+router.get("/telegram-gifts/history/:phone", async (req, res) => {
   try {
     const rawPhone = req.params.phone || "";
     const phoneNormalized = normalizeUaPhone(rawPhone);

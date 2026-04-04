@@ -58,6 +58,8 @@ export default function Checkout() {
     texts?.checkoutSuccessHint ||
     "Дякуємо за замовлення! Ми скоро зв’яжемося з вами.";
 
+  const CHECKOUT_DRAFT_KEY = "kara_checkout_draft_v1";
+
   const navigate = useNavigate();
   const { cartItems, clearCart, totalPrice } = useCart();
   const {
@@ -527,6 +529,54 @@ const TELEGRAM_BOT_WEB_URL =
   const finalCheckoutTotal = checkoutTotalPrice + condimentsExtraPrice;
 
   useEffect(() => {
+    try {
+      const raw = localStorage.getItem(CHECKOUT_DRAFT_KEY);
+      if (!raw) return;
+  
+      const draft = JSON.parse(raw);
+  
+      setName(draft.name || "");
+      setPhone(draft.phone || "");
+      setAddress(draft.address || "");
+      setEntrance(draft.entrance || "");
+      setComment(draft.comment || "");
+      setCheckoutMode(draft.checkoutMode || "delivery");
+      setNeedExactTime(Boolean(draft.needExactTime));
+      setExactTime(draft.exactTime || "");
+    } catch (error) {
+      console.error("CHECKOUT DRAFT LOAD ERROR:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      const draft = {
+        name,
+        phone,
+        address,
+        entrance,
+        comment,
+        checkoutMode,
+        needExactTime,
+        exactTime,
+      };
+  
+      localStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify(draft));
+    } catch (error) {
+      console.error("CHECKOUT DRAFT SAVE ERROR:", error);
+    }
+  }, [
+    name,
+    phone,
+    address,
+    entrance,
+    comment,
+    checkoutMode,
+    needExactTime,
+    exactTime,
+  ]);
+
+  useEffect(() => {
     if (confirmedAddress && checkoutMode === "delivery") {
       setForm((prev) => ({
         ...prev,
@@ -838,6 +888,7 @@ const TELEGRAM_BOT_WEB_URL =
       await createOrder(orderData);
 
       clearCart();
+      localStorage.removeItem(CHECKOUT_DRAFT_KEY);
       navigate("/success");
     } catch (err) {
       console.error(err);
@@ -1177,6 +1228,24 @@ const TELEGRAM_BOT_WEB_URL =
                        
                            window.location.href = TELEGRAM_BOT_APP_URL;
                        
+                           try {
+                            localStorage.setItem(
+                              CHECKOUT_DRAFT_KEY,
+                              JSON.stringify({
+                                name,
+                                phone,
+                                address,
+                                entrance,
+                                comment,
+                                checkoutMode,
+                                needExactTime,
+                                exactTime,
+                              })
+                            );
+                          } catch (error) {
+                            console.error("CHECKOUT DRAFT PRE-TELEGRAM SAVE ERROR:", error);
+                          }
+                          
                            setTimeout(() => {
                              if (Date.now() - openedAt < 1800) {
                                window.location.href = TELEGRAM_BOT_WEB_URL;
