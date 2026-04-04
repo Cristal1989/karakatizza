@@ -66,12 +66,44 @@ export default function Checkout() {
   const CHECKOUT_DRAFT_KEY = "kara_checkout_draft_v1";
 
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const isTelegramReturn = searchParams.get("tg") === "1";
+  const [searchParams] = useSearchParams();
+
+  const TELEGRAM_RETURN_FLAG_KEY = "kara_telegram_return_checkout";
+
+  const isTelegramReturnFromUrl = searchParams.get("tg") === "1";
+
   const [
     skipTelegramBonusForThisCheckout,
     setSkipTelegramBonusForThisCheckout,
-  ] = useState(isTelegramReturn);
+  ] = useState(() => {
+    if (typeof window === "undefined") return false;
+
+    if (isTelegramReturnFromUrl) {
+      return true;
+    }
+
+    return sessionStorage.getItem(TELEGRAM_RETURN_FLAG_KEY) === "1";
+  });
+
+  const activeTelegramGift = telegramCheckoutStatus?.activeGift || null;
+
+  const shouldApplyTelegramGift =
+    Boolean(activeTelegramGift) && !skipTelegramBonusForThisCheckout;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    if (isTelegramReturnFromUrl) {
+      sessionStorage.setItem(TELEGRAM_RETURN_FLAG_KEY, "1");
+      setSkipTelegramBonusForThisCheckout(true);
+      return;
+    }
+
+    const savedFlag = sessionStorage.getItem(TELEGRAM_RETURN_FLAG_KEY) === "1";
+    if (savedFlag) {
+      setSkipTelegramBonusForThisCheckout(true);
+    }
+  }, [isTelegramReturnFromUrl]);
 
   const { cartItems, clearCart, totalPrice } = useCart();
   const {
@@ -507,11 +539,6 @@ export default function Checkout() {
   const condimentsExtraPrice =
     extraSoyCount * 15 + extraGingerCount * 15 + extraWasabiCount * 10;
   const finalCheckoutTotal = checkoutTotalPrice + condimentsExtraPrice;
-
-  const activeTelegramGift = telegramCheckoutStatus?.activeGift || null;
-
-  const shouldApplyTelegramGift =
-    Boolean(activeTelegramGift) && !skipTelegramBonusForThisCheckout;
 
   useEffect(() => {
     try {
@@ -983,6 +1010,7 @@ export default function Checkout() {
 
       clearCart();
       localStorage.removeItem(CHECKOUT_DRAFT_KEY);
+      sessionStorage.removeItem(TELEGRAM_RETURN_FLAG_KEY);
       navigate("/success");
     } catch (err) {
       console.error(err);
@@ -1385,14 +1413,14 @@ export default function Checkout() {
                           fontSize: 13,
                           lineHeight: 1.45,
                           fontWeight: 700,
-                          color: skipTelegramBonusForThisCheckout
-                            ? "#a16207"
-                            : "#2f855a",
+                          color: shouldApplyTelegramGift
+                            ? "#2f855a"
+                            : "#a16207",
                         }}
                       >
-                        {skipTelegramBonusForThisCheckout
-                          ? "Бонус активовано, але буде доступний лише для наступного замовлення."
-                          : "Бонус буде використаний у цьому замовленні."}
+                        {shouldApplyTelegramGift
+                          ? "Бонус буде використаний у цьому замовленні."
+                          : "Бонус активовано, але буде доступний лише для наступного замовлення."}
                       </div>
                     </div>
                   ) : null}
