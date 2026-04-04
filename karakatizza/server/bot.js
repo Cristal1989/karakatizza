@@ -11,6 +11,7 @@ let botInstance = null;
 
 const pendingPhones = new Map();
 const pendingReturnUrls = new Map();
+const pendingReturnDrafts = new Map();
 
 function normalizePhone(phone = "") {
   const digits = String(phone).replace(/\D/g, "");
@@ -30,13 +31,25 @@ function buildMainKeyboard(isPhoneConfirmed = false) {
     : [{ text: "Підтвердити номер", request_contact: true }];
 
   return {
-    keyboard: [
-      firstRow,
-      [{ text: "Написати нам" }, { text: "Допомога" }],
-    ],
+    keyboard: [firstRow, [{ text: "Написати нам" }, { text: "Допомога" }]],
     resize_keyboard: true,
     persistent: true,
   };
+}
+
+function getDraftTokenFromStartParam(startParam = "") {
+  if (!startParam.startsWith("checkout_")) return "";
+  return startParam.replace(/^checkout_/, "").trim();
+}
+
+function buildCheckoutReturnUrl(draftToken = "") {
+  const baseUrl = "https://karakatizza.vercel.app/checkout";
+
+  if (!draftToken) {
+    return baseUrl;
+  }
+
+  return `${baseUrl}?draft=${encodeURIComponent(draftToken)}&tg=`;
 }
 
 function getReturnUrl(startParam = "") {
@@ -47,10 +60,7 @@ function getReturnUrl(startParam = "") {
     return_cart: "https://karakatizza.vercel.app/",
   };
 
-  return (
-    returnMap[safeParam] ||
-    "https://karakatizza.vercel.app/"
-  );
+  return returnMap[safeParam] || "https://karakatizza.vercel.app/";
 }
 
 async function getCustomerByTelegramUserId(telegramUserId) {
@@ -491,9 +501,6 @@ async function handleContact(bot, msg) {
   const telegramUsername = msg.from?.username || "";
   const telegramFirstName = msg.from?.first_name || "";
   const contact = msg.contact;
-  const returnUrl =
-  pendingReturnUrls.get(telegramUserId) ||
-  "https://karakatizza.vercel.app/checkout";
 
   if (!contact?.phone_number) {
     await bot.sendMessage(
@@ -542,9 +549,12 @@ async function handleContact(bot, msg) {
     const customer = linkResult.customer;
     pendingPhones.delete(telegramUserId);
 
-    const returnUrl =
-      pendingReturnUrls.get(telegramUserId) ||
-      "https://karakatizza.vercel.app/checkout?from=telegram";
+    const draftToken = pendingReturnDrafts.get(telegramUserId) || "";
+    const returnUrl = buildCheckoutReturnUrl(draftToken);
+
+    if (draftToken) {
+      pendingReturnDrafts.delete(telegramUserId);
+    }
 
     let issueResult = null;
 
@@ -577,12 +587,8 @@ async function handleContact(bot, msg) {
           reply_markup: buildReturnInlineKeyboard(returnUrl),
         }
       );
-    
-      await bot.sendMessage(chatId, "Що хочеш зробити далі?", {
-        reply_markup: buildMainKeyboard(true),
-      });
-    
-      pendingReturnUrls.delete(telegramUserId);
+
+      pendingReturnDrafts.delete(telegramUserId);
       return;
     }
 
@@ -594,20 +600,16 @@ async function handleContact(bot, msg) {
       await bot.sendMessage(
         chatId,
         `Номер підтверджено ✅
-    
-    Telegram уже прив'язаний до твого профілю.
-    
-    🎁 Бонус за підписку вже був нарахований раніше.`,
+      
+      Telegram уже прив'язаний до твого профілю.
+      
+      🎁 Бонус за підписку вже був нарахований раніше.`,
         {
           reply_markup: buildReturnInlineKeyboard(returnUrl),
         }
       );
-    
-      await bot.sendMessage(chatId, "Що хочеш зробити далі?", {
-        reply_markup: buildMainKeyboard(true),
-      });
-    
-      pendingReturnUrls.delete(telegramUserId);
+      
+      pendingReturnDrafts.delete(telegramUserId);
       return;
     }
 
@@ -621,12 +623,8 @@ async function handleContact(bot, msg) {
       }
     );
     
-    await bot.sendMessage(chatId, "Що хочеш зробити далі?", {
-      reply_markup: buildMainKeyboard(true),
-    });
-    
-    pendingReturnUrls.delete(telegramUserId);
-
+    pendingReturnDrafts.delete(telegramUserId);
+    return;
   } catch (error) {
     console.error("TELEGRAM CONTACT FLOW ERROR:", error);
 
@@ -638,10 +636,13 @@ async function handleContact(bot, msg) {
 Якщо ти оформиш перше замовлення пізніше — просто натисни "Мій бонус" або ще раз відкрий бота.`
         : "Сталася помилка під час підтвердження номера. Спробуй трохи пізніше.";
 
-    await bot.sendMessage(chatId, messageText, {
-      reply_markup: buildMainKeyboard(false),
-    });
-    pendingReturnUrls.delete(telegramUserId);
+        await bot.sendMessage(chatId, messageText, {
+          reply_markup: draftToken
+            ? buildReturnInlineKeyboard(returnUrl)
+            : buildMainKeyboard(false),
+        });
+        
+        return;
   }
 }
 
@@ -664,27 +665,50 @@ export function startTelegramBot() {
       const chatId = msg.chat.id;
       const telegramUserId = msg.from?.id ? String(msg.from.id) : "";
       const firstName = msg.from?.first_name || "друже";
-  
+
       const startParam = match?.[1] || "";
-  
+      const draftToken = getDraftTokenFromStartParam(startParam);
+
+      if (telegramUserId && draftToken) {
+        pendingReturnDrafts.set(telegramUserId, draftToken);
+      }
+
       const customer = await getCustomerByTelegramUserId(telegramUserId);
       const isLinked = Boolean(customer?.telegram_user_id);
-  
+
       if (isLinked) {
+        const returnUrl = buildCheckoutReturnUrl(draftToken);
+      
         await bot.sendMessage(
           chatId,
           `Привіт, ${firstName}! 👋
-  
-  Telegram уже прив'язаний до твого профілю в Karakatizza.
-  
-  Що хочеш зробити далі?`,
+      
+      Telegram уже прив'язаний до твого профілю в Karakatizza.`,
           {
             reply_markup: buildMainKeyboard(true),
           }
         );
+      
+        if (draftToken) {
+          await bot.sendMessage(chatId, "Повернутися до оформлення замовлення:", {
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  {
+                    text: "Відкрити checkout",
+                    url: returnUrl,
+                  },
+                ],
+              ],
+            },
+          });
+      
+          pendingReturnDrafts.delete(telegramUserId);
+        }
+      
         return;
       }
-  
+
       await bot.sendMessage(
         chatId,
         `Привіт, ${firstName}! 👋

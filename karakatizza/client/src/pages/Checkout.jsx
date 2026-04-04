@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { createOrder } from "../api/ordersApi";
 import {
@@ -7,7 +7,12 @@ import {
   getDeliveryInfo,
 } from "../services/deliveryService";
 import { useSiteSettings } from "../context/SiteSettingsContext";
-import { getTelegramCheckoutStatus } from "../api/crmApi";
+import {
+  getTelegramCheckoutStatus,
+  createCheckoutDraft,
+  getCheckoutDraft,
+  deleteCheckoutDraft,
+} from "../api/crmApi";
 
 export default function Checkout() {
   const { siteSettings } = useSiteSettings();
@@ -61,6 +66,8 @@ export default function Checkout() {
   const CHECKOUT_DRAFT_KEY = "kara_checkout_draft_v1";
 
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const { cartItems, clearCart, totalPrice } = useCart();
   const {
     checkoutMode,
@@ -102,10 +109,6 @@ export default function Checkout() {
   const [telegramCheckoutError, setTelegramCheckoutError] = useState("");
 
   const TELEGRAM_BOT_USERNAME = "crm_karakatizza_bot";
-
-  const TELEGRAM_BOT_APP_URL = `tg://resolve?domain=${TELEGRAM_BOT_USERNAME}&start=return_checkout`;
-
-  const TELEGRAM_BOT_WEB_URL = `https://t.me/${TELEGRAM_BOT_USERNAME}?start=return_checkout`;
 
   const checkoutPhoneValue = useMemo(() => {
     return String(form?.phone || "").trim();
@@ -711,6 +714,56 @@ export default function Checkout() {
     }
   }, [checkoutMode]);
 
+  useEffect(() => {
+    const draftToken = searchParams.get("draft");
+  
+    if (!draftToken) return;
+  
+    let isMounted = true;
+  
+    async function restoreDraftFromServer() {
+      try {
+        const response = await getCheckoutDraft(draftToken);
+        const draft = response?.draft;
+  
+        if (!isMounted || !draft) return;
+  
+        setForm((prev) => ({
+          ...prev,
+          name: draft.name ?? prev.name,
+          phone: draft.phone ?? prev.phone,
+          address: draft.address ?? prev.address,
+          entrance: draft.entrance ?? prev.entrance,
+          comment: draft.comment ?? prev.comment,
+          needExactTime:
+            typeof draft.needExactTime === "boolean"
+              ? draft.needExactTime
+              : prev.needExactTime,
+          exactTime: draft.exactTime ?? prev.exactTime,
+        }));
+  
+        if (draft.checkoutMode === "pickup" || draft.checkoutMode === "delivery") {
+          setCheckoutMode(draft.checkoutMode);
+        }
+  
+        await deleteCheckoutDraft(draftToken);
+  
+        const nextParams = new URLSearchParams(searchParams);
+        nextParams.delete("draft");
+        nextParams.delete("tg");
+        setSearchParams(nextParams, { replace: true });
+      } catch (error) {
+        console.error("RESTORE CHECKOUT DRAFT ERROR:", error);
+      }
+    }
+  
+    restoreDraftFromServer();
+  
+    return () => {
+      isMounted = false;
+    };
+  }, [searchParams, setSearchParams, setCheckoutMode]);
+
   function getCheckoutBonusText(activeGift) {
     if (!activeGift) return "";
 
@@ -792,6 +845,54 @@ export default function Checkout() {
 
     return "";
   };
+
+  async function handleOpenTelegramForCheckout(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  
+    try {
+      const payload = {
+        name: form.name,
+        phone: form.phone,
+        address: form.address,
+        entrance: form.entrance,
+        comment: form.comment,
+        checkoutMode,
+        needExactTime: form.needExactTime === true,
+        exactTime: form.exactTime,
+      };
+  
+      try {
+        localStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify(payload));
+      } catch (error) {
+        console.error("CHECKOUT LOCAL DRAFT SAVE ERROR:", error);
+      }
+  
+      const draftResponse = await createCheckoutDraft(payload);
+      const token = draftResponse?.token;
+  
+      if (!token) {
+        throw new Error("Не вдалося отримати token чернетки");
+      }
+  
+      const startParam = `checkout_${token}`;
+      const appUrl = `tg://resolve?domain=${TELEGRAM_BOT_USERNAME}&start=${startParam}`;
+      const webUrl = `https://t.me/${TELEGRAM_BOT_USERNAME}?start=${startParam}`;
+  
+      const openedAt = Date.now();
+  
+      window.location.href = appUrl;
+  
+      setTimeout(() => {
+        if (Date.now() - openedAt < 1800) {
+          window.location.href = webUrl;
+        }
+      }, 900);
+    } catch (error) {
+      console.error("OPEN TELEGRAM FOR CHECKOUT ERROR:", error);
+      alert(error?.message || "Не вдалося відкрити Telegram");
+    }
+  }
 
   const handleSubmit = async (e) => {
     if (e?.preventDefault) e.preventDefault();
@@ -1206,42 +1307,7 @@ export default function Checkout() {
 
                       <a
                         type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-
-                          const openedAt = Date.now();
-
-                          try {
-                            localStorage.setItem(
-                              CHECKOUT_DRAFT_KEY,
-                              JSON.stringify({
-                                name: form.name,
-                                phone: form.phone,
-                                address: form.address,
-                                entrance: form.entrance,
-                                comment: form.comment,
-                                paymentMethod: form.paymentMethod,
-                                checkoutMode,
-                                needExactTime: form.needExactTime,
-                                exactTime: form.exactTime,
-                              })
-                            );
-                          } catch (error) {
-                            console.error(
-                              "CHECKOUT DRAFT PRE-TELEGRAM SAVE ERROR:",
-                              error
-                            );
-                          }
-
-                          window.location.href = TELEGRAM_BOT_APP_URL;
-
-                          setTimeout(() => {
-                            if (Date.now() - openedAt < 1800) {
-                              window.location.href = TELEGRAM_BOT_WEB_URL;
-                            }
-                          }, 900);
-                        }}
+                        onClick={handleOpenTelegramForCheckout}
                         style={{
                           display: "inline-flex",
                           alignItems: "center",

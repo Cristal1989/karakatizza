@@ -14,6 +14,11 @@ import {
 import { sendTelegramTextToUser, sendTelegramTextToMany } from "../bot.js";
 import { normalizeUaPhone } from "../utils/phone.js";
 import requireAdminAuth from "../middleware/requireAdminAuth.js";
+import {
+  createCheckoutDraft,
+  getCheckoutDraftByToken,
+  deleteCheckoutDraftByToken,
+} from "../services/checkoutDraftService.js";
 
 const router = express.Router();
 
@@ -1100,6 +1105,100 @@ router.post("/telegram/reset-test-user", requireAdminAuth, async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Помилка скидання тестових даних",
+    });
+  }
+});
+
+router.post("/checkout-drafts", async (req, res) => {
+  try {
+    const {
+      name = "",
+      phone = "",
+      address = "",
+      entrance = "",
+      comment = "",
+      checkoutMode = "delivery",
+      needExactTime = false,
+      exactTime = "",
+    } = req.body || {};
+
+    const draft = await createCheckoutDraft(pool, {
+      name,
+      phone,
+      address,
+      entrance,
+      comment,
+      checkoutMode,
+      needExactTime: needExactTime === true,
+      exactTime,
+    });
+
+    return res.json({
+      success: true,
+      token: draft.token,
+      draft: draft.payload,
+      expiresAt: draft.expires_at,
+    });
+  } catch (error) {
+    console.error("CREATE CHECKOUT DRAFT ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Не вдалося створити чернетку checkout",
+      error: error?.message || "Unknown error",
+    });
+  }
+});
+
+router.get("/checkout-drafts/:token", async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: "Не вказано token",
+      });
+    }
+
+    const draft = await getCheckoutDraftByToken(pool, token);
+
+    return res.json({
+      success: true,
+      found: Boolean(draft),
+      draft: draft?.payload || null,
+    });
+  } catch (error) {
+    console.error("GET CHECKOUT DRAFT ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Не вдалося отримати чернетку checkout",
+      error: error?.message || "Unknown error",
+    });
+  }
+});
+
+router.delete("/checkout-drafts/:token", async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: "Не вказано token",
+      });
+    }
+
+    await deleteCheckoutDraftByToken(pool, token);
+
+    return res.json({
+      success: true,
+    });
+  } catch (error) {
+    console.error("DELETE CHECKOUT DRAFT ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Не вдалося видалити чернетку checkout",
+      error: error?.message || "Unknown error",
     });
   }
 });

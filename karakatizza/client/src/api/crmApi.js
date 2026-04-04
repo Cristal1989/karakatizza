@@ -287,3 +287,55 @@ export async function resetTelegramTestUser(phone) {
 
   return data;
 }
+
+export async function createCheckoutDraft(payload) {
+  const response = await fetch(`${API_BASE_URL}/api/crm/checkout-drafts`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload || {}),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok || !data?.success) {
+    throw new Error(data?.message || "Не вдалося створити чернетку checkout");
+  }
+
+  return data;
+}
+
+export async function getCheckoutDraft(token) {
+  const response = await fetch(
+    `${API_BASE_URL}/api/crm/checkout-drafts/${encodeURIComponent(token)}?t=${Date.now()}`,
+    {
+      cache: "no-store",
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok || !data?.success) {
+    throw new Error(data?.message || "Не вдалося отримати чернетку checkout");
+  }
+
+  return data;
+}
+
+export async function deleteCheckoutDraft(token) {
+  const response = await fetch(
+    `${API_BASE_URL}/api/crm/checkout-drafts/${encodeURIComponent(token)}`,
+    {
+      method: "DELETE",
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok || !data?.success) {
+    throw new Error(data?.message || "Не вдалося видалити чернетку checkout");
+  }
+
+  return data;
+}

@@ -780,4 +780,24 @@ await pool.query(`
   CREATE INDEX IF NOT EXISTS idx_telegram_broadcasts_created_at
   ON telegram_broadcasts(created_at DESC);
 `);
+
+await pool.query(`
+  CREATE TABLE IF NOT EXISTS checkout_drafts (
+    id SERIAL PRIMARY KEY,
+    token VARCHAR(128) NOT NULL UNIQUE,
+    payload JSONB NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    expires_at TIMESTAMP NOT NULL
+  );
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_checkout_drafts_token
+  ON checkout_drafts(token);
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_checkout_drafts_expires_at
+  ON checkout_drafts(expires_at);
+`);
 }
