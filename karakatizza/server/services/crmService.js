@@ -615,6 +615,16 @@ export async function getTelegramCheckoutStatusByPhone(pool, phone) {
     ? Math.max(0, Number(availableAfterOrdersCount || 0) - ordersCount)
     : null;
 
+    console.log("CHECKOUT STATUS DEBUG", {
+      phoneNormalized,
+      customerId: customer.id,
+      activeGiftId: activeGift?.id || null,
+      availableAfterOrdersCount,
+      ordersCount,
+      canUseGiftNow,
+      ordersLeftUntilGift,
+    });
+
   return {
     telegramLinked: Boolean(
       customer.telegram_user_id && customer.is_telegram_subscribed
