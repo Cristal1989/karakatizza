@@ -95,14 +95,6 @@ export default function Checkout() {
   const telegramOrdersLeftUntilGift =
     telegramCheckoutStatus?.ordersLeftUntilGift ?? null;
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    if (isTelegramReturnFromUrl) {
-      sessionStorage.setItem(TELEGRAM_RETURN_FLAG_KEY, "1");
-    }
-  }, [isTelegramReturnFromUrl]);
-
 
 
   const { cartItems, clearCart, totalPrice } = useCart();
@@ -940,10 +932,9 @@ export default function Checkout() {
         freshTelegramStatus?.canUseGiftNow && activeTelegramGift
       );
 
-      console.log("TG APPLY DECISION", {
+      console.log("TG CLIENT DECISION", {
         activeTelegramGift,
         freshCanUseGiftNow: freshTelegramStatus?.canUseGiftNow,
-        localCanUseGiftNow: telegramCheckoutStatus?.canUseGiftNow,
         telegramCanUseNowDirect,
       });
 
@@ -1026,10 +1017,9 @@ export default function Checkout() {
           : null,
       };
 
-      console.log("TG ORDER DATA FINAL", {
+      console.log("TG CLIENT ORDER DATA", {
         telegramBonusMeta: orderData.telegramBonusMeta,
         items: orderData.items,
-        totalPrice: orderData.totalPrice,
       });
 
       await createOrder(orderData);
