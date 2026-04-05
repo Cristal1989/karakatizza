@@ -213,7 +213,8 @@ export async function getActiveTelegramGiftByPhone(pool, phone) {
         tg.issued_at,
         tg.used_at,
         tg.created_at,
-        tg.updated_at
+        tg.updated_at,
+        tg.available_after_orders_count
       FROM telegram_gifts tg
       WHERE tg.phone_normalized = $1
         AND tg.status IN ('issued', 'reserved')
@@ -277,56 +278,77 @@ export async function issueTelegramGift(
     };
   }
 
-  const insertResult = await pool.query(
+  let availableAfterOrdersCount = null;
+
+if (customerId) {
+  const customerOrdersResult = await pool.query(
     `
-      INSERT INTO telegram_gifts (
-        customer_id,
-        phone_normalized,
-        gift_roll_id,
-        gift_roll_title,
-        status,
-        source,
-        comment,
-        issued_at,
-        used_at,
-        created_at,
-        updated_at
-      )
-      VALUES (
-        $1,
-        $2,
-        $3,
-        $4,
-        'issued',
-        'telegram',
-        $5,
-        NOW(),
-        NULL,
-        NOW(),
-        NOW()
-      )
-      RETURNING
-        id,
-        customer_id,
-        phone_normalized,
-        gift_roll_id,
-        gift_roll_title,
-        status,
-        source,
-        comment,
-        issued_at,
-        used_at,
-        created_at,
-        updated_at
+      SELECT orders_count
+      FROM customers
+      WHERE id = $1
+      LIMIT 1
     `,
-    [
-      customerId ? Number(customerId) : null,
-      phoneNormalized,
-      giftRollId || "",
-      giftRollTitle || "",
-      comment || "",
-    ]
+    [Number(customerId)]
   );
+
+  const customerRow = customerOrdersResult.rows[0] || null;
+  availableAfterOrdersCount = Number(customerRow?.orders_count || 0) + 1;
+}
+
+const insertResult = await pool.query(
+  `
+    INSERT INTO telegram_gifts (
+      customer_id,
+      phone_normalized,
+      gift_roll_id,
+      gift_roll_title,
+      status,
+      source,
+      comment,
+      available_after_orders_count,
+      issued_at,
+      used_at,
+      created_at,
+      updated_at
+    )
+    VALUES (
+      $1,
+      $2,
+      $3,
+      $4,
+      'issued',
+      'telegram',
+      $5,
+      $6,
+      NOW(),
+      NULL,
+      NOW(),
+      NOW()
+    )
+    RETURNING
+      id,
+      customer_id,
+      phone_normalized,
+      gift_roll_id,
+      gift_roll_title,
+      status,
+      source,
+      comment,
+      available_after_orders_count,
+      issued_at,
+      used_at,
+      created_at,
+      updated_at
+  `,
+  [
+    customerId ? Number(customerId) : null,
+    phoneNormalized,
+    giftRollId || "",
+    giftRollTitle || "",
+    comment || "",
+    availableAfterOrdersCount,
+  ]
+);
 
   return {
     success: true,
@@ -502,6 +524,92 @@ export async function getTelegramGiftsByPhone(pool, phone) {
   );
 
   return result.rows;
+}
+
+export async function getTelegramCheckoutStatusByPhone(pool, phone) {
+  const phoneNormalized = normalizeUaPhone(phone);
+
+  if (!phoneNormalized) {
+    return {
+      telegramLinked: false,
+      customer: null,
+      activeGift: null,
+      ordersCount: 0,
+      canUseGiftNow: false,
+      ordersLeftUntilGift: null,
+    };
+  }
+
+  const customerResult = await pool.query(
+    `
+      SELECT
+        id,
+        phone,
+        phone_normalized,
+        name,
+        telegram_user_id,
+        telegram_username,
+        telegram_first_name,
+        is_telegram_subscribed,
+        is_phone_confirmed,
+        orders_count,
+        total_spent,
+        last_order_amount,
+        first_order_at,
+        last_order_at,
+        created_at,
+        updated_at
+      FROM customers
+      WHERE phone_normalized = $1
+      ORDER BY id DESC
+      LIMIT 1
+    `,
+    [phoneNormalized]
+  );
+
+  const customer = customerResult.rows[0] || null;
+
+  if (!customer) {
+    return {
+      telegramLinked: false,
+      customer: null,
+      activeGift: null,
+      ordersCount: 0,
+      canUseGiftNow: false,
+      ordersLeftUntilGift: null,
+    };
+  }
+
+  const activeGift = await getActiveTelegramGiftByPhone(pool, phoneNormalized);
+  const ordersCount = Number(customer.orders_count || 0);
+
+  const availableAfterOrdersCount = activeGift
+    ? Number(activeGift.available_after_orders_count ?? 0)
+    : null;
+
+  const canUseGiftNow = Boolean(
+    activeGift &&
+      (
+        availableAfterOrdersCount === null ||
+        availableAfterOrdersCount <= 0 ||
+        ordersCount >= availableAfterOrdersCount
+      )
+  );
+
+  const ordersLeftUntilGift = activeGift
+    ? Math.max(0, Number(availableAfterOrdersCount || 0) - ordersCount)
+    : null;
+
+  return {
+    telegramLinked: Boolean(
+      customer.telegram_user_id && customer.is_telegram_subscribed
+    ),
+    customer,
+    activeGift,
+    ordersCount,
+    canUseGiftNow,
+    ordersLeftUntilGift,
+  };
 }
 
 export async function getTelegramGiftsByTelegramUserId(pool, telegramUserId) {

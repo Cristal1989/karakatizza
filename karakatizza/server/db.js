@@ -800,4 +800,14 @@ await pool.query(`
   CREATE INDEX IF NOT EXISTS idx_checkout_drafts_expires_at
   ON checkout_drafts(expires_at);
 `);
+
+await pool.query(`
+  ALTER TABLE telegram_gifts
+  ADD COLUMN IF NOT EXISTS available_after_orders_count INTEGER;
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_telegram_gifts_available_after_orders_count
+  ON telegram_gifts(available_after_orders_count);
+`);
 }

@@ -59,11 +59,9 @@ export default function Checkout() {
   const checkoutExactTimeLabel =
     texts?.checkoutExactTimeLabel || "Потрібно на певний час";
 
-   
   const [telegramCheckoutStatus, setTelegramCheckoutStatus] = useState(null);
   const [telegramCheckoutLoading, setTelegramCheckoutLoading] = useState(false);
-  const [telegramCheckoutError, setTelegramCheckoutError] = useState(""); 
-
+  const [telegramCheckoutError, setTelegramCheckoutError] = useState("");
 
   const CHECKOUT_DRAFT_KEY = "kara_checkout_draft_v1";
 
@@ -89,8 +87,12 @@ export default function Checkout() {
 
   const activeTelegramGift = telegramCheckoutStatus?.activeGift || null;
 
-  const shouldApplyTelegramGift =
-    Boolean(activeTelegramGift) && !skipTelegramBonusForThisCheckout;
+  const canUseTelegramGiftNow =
+    Boolean(telegramCheckoutStatus?.canUseGiftNow) &&
+    !skipTelegramBonusForThisCheckout;
+
+  const telegramOrdersLeftUntilGift =
+    telegramCheckoutStatus?.ordersLeftUntilGift ?? null;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -797,7 +799,7 @@ export default function Checkout() {
 
   useEffect(() => {
     if (!isTelegramReturnFromUrl) return;
-  
+
     const url = new URL(window.location.href);
     url.searchParams.delete("tg");
     window.history.replaceState({}, "", url.toString());
@@ -1002,6 +1004,19 @@ export default function Checkout() {
           isDiscountOffer: item.isDiscountOffer ?? false,
           discountLabel: item.discountLabel,
         })),
+        telegramBonusMeta: activeTelegramGift
+          ? {
+              giftId: activeTelegramGift.id,
+              giftRollId: activeTelegramGift.gift_roll_id || "",
+              giftRollTitle: activeTelegramGift.gift_roll_title || "",
+              source: "telegram",
+              status: activeTelegramGift.status || "issued",
+              applied: canUseTelegramGiftNow,
+              skipped: Boolean(skipTelegramBonusForThisCheckout),
+              availableAfterOrdersCount:
+                activeTelegramGift.available_after_orders_count ?? null,
+            }
+          : null,
       };
 
       await createOrder(orderData);
@@ -1411,14 +1426,14 @@ export default function Checkout() {
                           fontSize: 13,
                           lineHeight: 1.45,
                           fontWeight: 700,
-                          color: shouldApplyTelegramGift
-                            ? "#2f855a"
-                            : "#a16207",
+                          color: canUseTelegramGiftNow ? "#2f855a" : "#a16207",
                         }}
                       >
-                        {shouldApplyTelegramGift
+                        {canUseTelegramGiftNow
                           ? "Бонус буде використаний у цьому замовленні."
-                          : "Бонус активовано, але буде доступний лише для наступного замовлення."}
+                          : telegramOrdersLeftUntilGift > 0
+                          ? `Бонус вже активований, але стане доступний через ще ${telegramOrdersLeftUntilGift} замовлення.`
+                          : "Бонус активований, але поки що недоступний для цього замовлення."}
                       </div>
                     </div>
                   ) : null}

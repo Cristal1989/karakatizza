@@ -3,6 +3,7 @@ import { pool } from "../db.js";
 import {
   issueTelegramGift,
   getActiveTelegramGiftByPhone,
+  getTelegramCheckoutStatusByPhone,
   markTelegramGiftUsed,
   linkTelegramToCustomerByPhone,
   getTelegramGiftsByTelegramUserId,
@@ -798,14 +799,7 @@ router.post("/telegram-gifts/use-active", async (req, res) => {
       `,
       [phoneNormalized]
     );
-    const isWelcomeGift = activeGift?.gift_roll_id === "telegram-welcome";
-
-    if (isWelcomeGift && Number(customer?.orders_count || 0) < 1) {
-      return res.status(400).json({
-        success: false,
-        message: "Welcome-бонус доступний лише з наступного замовлення",
-      });
-    }
+    
 
     if (!activeResult.rows.length) {
       return res.json({
@@ -861,89 +855,11 @@ router.get("/telegram-checkout-status/:phone", async (req, res) => {
   try {
     const { phone } = req.params;
 
-    const phoneNormalized = normalizeUaPhone(phone);
-
-    if (!phoneNormalized) {
-      return res.status(400).json({
-        success: false,
-        message: "Некоректний номер телефону",
-      });
-    }
-
-    const customerResult = await pool.query(
-      `
-      SELECT
-        id,
-        name,
-        phone,
-        phone_normalized,
-        telegram_user_id,
-        telegram_username,
-        telegram_first_name,
-        is_telegram_subscribed,
-        is_phone_confirmed,
-        first_order_at,
-        last_order_at,
-        orders_count,
-        total_spent,
-        last_order_amount,
-        created_at,
-        updated_at
-      FROM customers
-      WHERE phone_normalized = $1
-      ORDER BY id DESC
-      LIMIT 1
-      `,
-      [phoneNormalized]
-    );
-
-    const customer = customerResult.rows[0] || null;
-
-    if (!customer) {
-      return res.json({
-        success: true,
-        customer: null,
-        activeGift: null,
-      });
-    }
-
-    const giftResult = await pool.query(
-      `
-      SELECT
-        id,
-        customer_id,
-        phone_normalized,
-        gift_roll_id,
-        gift_roll_title,
-        status,
-        source,
-        comment,
-        issued_at,
-        used_at,
-        created_at,
-        updated_at
-      FROM telegram_gifts
-      WHERE phone_normalized = $1
-        AND status IN ('issued', 'reserved')
-      ORDER BY id DESC
-      LIMIT 1
-      `,
-      [phoneNormalized]
-    );
-
-    const activeGift = giftResult.rows[0] || null;
-
-    const isWelcomeGift = activeGift?.gift_roll_id === "telegram-welcome";
-
-    const canUseWelcomeGift = Number(customer.orders_count || 0) >= 1;
-
-    const visibleGift =
-      activeGift && (!isWelcomeGift || canUseWelcomeGift) ? activeGift : null;
+    const status = await getTelegramCheckoutStatusByPhone(pool, phone);
 
     return res.json({
       success: true,
-      customer,
-      activeGift: visibleGift,
+      ...status,
     });
   } catch (error) {
     console.error("TELEGRAM CHECKOUT STATUS ERROR:", error);

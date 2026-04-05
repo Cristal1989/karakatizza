@@ -17,7 +17,6 @@ import siteSettingsRoutes from "./routes/siteSettings.js";
 import { isValidUaPhone } from "./utils/phone.js";
 import {
   saveOrderToCrm,
-  getActiveTelegramGiftByPhone,
   markTelegramGiftUsed,
 } from "./services/crmService.js";
 import crmRoutes from "./routes/crmRoutes.js";
@@ -888,6 +887,7 @@ app.post("/order", async (req, res) => {
       needExactTime,
       exactTime,
       condiments,
+      telegramBonusMeta = null,
     } = req.body;
 
     let sticksText = "";
@@ -904,13 +904,6 @@ app.post("/order", async (req, res) => {
       });
     }
 
-    let activeTelegramGift = null;
-
-    try {
-      activeTelegramGift = await getActiveTelegramGiftByPhone(pool, phone);
-    } catch (giftLookupError) {
-      console.error("ACTIVE TELEGRAM GIFT LOOKUP ERROR:", giftLookupError);
-    }
 
     if ((regularSticksCount ?? 0) > 0 || (trainingSticksCount ?? 0) > 0) {
       sticksText = `🥢 Паличкu: звичайні: ${
@@ -1019,21 +1012,21 @@ app.post("/order", async (req, res) => {
       }
     }
 
-    if (activeTelegramGift) {
-      let bonusBlock = `\n🎁 Бонус до замовлення:\n`;
+    if (telegramBonusMeta?.applied) {
+  let bonusBlock = `\n🎁 Telegram-бонус застосовано:\n`;
 
-      bonusBlock += `Назва: ${activeTelegramGift.gift_roll_title || "Бонус"}\n`;
+  bonusBlock += `Назва: ${telegramBonusMeta.giftRollTitle || "Бонус"}\n`;
 
-      if (activeTelegramGift.gift_roll_id) {
-        bonusBlock += `Код: ${activeTelegramGift.gift_roll_id}\n`;
-      }
+  if (telegramBonusMeta.giftRollId) {
+    bonusBlock += `Код: ${telegramBonusMeta.giftRollId}\n`;
+  }
 
-      if (activeTelegramGift.comment) {
-        bonusBlock += `Коментар: ${activeTelegramGift.comment}\n`;
-      }
+  if (telegramBonusMeta.availableAfterOrdersCount != null) {
+    bonusBlock += `Доступний після замовлень: ${telegramBonusMeta.availableAfterOrdersCount}\n`;
+  }
 
-      message += bonusBlock;
-    }
+  message += bonusBlock;
+}
 
     message += `💰 Разом: ${totalPrice} грн`;
 
@@ -1079,17 +1072,7 @@ app.post("/order", async (req, res) => {
         regularSticksCount,
         trainingSticksCount,
         sticksExtraPrice,
-        telegramBonusMeta: activeTelegramGift
-          ? {
-              id: activeTelegramGift.id,
-              giftRollId: activeTelegramGift.gift_roll_id,
-              giftRollTitle: activeTelegramGift.gift_roll_title,
-              comment: activeTelegramGift.comment,
-              status: activeTelegramGift.status,
-              source: activeTelegramGift.source,
-              issuedAt: activeTelegramGift.issued_at,
-            }
-          : null,
+        telegramBonusMeta,
       });
 
       console.log("CRM SAVE SUCCESS", {
@@ -1101,32 +1084,35 @@ app.post("/order", async (req, res) => {
         console.log("ORDER AUTO USE CHECK", {
           hasOrder: Boolean(crmResult?.order),
           orderId: crmResult?.order?.id || null,
-          hasActiveTelegramGift: Boolean(activeTelegramGift),
-          activeTelegramGiftId: activeTelegramGift?.id || null,
-          activeTelegramGiftStatus: activeTelegramGift?.status || null,
+          hasTelegramBonusMeta: Boolean(telegramBonusMeta),
+          telegramBonusApplied: telegramBonusMeta?.applied === true,
+          telegramBonusGiftId: telegramBonusMeta?.giftId || null,
           phone,
         });
-        if (crmResult?.order && activeTelegramGift) {
+      
+        if (
+          crmResult?.order &&
+          telegramBonusMeta?.applied === true &&
+          telegramBonusMeta?.giftId
+        ) {
           console.log("ORDER AUTO USE START", {
-            giftId: activeTelegramGift.id,
+            giftId: telegramBonusMeta.giftId,
             orderId: crmResult.order?.id,
             phone,
           });
+      
           try {
-            await markTelegramGiftUsed(pool, activeTelegramGift.id);
-
+            await markTelegramGiftUsed(pool, Number(telegramBonusMeta.giftId));
+      
             console.log("TELEGRAM GIFT AUTO USED", {
-              giftId: activeTelegramGift.id,
+              giftId: telegramBonusMeta.giftId,
               phone,
-              giftRollTitle: activeTelegramGift.gift_roll_title,
+              giftRollTitle: telegramBonusMeta.giftRollTitle || "",
               orderId: crmResult.order?.id,
             });
           } catch (giftUseError) {
             console.error("ORDER AUTO USE ERROR", giftUseError);
-            console.error(
-              "ORDER AUTO USE ERROR MESSAGE",
-              giftUseError?.message
-            );
+            console.error("ORDER AUTO USE ERROR MESSAGE", giftUseError?.message);
           }
         }
       } catch (giftUseError) {
