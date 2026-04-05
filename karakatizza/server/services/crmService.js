@@ -280,23 +280,23 @@ export async function issueTelegramGift(
 
   let availableAfterOrdersCount = null;
 
-if (customerId) {
-  const customerOrdersResult = await pool.query(
-    `
+  if (customerId) {
+    const customerOrdersResult = await pool.query(
+      `
       SELECT orders_count
       FROM customers
       WHERE id = $1
       LIMIT 1
     `,
-    [Number(customerId)]
-  );
+      [Number(customerId)]
+    );
 
-  const customerRow = customerOrdersResult.rows[0] || null;
-  availableAfterOrdersCount = Number(customerRow?.orders_count || 0) + 1;
-}
+    const customerRow = customerOrdersResult.rows[0] || null;
+    availableAfterOrdersCount = Number(customerRow?.orders_count || 0);
+  }
 
-const insertResult = await pool.query(
-  `
+  const insertResult = await pool.query(
+    `
     INSERT INTO telegram_gifts (
       customer_id,
       phone_normalized,
@@ -340,15 +340,15 @@ const insertResult = await pool.query(
       created_at,
       updated_at
   `,
-  [
-    customerId ? Number(customerId) : null,
-    phoneNormalized,
-    giftRollId || "",
-    giftRollTitle || "",
-    comment || "",
-    availableAfterOrdersCount,
-  ]
-);
+    [
+      customerId ? Number(customerId) : null,
+      phoneNormalized,
+      giftRollId || "",
+      giftRollTitle || "",
+      comment || "",
+      availableAfterOrdersCount,
+    ]
+  );
 
   return {
     success: true,
@@ -396,12 +396,7 @@ export async function markTelegramGiftUsed(pool, giftId) {
 
 export async function linkTelegramToCustomerByPhone(
   pool,
-  {
-    phone,
-    telegramUserId,
-    telegramUsername = "",
-    telegramFirstName = "",
-  }
+  { phone, telegramUserId, telegramUsername = "", telegramFirstName = "" }
 ) {
   const phoneNormalized = normalizeUaPhone(phone);
 
@@ -589,11 +584,9 @@ export async function getTelegramCheckoutStatusByPhone(pool, phone) {
 
   const canUseGiftNow = Boolean(
     activeGift &&
-      (
-        availableAfterOrdersCount === null ||
+      (availableAfterOrdersCount === null ||
         availableAfterOrdersCount <= 0 ||
-        ordersCount >= availableAfterOrdersCount
-      )
+        ordersCount >= availableAfterOrdersCount)
   );
 
   const ordersLeftUntilGift = activeGift
@@ -675,7 +668,10 @@ export async function getTelegramCustomersForBroadcast(
     minLastOrderAmount = "",
   } = {}
 ) {
-  const conditions = [`telegram_user_id IS NOT NULL`, `is_telegram_subscribed = TRUE`];
+  const conditions = [
+    `telegram_user_id IS NOT NULL`,
+    `is_telegram_subscribed = TRUE`,
+  ];
   const values = [];
   let paramIndex = 1;
 
@@ -699,7 +695,9 @@ export async function getTelegramCustomersForBroadcast(
   }
 
   if (inactiveDays !== "" && Number(inactiveDays) > 0) {
-    conditions.push(`last_order_at <= NOW() - ($${paramIndex}::text || ' days')::interval`);
+    conditions.push(
+      `last_order_at <= NOW() - ($${paramIndex}::text || ' days')::interval`
+    );
     values.push(String(Number(inactiveDays)));
     paramIndex += 1;
   }
@@ -761,7 +759,10 @@ export async function getTelegramBroadcastCount(
     minLastOrderAmount = "",
   } = {}
 ) {
-  const conditions = [`telegram_user_id IS NOT NULL`, `is_telegram_subscribed = TRUE`];
+  const conditions = [
+    `telegram_user_id IS NOT NULL`,
+    `is_telegram_subscribed = TRUE`,
+  ];
   const values = [];
   let paramIndex = 1;
 
@@ -785,7 +786,9 @@ export async function getTelegramBroadcastCount(
   }
 
   if (inactiveDays !== "" && Number(inactiveDays) > 0) {
-    conditions.push(`last_order_at <= NOW() - ($${paramIndex}::text || ' days')::interval`);
+    conditions.push(
+      `last_order_at <= NOW() - ($${paramIndex}::text || ' days')::interval`
+    );
     values.push(String(Number(inactiveDays)));
     paramIndex += 1;
   }
