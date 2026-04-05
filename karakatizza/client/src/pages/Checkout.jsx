@@ -970,6 +970,10 @@ export default function Checkout() {
       );
       const telegramCanUseNowDirect = shouldForceApplyTelegramGift;
 
+      const telegramGiftReadyForUi = Boolean(
+        activeTelegramGift && isWelcomeTelegramGift
+      );
+
       const itemsForOrder = [
         ...cartItems.map((item) => ({
           name: item.name,
@@ -1452,12 +1456,12 @@ export default function Checkout() {
                           fontSize: 13,
                           lineHeight: 1.45,
                           fontWeight: 700,
-                          color: telegramCanUseNowDirect
+                          color: telegramGiftReadyForUi
                             ? "#2f855a"
                             : "#a16207",
                         }}
                       >
-                        {telegramCanUseNowDirect
+                        {telegramGiftReadyForUi
                           ? "Бонус буде використаний у цьому замовленні."
                           : "Бонус активований, але поки що недоступний для цього замовлення."}
                       </div>
