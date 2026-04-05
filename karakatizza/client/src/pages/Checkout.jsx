@@ -88,29 +88,13 @@ export default function Checkout() {
 
   const activeTelegramGift = telegramCheckoutStatus?.activeGift || null;
 
-  const telegramOrdersCountForUi = Number(
-    telegramCheckoutStatus?.ordersCount ?? 0
-  );
-
-  const telegramGiftAvailableAfterOrdersForUi = activeTelegramGift
-    ? Number(activeTelegramGift.available_after_orders_count ?? 0)
-    : null;
-
-  const isWelcomeTelegramGiftForUi =
-    String(activeTelegramGift?.gift_roll_id || "") === "telegram-welcome";
-
   const telegramGiftReadyForUi = Boolean(
-    activeTelegramGift &&
-      (isWelcomeTelegramGiftForUi
-        ? telegramOrdersCountForUi >= 1
-        : telegramGiftAvailableAfterOrdersForUi === null ||
-          telegramGiftAvailableAfterOrdersForUi <= 0 ||
-          telegramOrdersCountForUi >= telegramGiftAvailableAfterOrdersForUi)
+    telegramCheckoutStatus?.canUseGiftNow && activeTelegramGift
   );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-  
+
     if (isTelegramReturnFromUrl) {
       sessionStorage.setItem(TELEGRAM_RETURN_FLAG_KEY, "1");
     }
@@ -144,20 +128,6 @@ export default function Checkout() {
   const checkoutPhoneValue = useMemo(() => {
     return String(form?.phone || "").trim();
   }, [form?.phone]);
-
-  function getCheckoutBonusText(activeGift) {
-    if (!activeGift) return "";
-
-    if (activeGift.giftRollTitle && String(activeGift.giftRollTitle).trim()) {
-      return String(activeGift.giftRollTitle).trim();
-    }
-
-    if (activeGift.giftRollId && String(activeGift.giftRollId).trim()) {
-      return String(activeGift.giftRollId).trim();
-    }
-
-    return "Активний бонус";
-  }
 
   const isMobile = window.innerWidth <= 768;
 
@@ -963,26 +933,8 @@ export default function Checkout() {
         telegramCheckoutStatus?.activeGift ||
         null;
 
-      const ordersCount = Number(
-        freshTelegramStatus?.ordersCount ??
-          telegramCheckoutStatus?.ordersCount ??
-          0
-      );
-
-      const availableAfterOrdersCount = activeTelegramGift
-        ? Number(activeTelegramGift.available_after_orders_count ?? 0)
-        : null;
-
-      const isWelcomeTelegramGift =
-        String(activeTelegramGift?.gift_roll_id || "") === "telegram-welcome";
-
       const telegramCanUseNowDirect = Boolean(
-        activeTelegramGift &&
-          (isWelcomeTelegramGift
-            ? ordersCount >= 1
-            : availableAfterOrdersCount === null ||
-              availableAfterOrdersCount <= 0 ||
-              ordersCount >= availableAfterOrdersCount)
+        freshTelegramStatus?.canUseGiftNow && activeTelegramGift
       );
 
       const itemsForOrder = [
@@ -1434,7 +1386,7 @@ export default function Checkout() {
                           color: "#1f2937",
                         }}
                       >
-                        Для цього номера є активний бонус 🎁
+                        🎁 Для цього номера є активний бонус
                       </div>
 
                       <div
@@ -1449,9 +1401,22 @@ export default function Checkout() {
                           "Подарунковий рол"}
                       </div>
 
+                      {activeTelegramGift.comment ? (
+                        <div
+                          style={{
+                            marginTop: 4,
+                            fontSize: 12,
+                            color: "#64748b",
+                            lineHeight: 1.45,
+                          }}
+                        >
+                          {activeTelegramGift.comment}
+                        </div>
+                      ) : null}
+
                       <div
                         style={{
-                          marginTop: 6,
+                          marginTop: 8,
                           fontSize: 13,
                           lineHeight: 1.45,
                           fontWeight: 700,
