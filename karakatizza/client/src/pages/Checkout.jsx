@@ -968,16 +968,7 @@ export default function Checkout() {
       const shouldForceApplyTelegramGift = Boolean(
         activeTelegramGift && isWelcomeTelegramGift
       );
-
-      const ordersCount = Number(
-        freshTelegramStatus?.ordersCount ??
-          telegramCheckoutStatus?.ordersCount ??
-          0
-      );
-
-      const availableAfterOrdersCount = activeTelegramGift
-        ? Number(activeTelegramGift.available_after_orders_count ?? 0)
-        : null;
+      const telegramCanUseNowDirect = shouldForceApplyTelegramGift;
 
       const itemsForOrder = [
         ...cartItems.map((item) => ({
