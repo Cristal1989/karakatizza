@@ -961,6 +961,33 @@ export default function Checkout() {
         };
       }
 
+      const itemsForOrder = [
+        ...cartItems.map((item) => ({
+          name: item.name,
+          quantity: item.quantity,
+          paidQuantity: item.paidQuantity ?? item.quantity,
+          freeQuantity: item.freeQuantity ?? 0,
+          price: item.price,
+          lineTotal: item.price * (item.paidQuantity ?? item.quantity),
+          isDiscountOffer: item.isDiscountOffer ?? false,
+          discountLabel: item.discountLabel,
+        })),
+      ];
+      
+      if (canUseTelegramGiftNow && activeTelegramGift) {
+        itemsForOrder.push({
+          name: activeTelegramGift.gift_roll_title || "Telegram bonus",
+          quantity: 1,
+          paidQuantity: 0,
+          freeQuantity: 1,
+          price: 0,
+          lineTotal: 0,
+          isTelegramGift: true,
+          giftRollId: activeTelegramGift.gift_roll_id || "",
+          discountLabel: "Telegram bonus",
+        });
+      }
+
       const orderData = {
         name: form.name.trim(),
         phone: form.phone.trim(),
@@ -994,16 +1021,7 @@ export default function Checkout() {
         regularSticksCount,
         trainingSticksCount,
         sticksExtraPrice,
-        items: cartItems.map((item) => ({
-          name: item.name,
-          quantity: item.quantity,
-          paidQuantity: item.paidQuantity ?? item.quantity,
-          freeQuantity: item.freeQuantity ?? 0,
-          price: item.price,
-          lineTotal: item.price * (item.paidQuantity ?? item.quantity),
-          isDiscountOffer: item.isDiscountOffer ?? false,
-          discountLabel: item.discountLabel,
-        })),
+        items: itemsForOrder,
         telegramBonusMeta: activeTelegramGift
           ? {
               giftId: activeTelegramGift.id,
