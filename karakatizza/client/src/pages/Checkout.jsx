@@ -961,6 +961,15 @@ export default function Checkout() {
         };
       }
 
+      const activeTelegramGift = telegramCheckoutStatus?.activeGift || null;
+
+      const canUseTelegramGiftNow =
+        Boolean(telegramCheckoutStatus?.canUseGiftNow) &&
+        !skipTelegramBonusForThisCheckout;
+
+      const telegramOrdersLeftUntilGift =
+        telegramCheckoutStatus?.ordersLeftUntilGift ?? null;
+
       const itemsForOrder = [
         ...cartItems.map((item) => ({
           name: item.name,
@@ -973,7 +982,7 @@ export default function Checkout() {
           discountLabel: item.discountLabel,
         })),
       ];
-      
+
       if (canUseTelegramGiftNow && activeTelegramGift) {
         itemsForOrder.push({
           name: activeTelegramGift.gift_roll_title || "Telegram bonus",
