@@ -1046,6 +1046,7 @@ export default function Checkout() {
           : null,
       };
 
+      console.log("ORDER DATA DEBUG", orderData);
       await createOrder(orderData);
 
       clearCart();
