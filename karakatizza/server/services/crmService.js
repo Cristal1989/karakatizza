@@ -287,16 +287,14 @@ export async function issueTelegramGift(
   if (customerId) {
     const customerOrdersResult = await pool.query(
       `
-      SELECT orders_count
-      FROM customers
-      WHERE id = $1
-      LIMIT 1
-    `,
+        SELECT COUNT(*)::int AS count
+        FROM orders
+        WHERE customer_id = $1
+      `,
       [Number(customerId)]
     );
-
-    const customerRow = customerOrdersResult.rows[0] || null;
-    currentOrdersCount = Number(customerRow?.orders_count || 0);
+    
+    currentOrdersCount = Number(customerOrdersResult.rows[0]?.count || 0);
   }
 
   if (normalizedGiftRollId === "telegram-welcome") {
