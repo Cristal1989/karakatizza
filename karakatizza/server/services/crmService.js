@@ -280,14 +280,20 @@ export async function issueTelegramGift(
 
   let availableAfterOrdersCount = null;
 
-  if (customerId) {
+  const normalizedGiftRollId = String(giftRollId || "").trim();
+
+  // welcome-подарок должен быть доступен уже начиная со 2-го заказа,
+  // то есть как только у клиента есть хотя бы 1 завершённый заказ
+  if (normalizedGiftRollId === "telegram-welcome") {
+    availableAfterOrdersCount = 1;
+  } else if (customerId) {
     const customerOrdersResult = await pool.query(
       `
-      SELECT orders_count
-      FROM customers
-      WHERE id = $1
-      LIMIT 1
-    `,
+    SELECT orders_count
+    FROM customers
+    WHERE id = $1
+    LIMIT 1
+  `,
       [Number(customerId)]
     );
 
