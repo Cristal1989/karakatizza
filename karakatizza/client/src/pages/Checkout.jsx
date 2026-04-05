@@ -962,6 +962,13 @@ export default function Checkout() {
         telegramCheckoutStatus?.activeGift ||
         null;
 
+      const isWelcomeTelegramGift =
+        String(activeTelegramGift?.gift_roll_id || "") === "telegram-welcome";
+
+      const shouldForceApplyTelegramGift = Boolean(
+        activeTelegramGift && isWelcomeTelegramGift
+      );
+
       const ordersCount = Number(
         freshTelegramStatus?.ordersCount ??
           telegramCheckoutStatus?.ordersCount ??
@@ -971,28 +978,6 @@ export default function Checkout() {
       const availableAfterOrdersCount = activeTelegramGift
         ? Number(activeTelegramGift.available_after_orders_count ?? 0)
         : null;
-
-      const isWelcomeTelegramGift =
-        String(activeTelegramGift?.gift_roll_id || "") === "telegram-welcome";
-
-      const telegramCanUseNowDirect = Boolean(
-        activeTelegramGift &&
-          (isWelcomeTelegramGift
-            ? ordersCount >= 1
-            : availableAfterOrdersCount === null ||
-              availableAfterOrdersCount <= 0 ||
-              ordersCount >= availableAfterOrdersCount)
-      );
-
-      console.log("TELEGRAM FINAL APPLY DEBUG", {
-        ordersCount,
-        availableAfterOrdersCount,
-        isWelcomeTelegramGift,
-        freshCanUseGiftNow: freshTelegramStatus?.canUseGiftNow,
-        stateCanUseGiftNow: telegramCheckoutStatus?.canUseGiftNow,
-        telegramCanUseNowDirect,
-        activeTelegramGift,
-      });
 
       const itemsForOrder = [
         ...cartItems.map((item) => ({
@@ -1062,25 +1047,16 @@ export default function Checkout() {
               giftRollTitle: activeTelegramGift.gift_roll_title || "",
               source: "telegram",
               status: activeTelegramGift.status || "issued",
-              applied: telegramCanUseNowDirect,
+              applied: shouldForceApplyTelegramGift,
               skipped: false,
               availableAfterOrdersCount:
                 activeTelegramGift.available_after_orders_count ?? null,
             }
           : null,
       };
-      console.log("ORDER DATA DEBUG JSON", JSON.stringify(orderData, null, 2));
-      console.log("TELEGRAM BONUS FLAGS", {
-        telegramCanUseNowDirect,
-        ordersCount,
-        availableAfterOrdersCount,
+      console.log("FORCED TELEGRAM APPLY DEBUG", {
         isWelcomeTelegramGift,
-        activeTelegramGift,
-      });
-      console.log("CHECKOUT_BUILD_MARKER_0504_V1", {
-        telegramCanUseNowDirect,
-        ordersCount,
-        availableAfterOrdersCount,
+        shouldForceApplyTelegramGift,
         activeTelegramGift,
         orderData,
       });
