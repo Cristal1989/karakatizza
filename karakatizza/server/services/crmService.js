@@ -300,7 +300,7 @@ export async function issueTelegramGift(
   }
 
   if (normalizedGiftRollId === "telegram-welcome") {
-    availableAfterOrdersCount = currentOrdersCount + 1;
+    availableAfterOrdersCount = Math.max(1, currentOrdersCount);
   } else if (customerId) {
     availableAfterOrdersCount = currentOrdersCount;
   }
