@@ -92,12 +92,23 @@ export default function Checkout() {
     telegramCheckoutStatus?.canUseGiftNow && activeTelegramGift
   );
 
+  const telegramOrdersLeftUntilGift =
+    telegramCheckoutStatus?.ordersLeftUntilGift ?? null;
+
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     if (isTelegramReturnFromUrl) {
       sessionStorage.setItem(TELEGRAM_RETURN_FLAG_KEY, "1");
     }
+  }, [isTelegramReturnFromUrl]);
+
+  useEffect(() => {
+    if (!isTelegramReturnFromUrl) return;
+
+    const url = new URL(window.location.href);
+    url.searchParams.delete("tg");
+    window.history.replaceState({}, "", url.toString());
   }, [isTelegramReturnFromUrl]);
 
   const { cartItems, clearCart, totalPrice } = useCart();
@@ -761,14 +772,6 @@ export default function Checkout() {
     };
   }, [searchParams, setSearchParams, setCheckoutMode]);
 
-  useEffect(() => {
-    if (!isTelegramReturnFromUrl) return;
-
-    const url = new URL(window.location.href);
-    url.searchParams.delete("tg");
-    window.history.replaceState({}, "", url.toString());
-  }, [isTelegramReturnFromUrl]);
-
   const handleNameChange = (e) => {
     const value = e.target.value;
 
@@ -1007,12 +1010,14 @@ export default function Checkout() {
               source: "telegram",
               status: activeTelegramGift.status || "issued",
               applied: telegramCanUseNowDirect,
-              skipped: false,
+              skipped: !telegramCanUseNowDirect,
               availableAfterOrdersCount:
                 activeTelegramGift.available_after_orders_count ?? null,
             }
           : null,
       };
+
+      console.log("ORDER DATA DEBUG JSON", JSON.stringify(orderData, null, 2));
 
       await createOrder(orderData);
 
@@ -1366,7 +1371,6 @@ export default function Checkout() {
                   ) : null}
 
                   {!telegramCheckoutLoading &&
-                  !telegramCheckoutError &&
                   telegramCheckoutStatus &&
                   telegramCheckoutStatus.telegramLinked === true &&
                   activeTelegramGift ? (
@@ -1425,7 +1429,9 @@ export default function Checkout() {
                       >
                         {telegramGiftReadyForUi
                           ? "Бонус буде використаний у цьому замовленні."
-                          : "Бонус активований, але буде доступний лише для наступного замовлення."}
+                          : telegramOrdersLeftUntilGift > 0
+                          ? `Бонус активований, але буде доступний через ще ${telegramOrdersLeftUntilGift} замовлення.`
+                          : "Бонус активований, але поки що недоступний для цього замовлення."}
                       </div>
                     </div>
                   ) : null}
