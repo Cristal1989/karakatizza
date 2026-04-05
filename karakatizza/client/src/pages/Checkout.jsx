@@ -86,55 +86,35 @@ export default function Checkout() {
 
   const isTelegramReturnFromUrl = searchParams.get("tg") === "1";
 
-  const [
-    skipTelegramBonusForThisCheckout,
-    setSkipTelegramBonusForThisCheckout,
-  ] = useState(false);
-
   const activeTelegramGift = telegramCheckoutStatus?.activeGift || null;
 
   const telegramOrdersCountForUi = Number(
     telegramCheckoutStatus?.ordersCount ?? 0
   );
-  
+
   const telegramGiftAvailableAfterOrdersForUi = activeTelegramGift
     ? Number(activeTelegramGift.available_after_orders_count ?? 0)
     : null;
-  
+
   const isWelcomeTelegramGiftForUi =
     String(activeTelegramGift?.gift_roll_id || "") === "telegram-welcome";
-  
+
   const telegramGiftReadyForUi = Boolean(
     activeTelegramGift &&
-      (
-        isWelcomeTelegramGiftForUi
-          ? telegramOrdersCountForUi >= 1
-          : telegramGiftAvailableAfterOrdersForUi === null ||
-            telegramGiftAvailableAfterOrdersForUi <= 0 ||
-            telegramOrdersCountForUi >= telegramGiftAvailableAfterOrdersForUi
-      )
+      (isWelcomeTelegramGiftForUi
+        ? telegramOrdersCountForUi >= 1
+        : telegramGiftAvailableAfterOrdersForUi === null ||
+          telegramGiftAvailableAfterOrdersForUi <= 0 ||
+          telegramOrdersCountForUi >= telegramGiftAvailableAfterOrdersForUi)
   );
-
-  const canUseTelegramGiftNow =
-    Boolean(telegramCheckoutStatus?.canUseGiftNow) &&
-    !skipTelegramBonusForThisCheckout;
-
-  const telegramOrdersLeftUntilGift =
-    telegramCheckoutStatus?.ordersLeftUntilGift ?? null;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-
+  
     if (isTelegramReturnFromUrl) {
       sessionStorage.setItem(TELEGRAM_RETURN_FLAG_KEY, "1");
     }
-
-    setSkipTelegramBonusForThisCheckout(false);
-  }, [
-    isTelegramReturnFromUrl,
-    form.phone,
-    telegramCheckoutStatus?.activeGift?.id,
-  ]);
+  }, [isTelegramReturnFromUrl]);
 
   const { cartItems, clearCart, totalPrice } = useCart();
   const {
@@ -957,7 +937,6 @@ export default function Checkout() {
         if (result) {
           checkedDeliveryInfo = result;
         } else {
-          // fallback если адрес не найден
           checkedDeliveryInfo = {
             type: "operator",
             addressFound: false,
@@ -970,7 +949,7 @@ export default function Checkout() {
         }
 
         checkedDeliveryInfo = {
-          ...deliveryInfo,
+          ...checkedDeliveryInfo,
           shortAddress: form.address.trim(),
         };
       }
@@ -1013,7 +992,8 @@ export default function Checkout() {
           paidQuantity: item.paidQuantity ?? item.quantity,
           freeQuantity: item.freeQuantity ?? 0,
           price: item.price,
-          lineTotal: item.price * (item.paidQuantity ?? item.quantity),
+          lineTotal:
+            item.lineTotal ?? item.price * (item.paidQuantity ?? item.quantity),
           isDiscountOffer: item.isDiscountOffer ?? false,
           discountLabel: item.discountLabel || "",
         })),
@@ -1074,7 +1054,7 @@ export default function Checkout() {
               giftRollTitle: activeTelegramGift.gift_roll_title || "",
               source: "telegram",
               status: activeTelegramGift.status || "issued",
-              applied: shouldForceApplyTelegramGift,
+              applied: telegramCanUseNowDirect,
               skipped: false,
               availableAfterOrdersCount:
                 activeTelegramGift.available_after_orders_count ?? null,
@@ -1454,7 +1434,7 @@ export default function Checkout() {
                           color: "#1f2937",
                         }}
                       >
-                        🎁 Для цього номера є активний бонус
+                        Для цього номера є активний бонус 🎁
                       </div>
 
                       <div
@@ -1469,22 +1449,9 @@ export default function Checkout() {
                           "Подарунковий рол"}
                       </div>
 
-                      {activeTelegramGift.comment ? (
-                        <div
-                          style={{
-                            marginTop: 4,
-                            fontSize: 12,
-                            color: "#64748b",
-                            lineHeight: 1.45,
-                          }}
-                        >
-                          {activeTelegramGift.comment}
-                        </div>
-                      ) : null}
-
                       <div
                         style={{
-                          marginTop: 8,
+                          marginTop: 6,
                           fontSize: 13,
                           lineHeight: 1.45,
                           fontWeight: 700,
@@ -1493,7 +1460,7 @@ export default function Checkout() {
                       >
                         {telegramGiftReadyForUi
                           ? "Бонус буде використаний у цьому замовленні."
-                          : "Бонус активований, але поки що недоступний для цього замовлення."}
+                          : "Бонус активований, але буде доступний лише для наступного замовлення."}
                       </div>
                     </div>
                   ) : null}
