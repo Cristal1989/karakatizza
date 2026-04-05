@@ -75,15 +75,7 @@ export default function Checkout() {
   const [
     skipTelegramBonusForThisCheckout,
     setSkipTelegramBonusForThisCheckout,
-  ] = useState(() => {
-    if (typeof window === "undefined") return false;
-
-    if (isTelegramReturnFromUrl) {
-      return true;
-    }
-
-    return sessionStorage.getItem(TELEGRAM_RETURN_FLAG_KEY) === "1";
-  });
+  ] = useState(false);
 
   const activeTelegramGift = telegramCheckoutStatus?.activeGift || null;
 
@@ -94,20 +86,15 @@ export default function Checkout() {
   const telegramOrdersLeftUntilGift =
     telegramCheckoutStatus?.ordersLeftUntilGift ?? null;
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    if (isTelegramReturnFromUrl) {
-      sessionStorage.setItem(TELEGRAM_RETURN_FLAG_KEY, "1");
-      setSkipTelegramBonusForThisCheckout(true);
-      return;
-    }
-
-    const savedFlag = sessionStorage.getItem(TELEGRAM_RETURN_FLAG_KEY) === "1";
-    if (savedFlag) {
-      setSkipTelegramBonusForThisCheckout(true);
-    }
-  }, [isTelegramReturnFromUrl]);
+    useEffect(() => {
+      if (typeof window === "undefined") return;
+    
+      if (isTelegramReturnFromUrl) {
+        sessionStorage.setItem(TELEGRAM_RETURN_FLAG_KEY, "1");
+      }
+    
+      setSkipTelegramBonusForThisCheckout(false);
+    }, [isTelegramReturnFromUrl, form.phone, telegramCheckoutStatus?.activeGift?.id]);
 
   const { cartItems, clearCart, totalPrice } = useCart();
   const {
@@ -1036,7 +1023,7 @@ export default function Checkout() {
               source: "telegram",
               status: activeTelegramGift.status || "issued",
               applied: canUseTelegramGiftNow,
-              skipped: Boolean(skipTelegramBonusForThisCheckout),
+              skipped: false,
               availableAfterOrdersCount:
                 activeTelegramGift.available_after_orders_count ?? null,
             }
