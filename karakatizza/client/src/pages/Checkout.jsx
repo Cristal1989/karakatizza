@@ -1045,12 +1045,6 @@ export default function Checkout() {
             }
           : null,
       };
-      console.log("FORCED TELEGRAM APPLY DEBUG", {
-        isWelcomeTelegramGift,
-        shouldForceApplyTelegramGift,
-        activeTelegramGift,
-        orderData,
-      });
 
       await createOrder(orderData);
 

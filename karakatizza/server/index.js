@@ -887,9 +887,6 @@ app.post("/order", async (req, res) => {
       telegramBonusMeta = null,
     } = req.body;
 
-    console.log("REQ BODY TELEGRAM BONUS META", req.body.telegramBonusMeta);
-    console.log("REQ BODY ITEMS", JSON.stringify(req.body.items, null, 2));
-
     let sticksText = "";
 
     const calculatedTotal =
@@ -1047,13 +1044,6 @@ app.post("/order", async (req, res) => {
     }
 
     try {
-      console.log("CRM SAVE START", {
-        phone,
-        totalPrice,
-        paymentMethod,
-        itemsCount: Array.isArray(items) ? items.length : 0,
-      });
-
       const crmResult = await saveOrderToCrm(pool, {
         name,
         phone,
@@ -1074,41 +1064,14 @@ app.post("/order", async (req, res) => {
         telegramBonusMeta,
       });
 
-      console.log("CRM SAVE SUCCESS", {
-        customerId: crmResult.customer?.id,
-        orderId: crmResult.order?.id,
-      });
-
       try {
-        console.log("ORDER AUTO USE CHECK", {
-          hasOrder: Boolean(crmResult?.order),
-          orderId: crmResult?.order?.id || null,
-          hasTelegramBonusMeta: Boolean(telegramBonusMeta),
-          telegramBonusApplied: telegramBonusMeta?.applied === true,
-          telegramBonusGiftId: telegramBonusMeta?.giftId || null,
-          phone,
-        });
-
         if (
           crmResult?.order &&
           telegramBonusMeta?.applied === true &&
           telegramBonusMeta?.giftId
         ) {
-          console.log("ORDER AUTO USE START", {
-            giftId: telegramBonusMeta.giftId,
-            orderId: crmResult.order?.id,
-            phone,
-          });
-
           try {
             await markTelegramGiftUsed(pool, Number(telegramBonusMeta.giftId));
-
-            console.log("TELEGRAM GIFT AUTO USED", {
-              giftId: telegramBonusMeta.giftId,
-              phone,
-              giftRollTitle: telegramBonusMeta.giftRollTitle || "",
-              orderId: crmResult.order?.id,
-            });
           } catch (giftUseError) {
             console.error("ORDER AUTO USE ERROR", giftUseError);
             console.error(
