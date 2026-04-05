@@ -887,6 +887,12 @@ app.post("/order", async (req, res) => {
       telegramBonusMeta = null,
     } = req.body;
 
+    console.log("ORDER REQUEST TELEGRAM", {
+      phone,
+      telegramBonusMeta,
+      items,
+    });
+
     let sticksText = "";
 
     const calculatedTotal =
@@ -1059,6 +1065,10 @@ app.post("/order", async (req, res) => {
       });
 
       try {
+        console.log("ORDER AUTO USE INPUT", {
+          hasOrder: Boolean(crmResult?.order),
+          telegramBonusMeta,
+        });
         if (
           crmResult?.order &&
           telegramBonusMeta?.applied === true &&

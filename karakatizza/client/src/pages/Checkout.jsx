@@ -103,13 +103,7 @@ export default function Checkout() {
     }
   }, [isTelegramReturnFromUrl]);
 
-  useEffect(() => {
-    if (!isTelegramReturnFromUrl) return;
 
-    const url = new URL(window.location.href);
-    url.searchParams.delete("tg");
-    window.history.replaceState({}, "", url.toString());
-  }, [isTelegramReturnFromUrl]);
 
   const { cartItems, clearCart, totalPrice } = useCart();
   const {
@@ -931,6 +925,12 @@ export default function Checkout() {
         form.phone.trim()
       );
 
+      console.log("TG STATUS BEFORE ORDER", {
+        phone: form.phone.trim(),
+        freshTelegramStatus,
+        telegramCheckoutStatus,
+      });
+
       const activeTelegramGift =
         freshTelegramStatus?.activeGift ||
         telegramCheckoutStatus?.activeGift ||
@@ -939,6 +939,13 @@ export default function Checkout() {
       const telegramCanUseNowDirect = Boolean(
         freshTelegramStatus?.canUseGiftNow && activeTelegramGift
       );
+
+      console.log("TG APPLY DECISION", {
+        activeTelegramGift,
+        freshCanUseGiftNow: freshTelegramStatus?.canUseGiftNow,
+        localCanUseGiftNow: telegramCheckoutStatus?.canUseGiftNow,
+        telegramCanUseNowDirect,
+      });
 
       const itemsForOrder = [
         ...cartItems.map((item) => ({
@@ -967,6 +974,8 @@ export default function Checkout() {
           discountLabel: "Telegram bonus",
         });
       }
+
+      console.log("TG ITEMS FOR ORDER", itemsForOrder);
 
       const orderData = {
         name: form.name.trim(),
@@ -1017,7 +1026,11 @@ export default function Checkout() {
           : null,
       };
 
-      console.log("ORDER DATA DEBUG JSON", JSON.stringify(orderData, null, 2));
+      console.log("TG ORDER DATA FINAL", {
+        telegramBonusMeta: orderData.telegramBonusMeta,
+        items: orderData.items,
+        totalPrice: orderData.totalPrice,
+      });
 
       await createOrder(orderData);
 

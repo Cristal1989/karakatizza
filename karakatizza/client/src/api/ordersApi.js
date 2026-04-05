@@ -1,6 +1,7 @@
 import { API_BASE_URL } from "./productsApi";
 
 export async function createOrder(orderData) {
+  console.log("CREATE ORDER PAYLOAD", orderData);
   const response = await fetch(`${API_BASE_URL}/order`, {
     method: "POST",
     headers: {
@@ -18,6 +19,8 @@ export async function createOrder(orderData) {
     const text = await response.text();
     throw new Error(`Сервер повернув не JSON: ${text.slice(0, 200)}`);
   }
+
+  console.log("CREATE ORDER RESPONSE", data);
 
   if (!response.ok) {
     throw new Error(data.message || "Помилка відправки замовлення");
