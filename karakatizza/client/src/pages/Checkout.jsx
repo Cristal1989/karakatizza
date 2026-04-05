@@ -967,9 +967,6 @@ export default function Checkout() {
         Boolean(telegramCheckoutStatus?.canUseGiftNow) &&
         !skipTelegramBonusForThisCheckout;
 
-      const telegramOrdersLeftUntilGift =
-        telegramCheckoutStatus?.ordersLeftUntilGift ?? null;
-
       const itemsForOrder = [
         ...cartItems.map((item) => ({
           name: item.name,
@@ -1047,6 +1044,7 @@ export default function Checkout() {
       };
 
       console.log("ORDER DATA DEBUG", orderData);
+
       await createOrder(orderData);
 
       clearCart();
