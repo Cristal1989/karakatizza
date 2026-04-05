@@ -1077,6 +1077,13 @@ export default function Checkout() {
         isWelcomeTelegramGift,
         activeTelegramGift,
       });
+      console.log("CHECKOUT_BUILD_MARKER_0504_V1", {
+        telegramCanUseNowDirect,
+        ordersCount,
+        availableAfterOrdersCount,
+        activeTelegramGift,
+        orderData,
+      });
 
       await createOrder(orderData);
 
