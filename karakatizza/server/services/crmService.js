@@ -118,7 +118,7 @@ export async function saveOrderToCrm(pool, orderData) {
     regularSticksCount,
     trainingSticksCount,
     sticksExtraPrice,
-    telegramBonusMeta = null,
+    telegramBonusMeta,
   } = orderData;
 
   const customer = await findOrCreateCustomer(pool, {
