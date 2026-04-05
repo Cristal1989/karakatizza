@@ -952,130 +952,133 @@ export default function Checkout() {
           shortAddress: form.address.trim(),
         };
       }
-
-      const freshTelegramStatus = await getTelegramCheckoutStatus(
-        form.phone.trim()
-      );
-
-      const activeTelegramGift =
-        freshTelegramStatus?.activeGift ||
-        telegramCheckoutStatus?.activeGift ||
-        null;
-
-      const ordersCount = Number(
-        freshTelegramStatus?.ordersCount ??
-          telegramCheckoutStatus?.ordersCount ??
-          0
-      );
-
-      const availableAfterOrdersCount = activeTelegramGift
-        ? Number(activeTelegramGift.available_after_orders_count ?? 0)
-        : null;
-
-      const canUseTelegramGiftNow = Boolean(
-        activeTelegramGift &&
-          (Boolean(freshTelegramStatus?.canUseGiftNow) ||
-            availableAfterOrdersCount === null ||
-            availableAfterOrdersCount <= 0 ||
-            ordersCount >= availableAfterOrdersCount)
-      );
-
-      const itemsForOrder = [
-        ...cartItems.map((item) => ({
-          name: item.name,
-          quantity: item.quantity,
-          paidQuantity: item.paidQuantity ?? item.quantity,
-          freeQuantity: item.freeQuantity ?? 0,
-          price: item.price,
-          lineTotal: item.price * (item.paidQuantity ?? item.quantity),
-          isDiscountOffer: item.isDiscountOffer ?? false,
-          discountLabel: item.discountLabel,
-        })),
-      ];
-
-      if (canUseTelegramGiftNow && activeTelegramGift) {
-        itemsForOrder.push({
-          name: activeTelegramGift.gift_roll_title || "Telegram bonus",
-          quantity: 1,
-          paidQuantity: 0,
-          freeQuantity: 1,
-          price: 0,
-          lineTotal: 0,
-          isTelegramGift: true,
-          giftRollId: activeTelegramGift.gift_roll_id || "",
-          discountLabel: "Telegram bonus",
-        });
-      }
-
-      const orderData = {
-        name: form.name.trim(),
-        phone: form.phone.trim(),
-        mode: checkoutMode,
-        address:
-          checkoutMode === "pickup"
-            ? `Самовивіз: Миколаїв, ${pickupAddress}`
-            : form.address.trim(),
-        resolvedAddress:
-          checkoutMode === "delivery"
-            ? checkedDeliveryInfo?.resolvedAddress || ""
-            : "",
-        comment: form.comment.trim(),
-        totalPrice: finalCheckoutTotal,
-        entrance: form.entrance.trim(),
-        paymentMethod: form.paymentMethod,
-        needExactTime: form.needExactTime,
-        exactTime: form.needExactTime ? form.exactTime.trim() : "",
-        condiments: {
-          soySauceCount: form.soySauceCount,
-          gingerCount: form.gingerCount,
-          wasabiCount: form.wasabiCount,
-          freeSoySauce: freeCondiments.soy,
-          freeGinger: freeCondiments.ginger,
-          freeWasabi: freeCondiments.wasabi,
-          extraSoyCount,
-          extraGingerCount,
-          extraWasabiCount,
-          extraPrice: condimentsExtraPrice,
-        },
-        regularSticksCount,
-        trainingSticksCount,
-        sticksExtraPrice,
-        items: itemsForOrder,
-        telegramBonusMeta: activeTelegramGift
-          ? {
-              giftId: activeTelegramGift.id,
+      
+          const freshTelegramStatus = await getTelegramCheckoutStatus(
+            form.phone.trim()
+          );
+      
+          const activeTelegramGift =
+            freshTelegramStatus?.activeGift ||
+            telegramCheckoutStatus?.activeGift ||
+            null;
+      
+          const ordersCount = Number(
+            freshTelegramStatus?.ordersCount ??
+              telegramCheckoutStatus?.ordersCount ??
+              0
+          );
+      
+          const availableAfterOrdersCount = activeTelegramGift
+            ? Number(activeTelegramGift.available_after_orders_count ?? 0)
+            : null;
+      
+          const telegramCanUseNowDirect =
+            !!activeTelegramGift &&
+            (availableAfterOrdersCount === null ||
+              availableAfterOrdersCount <= 0 ||
+              ordersCount >= availableAfterOrdersCount);
+      
+          const itemsForOrder = [
+            ...cartItems.map((item) => ({
+              name: item.name,
+              quantity: item.quantity,
+              paidQuantity: item.paidQuantity ?? item.quantity,
+              freeQuantity: item.freeQuantity ?? 0,
+              price: item.price,
+              lineTotal: item.price * (item.paidQuantity ?? item.quantity),
+              isDiscountOffer: item.isDiscountOffer ?? false,
+              discountLabel: item.discountLabel || "",
+            })),
+          ];
+      
+          if (telegramCanUseNowDirect && activeTelegramGift) {
+            itemsForOrder.push({
+              name: activeTelegramGift.gift_roll_title || "Подарунковий рол",
+              quantity: 1,
+              paidQuantity: 0,
+              freeQuantity: 1,
+              price: 0,
+              lineTotal: 0,
+              isTelegramGift: true,
               giftRollId: activeTelegramGift.gift_roll_id || "",
-              giftRollTitle: activeTelegramGift.gift_roll_title || "",
-              source: "telegram",
-              status: activeTelegramGift.status || "issued",
-              applied: canUseTelegramGiftNow,
-              skipped: false,
-              availableAfterOrdersCount:
-                activeTelegramGift.available_after_orders_count ?? null,
-            }
-          : null,
+              discountLabel: "Telegram bonus",
+            });
+          }
+      
+          const orderData = {
+            name: form.name.trim(),
+            phone: form.phone.trim(),
+            mode: checkoutMode,
+            address:
+              checkoutMode === "pickup"
+                ? `Самовивіз: Миколаїв, ${pickupAddress}`
+                : form.address.trim(),
+            resolvedAddress:
+              checkoutMode === "delivery"
+                ? checkedDeliveryInfo?.resolvedAddress || ""
+                : "",
+            comment: form.comment.trim(),
+            totalPrice: finalCheckoutTotal,
+            entrance: form.entrance.trim(),
+            paymentMethod: form.paymentMethod,
+            needExactTime: form.needExactTime,
+            exactTime: form.needExactTime ? form.exactTime.trim() : "",
+            condiments: {
+              soySauceCount: form.soySauceCount,
+              gingerCount: form.gingerCount,
+              wasabiCount: form.wasabiCount,
+              freeSoySauce: freeCondiments.soy,
+              freeGinger: freeCondiments.ginger,
+              freeWasabi: freeCondiments.wasabi,
+              extraSoyCount,
+              extraGingerCount,
+              extraWasabiCount,
+              extraPrice: condimentsExtraPrice,
+            },
+            regularSticksCount,
+            trainingSticksCount,
+            sticksExtraPrice,
+            items: itemsForOrder,
+            telegramBonusMeta: activeTelegramGift
+              ? {
+                  giftId: activeTelegramGift.id,
+                  giftRollId: activeTelegramGift.gift_roll_id || "",
+                  giftRollTitle: activeTelegramGift.gift_roll_title || "",
+                  source: "telegram",
+                  status: activeTelegramGift.status || "issued",
+                  applied: telegramCanUseNowDirect,
+                  skipped: false,
+                  availableAfterOrdersCount:
+                    activeTelegramGift.available_after_orders_count ?? null,
+                }
+              : null,
+          };
+              console.log(
+            "ORDER DATA DEBUG JSON",
+            JSON.stringify(orderData, null, 2)
+          );
+          console.log("TELEGRAM FINAL APPLY DEBUG", {
+            ordersCount,
+            availableAfterOrdersCount,
+            freshCanUseGiftNow: freshTelegramStatus?.canUseGiftNow,
+            stateCanUseGiftNow: telegramCheckoutStatus?.canUseGiftNow,
+            telegramCanUseNowDirect,
+            activeTelegramGift,
+          });
+      
+          await createOrder(orderData);
+      
+          clearCart();
+          localStorage.removeItem(CHECKOUT_DRAFT_KEY);
+          sessionStorage.removeItem(TELEGRAM_RETURN_FLAG_KEY);
+          navigate("/success");
+        } catch (err) {
+          console.error(err);
+          setError(err.message || "Не вдалося відправити замовлення");
+        } finally {
+          setLoading(false);
+        }
       };
-
-      console.log("ORDER DATA DEBUG JSON", JSON.stringify(orderData, null, 2));
-      console.log("TELEGRAM BONUS FLAGS", {
-        canUseTelegramGiftNow,
-        skipTelegramBonusForThisCheckout,
-        activeTelegramGift,
-      });
-
-      await createOrder(orderData);
-
-      clearCart();
-      localStorage.removeItem(CHECKOUT_DRAFT_KEY);
-      sessionStorage.removeItem(TELEGRAM_RETURN_FLAG_KEY);
-      navigate("/success");
-    } catch (err) {
-      console.error(err);
-      setError(err.message || "Не вдалося відправити замовлення");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   async function handleCheckDelivery() {
     if (checkoutMode !== "delivery") return null;
