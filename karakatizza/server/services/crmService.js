@@ -586,29 +586,38 @@ export async function getTelegramCheckoutStatusByPhone(pool, phone) {
   }
 
   const activeGift = await getActiveTelegramGiftByPhone(pool, phoneNormalized);
-  const ordersCount = Number(customer.orders_count || 0);
+
+  const ordersCountResult = await pool.query(
+    `
+      SELECT COUNT(*)::int AS count
+      FROM orders
+      WHERE phone_normalized = $1
+    `,
+    [phoneNormalized]
+  );
+
+  const ordersCount = Number(ordersCountResult.rows[0]?.count || 0);
 
   const availableAfterOrdersCount = activeGift
-    ? activeGift.available_after_orders_count == null
-      ? null
-      : Number(activeGift.available_after_orders_count)
+    ? Number(activeGift.available_after_orders_count ?? 0)
     : null;
 
-  const canUseGiftNow =
-    Boolean(activeGift) &&
-    (availableAfterOrdersCount === null ||
-      ordersCount >= availableAfterOrdersCount);
+  const canUseGiftNow = Boolean(
+    activeGift &&
+      (
+        availableAfterOrdersCount === null ||
+        availableAfterOrdersCount <= 0 ||
+        ordersCount >= availableAfterOrdersCount
+      )
+  );
 
-  const ordersLeftUntilGift =
-    activeGift && availableAfterOrdersCount !== null
-      ? Math.max(0, availableAfterOrdersCount - ordersCount)
-      : null;
+  const ordersLeftUntilGift = activeGift
+    ? Math.max(0, Number(availableAfterOrdersCount || 0) - ordersCount)
+    : null;
 
   return {
     telegramLinked: Boolean(
-      customer.telegram_user_id &&
-        customer.is_telegram_subscribed &&
-        customer.is_phone_confirmed
+      customer.telegram_user_id && customer.is_telegram_subscribed
     ),
     customer,
     activeGift,
