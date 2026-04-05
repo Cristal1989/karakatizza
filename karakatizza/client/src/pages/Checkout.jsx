@@ -930,35 +930,47 @@ export default function Checkout() {
       const freshTelegramStatus = await getTelegramCheckoutStatus(
         form.phone.trim()
       );
-
+      
       const activeTelegramGift =
         freshTelegramStatus?.activeGift ||
         telegramCheckoutStatus?.activeGift ||
         null;
-
+      
       const freshOrdersCount = Number(
         freshTelegramStatus?.ordersCount ??
+          freshTelegramStatus?.orders_count ??
+          freshTelegramStatus?.customer?.ordersCount ??
+          freshTelegramStatus?.customer?.orders_count ??
           telegramCheckoutStatus?.ordersCount ??
+          telegramCheckoutStatus?.orders_count ??
+          telegramCheckoutStatus?.customer?.ordersCount ??
+          telegramCheckoutStatus?.customer?.orders_count ??
           0
       );
-
+      
       const freshAvailableAfterOrdersCount = activeTelegramGift
-        ? Number(activeTelegramGift.available_after_orders_count ?? 0)
+        ? Number(
+            activeTelegramGift.available_after_orders_count ??
+              activeTelegramGift.availableAfterOrdersCount ??
+              0
+          )
         : null;
-
+      
       const telegramCanUseNowDirect = Boolean(
         activeTelegramGift &&
-          (freshAvailableAfterOrdersCount === null ||
+          (
+            freshAvailableAfterOrdersCount === null ||
             freshAvailableAfterOrdersCount <= 0 ||
-            freshOrdersCount >= freshAvailableAfterOrdersCount)
+            freshOrdersCount >= freshAvailableAfterOrdersCount
+          )
       );
-
+      
       console.log("TG STATUS BEFORE ORDER", {
         phone: form.phone.trim(),
         freshTelegramStatus,
         telegramCheckoutStatus,
       });
-
+      
       console.log("TG CLIENT DECISION", {
         activeTelegramGift,
         freshOrdersCount,
