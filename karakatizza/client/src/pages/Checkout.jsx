@@ -41,6 +41,20 @@ export default function Checkout() {
       ? deliverySettings.deliveryZones
       : [];
 
+  const [form, setForm] = useState({
+    name: "",
+    phone: "+380",
+    address: "",
+    entrance: "",
+    comment: "",
+    paymentMethod: "cash",
+    needExactTime: false,
+    exactTime: "",
+    soySauceCount: 1,
+    gingerCount: 1,
+    wasabiCount: 1,
+  });
+
   const paymentSettings = siteSettings?.payment;
 
   const cardOnlineEnabled = paymentSettings?.cardOnlineEnabled ?? true;
@@ -86,15 +100,19 @@ export default function Checkout() {
   const telegramOrdersLeftUntilGift =
     telegramCheckoutStatus?.ordersLeftUntilGift ?? null;
 
-    useEffect(() => {
-      if (typeof window === "undefined") return;
-    
-      if (isTelegramReturnFromUrl) {
-        sessionStorage.setItem(TELEGRAM_RETURN_FLAG_KEY, "1");
-      }
-    
-      setSkipTelegramBonusForThisCheckout(false);
-    }, [isTelegramReturnFromUrl, form.phone, telegramCheckoutStatus?.activeGift?.id]);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    if (isTelegramReturnFromUrl) {
+      sessionStorage.setItem(TELEGRAM_RETURN_FLAG_KEY, "1");
+    }
+
+    setSkipTelegramBonusForThisCheckout(false);
+  }, [
+    isTelegramReturnFromUrl,
+    form.phone,
+    telegramCheckoutStatus?.activeGift?.id,
+  ]);
 
   const { cartItems, clearCart, totalPrice } = useCart();
   const {
@@ -112,19 +130,6 @@ export default function Checkout() {
     pickupDiscount,
   } = useCart();
 
-  const [form, setForm] = useState({
-    name: "",
-    phone: "+380",
-    address: "",
-    entrance: "",
-    comment: "",
-    paymentMethod: "cash",
-    needExactTime: false,
-    exactTime: "",
-    soySauceCount: 1,
-    gingerCount: 1,
-    wasabiCount: 1,
-  });
   const [deliveryInfo, setDeliveryInfo] = useState(null);
   const [deliveryLoading, setDeliveryLoading] = useState(false);
   const [deliveryError, setDeliveryError] = useState("");
