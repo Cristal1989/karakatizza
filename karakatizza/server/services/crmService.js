@@ -282,23 +282,27 @@ export async function issueTelegramGift(
 
   const normalizedGiftRollId = String(giftRollId || "").trim();
 
-  // welcome-подарок должен быть доступен уже начиная со 2-го заказа,
-  // то есть как только у клиента есть хотя бы 1 завершённый заказ
-  if (normalizedGiftRollId === "telegram-welcome") {
-    availableAfterOrdersCount = 1;
-  } else if (customerId) {
+  let currentOrdersCount = 0;
+
+  if (customerId) {
     const customerOrdersResult = await pool.query(
       `
-    SELECT orders_count
-    FROM customers
-    WHERE id = $1
-    LIMIT 1
-  `,
+      SELECT orders_count
+      FROM customers
+      WHERE id = $1
+      LIMIT 1
+    `,
       [Number(customerId)]
     );
 
     const customerRow = customerOrdersResult.rows[0] || null;
-    availableAfterOrdersCount = Number(customerRow?.orders_count || 0);
+    currentOrdersCount = Number(customerRow?.orders_count || 0);
+  }
+
+  if (normalizedGiftRollId === "telegram-welcome") {
+    availableAfterOrdersCount = currentOrdersCount + 1;
+  } else if (customerId) {
+    availableAfterOrdersCount = currentOrdersCount;
   }
 
   const insertResult = await pool.query(
@@ -585,23 +589,26 @@ export async function getTelegramCheckoutStatusByPhone(pool, phone) {
   const ordersCount = Number(customer.orders_count || 0);
 
   const availableAfterOrdersCount = activeGift
-    ? Number(activeGift.available_after_orders_count ?? 0)
+    ? activeGift.available_after_orders_count == null
+      ? null
+      : Number(activeGift.available_after_orders_count)
     : null;
 
-  const canUseGiftNow = Boolean(
-    activeGift &&
-      (availableAfterOrdersCount === null ||
-        availableAfterOrdersCount <= 0 ||
-        ordersCount >= availableAfterOrdersCount)
-  );
+  const canUseGiftNow =
+    Boolean(activeGift) &&
+    (availableAfterOrdersCount === null ||
+      ordersCount >= availableAfterOrdersCount);
 
-  const ordersLeftUntilGift = activeGift
-    ? Math.max(0, Number(availableAfterOrdersCount || 0) - ordersCount)
-    : null;
+  const ordersLeftUntilGift =
+    activeGift && availableAfterOrdersCount !== null
+      ? Math.max(0, availableAfterOrdersCount - ordersCount)
+      : null;
 
   return {
     telegramLinked: Boolean(
-      customer.telegram_user_id && customer.is_telegram_subscribed
+      customer.telegram_user_id &&
+        customer.is_telegram_subscribed &&
+        customer.is_phone_confirmed
     ),
     customer,
     activeGift,
