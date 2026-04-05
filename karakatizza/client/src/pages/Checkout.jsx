@@ -1405,19 +1405,17 @@ export default function Checkout() {
                     <div
                       style={{
                         marginTop: 12,
-                        padding: "14px 16px",
-                        borderRadius: 18,
-                        border: "1px solid #dbe4f0",
-                        background: "#f8fafc",
+                        padding: 14,
+                        borderRadius: 14,
+                        border: "1px solid #e7e5e4",
+                        background: "#fff",
                       }}
                     >
                       <div
                         style={{
                           fontSize: 14,
-                          fontWeight: 700,
-                          color: "#0f172a",
-                          lineHeight: 1.35,
-                          marginBottom: 4,
+                          fontWeight: 800,
+                          color: "#1f2937",
                         }}
                       >
                         🎁 Для цього номера є активний бонус
@@ -1425,16 +1423,17 @@ export default function Checkout() {
 
                       <div
                         style={{
+                          marginTop: 6,
                           fontSize: 13,
-                          color: "#0f172a",
-                          lineHeight: 1.45,
-                          fontWeight: 600,
+                          color: "#374151",
+                          fontWeight: 700,
                         }}
                       >
-                        {getCheckoutBonusText(activeTelegramGift)}
+                        {activeTelegramGift.gift_roll_title ||
+                          "Подарунковий рол"}
                       </div>
 
-                      {activeTelegramGift?.comment ? (
+                      {activeTelegramGift.comment ? (
                         <div
                           style={{
                             marginTop: 4,
@@ -1453,13 +1452,13 @@ export default function Checkout() {
                           fontSize: 13,
                           lineHeight: 1.45,
                           fontWeight: 700,
-                          color: canUseTelegramGiftNow ? "#2f855a" : "#a16207",
+                          color: telegramCanUseNowDirect
+                            ? "#2f855a"
+                            : "#a16207",
                         }}
                       >
-                        {canUseTelegramGiftNow
+                        {telegramCanUseNowDirect
                           ? "Бонус буде використаний у цьому замовленні."
-                          : telegramOrdersLeftUntilGift > 0
-                          ? `Бонус вже активований, але стане доступний через ще ${telegramOrdersLeftUntilGift} замовлення.`
                           : "Бонус активований, але поки що недоступний для цього замовлення."}
                       </div>
                     </div>

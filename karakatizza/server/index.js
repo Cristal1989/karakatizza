@@ -937,26 +937,30 @@ app.post("/order", async (req, res) => {
       const paidQuantity = item.paidQuantity ?? item.quantity ?? 0;
       const freeQuantity = item.freeQuantity ?? 0;
       const lineTotal = item.lineTotal ?? item.price * paidQuantity;
-
+    
       let itemLine = `• ${item.name}`;
-
+    
+      if (item.isTelegramGift) {
+        itemLine +=  `🎁`;
+      }
+    
       if (item.isDiscountOffer || item.discountLabel) {
         const label =
           item.discountLabel && item.discountLabel !== ""
             ? item.discountLabel
-            : "-25%"; // временный дефолт
-
-        itemLine += `(знижка ${label})`;
+            : "-25%";
+    
+        itemLine +=  `(${label})`;
       }
-
-      itemLine += `— ${item.quantity} шт`;
-
+    
+      itemLine +=  `— ${item.quantity} шт`;
+    
       if (freeQuantity > 0) {
-        itemLine += `(${paidQuantity} платно + ${freeQuantity} 🎁 подарок)`;
+        itemLine +=  `(${paidQuantity} платно + ${freeQuantity} 🎁 подарунок)`;
       }
-
-      itemLine += `— ${lineTotal} грн\n`;
-
+    
+      itemLine +=  `— ${lineTotal} грн\n`;
+    
       message += itemLine;
     });
 
@@ -1009,18 +1013,8 @@ app.post("/order", async (req, res) => {
     }
 
     if (telegramBonusMeta?.applied) {
-      let bonusBlock = `\n🎁 Telegram-бонус застосовано:\n`;
-
+      let bonusBlock = `\n🎁 Telegram-бонус застосовано\n`;
       bonusBlock += `Назва: ${telegramBonusMeta.giftRollTitle || "Бонус"}\n`;
-
-      if (telegramBonusMeta.giftRollId) {
-        bonusBlock += `Код: ${telegramBonusMeta.giftRollId}\n`;
-      }
-
-      if (telegramBonusMeta.availableAfterOrdersCount != null) {
-        bonusBlock += `Доступний після замовлень: ${telegramBonusMeta.availableAfterOrdersCount}\n`;
-      }
-
       message += bonusBlock;
     }
 
