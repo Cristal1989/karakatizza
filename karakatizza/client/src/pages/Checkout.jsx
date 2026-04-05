@@ -1043,7 +1043,12 @@ export default function Checkout() {
           : null,
       };
 
-      console.log("ORDER DATA DEBUG", orderData);
+      console.log("ORDER DATA DEBUG JSON", JSON.stringify(orderData, null, 2));
+      console.log("TELEGRAM BONUS FLAGS", {
+        canUseTelegramGiftNow,
+        skipTelegramBonusForThisCheckout,
+        activeTelegramGift,
+      });
 
       await createOrder(orderData);
 

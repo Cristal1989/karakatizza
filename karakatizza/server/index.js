@@ -15,10 +15,7 @@ import promotionsRoutes from "./routes/promotions.js";
 import giftRollRoutes from "./routes/giftRoll.js";
 import siteSettingsRoutes from "./routes/siteSettings.js";
 import { isValidUaPhone } from "./utils/phone.js";
-import {
-  saveOrderToCrm,
-  markTelegramGiftUsed,
-} from "./services/crmService.js";
+import { saveOrderToCrm, markTelegramGiftUsed } from "./services/crmService.js";
 import crmRoutes from "./routes/crmRoutes.js";
 import { startTelegramBot } from "./bot.js";
 import adminAuthRoutes from "./routes/adminAuth.js";
@@ -890,6 +887,9 @@ app.post("/order", async (req, res) => {
       telegramBonusMeta = null,
     } = req.body;
 
+    console.log("REQ BODY TELEGRAM BONUS META", req.body.telegramBonusMeta);
+    console.log("REQ BODY ITEMS", JSON.stringify(req.body.items, null, 2));
+
     let sticksText = "";
 
     const calculatedTotal =
@@ -903,7 +903,6 @@ app.post("/order", async (req, res) => {
         message: "Вкажіть коректний номер телефону України",
       });
     }
-
 
     if ((regularSticksCount ?? 0) > 0 || (trainingSticksCount ?? 0) > 0) {
       sticksText = `🥢 Паличкu: звичайні: ${
@@ -1013,20 +1012,20 @@ app.post("/order", async (req, res) => {
     }
 
     if (telegramBonusMeta?.applied) {
-  let bonusBlock = `\n🎁 Telegram-бонус застосовано:\n`;
+      let bonusBlock = `\n🎁 Telegram-бонус застосовано:\n`;
 
-  bonusBlock += `Назва: ${telegramBonusMeta.giftRollTitle || "Бонус"}\n`;
+      bonusBlock += `Назва: ${telegramBonusMeta.giftRollTitle || "Бонус"}\n`;
 
-  if (telegramBonusMeta.giftRollId) {
-    bonusBlock += `Код: ${telegramBonusMeta.giftRollId}\n`;
-  }
+      if (telegramBonusMeta.giftRollId) {
+        bonusBlock += `Код: ${telegramBonusMeta.giftRollId}\n`;
+      }
 
-  if (telegramBonusMeta.availableAfterOrdersCount != null) {
-    bonusBlock += `Доступний після замовлень: ${telegramBonusMeta.availableAfterOrdersCount}\n`;
-  }
+      if (telegramBonusMeta.availableAfterOrdersCount != null) {
+        bonusBlock += `Доступний після замовлень: ${telegramBonusMeta.availableAfterOrdersCount}\n`;
+      }
 
-  message += bonusBlock;
-}
+      message += bonusBlock;
+    }
 
     message += `💰 Разом: ${totalPrice} грн`;
 
@@ -1089,7 +1088,7 @@ app.post("/order", async (req, res) => {
           telegramBonusGiftId: telegramBonusMeta?.giftId || null,
           phone,
         });
-      
+
         if (
           crmResult?.order &&
           telegramBonusMeta?.applied === true &&
@@ -1100,10 +1099,10 @@ app.post("/order", async (req, res) => {
             orderId: crmResult.order?.id,
             phone,
           });
-      
+
           try {
             await markTelegramGiftUsed(pool, Number(telegramBonusMeta.giftId));
-      
+
             console.log("TELEGRAM GIFT AUTO USED", {
               giftId: telegramBonusMeta.giftId,
               phone,
@@ -1112,7 +1111,10 @@ app.post("/order", async (req, res) => {
             });
           } catch (giftUseError) {
             console.error("ORDER AUTO USE ERROR", giftUseError);
-            console.error("ORDER AUTO USE ERROR MESSAGE", giftUseError?.message);
+            console.error(
+              "ORDER AUTO USE ERROR MESSAGE",
+              giftUseError?.message
+            );
           }
         }
       } catch (giftUseError) {
