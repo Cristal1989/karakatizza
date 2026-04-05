@@ -953,11 +953,32 @@ export default function Checkout() {
         };
       }
 
-      const activeTelegramGift = telegramCheckoutStatus?.activeGift || null;
+      const freshTelegramStatus = await getTelegramCheckoutStatus(
+        form.phone.trim()
+      );
 
-      const canUseTelegramGiftNow =
-        Boolean(telegramCheckoutStatus?.canUseGiftNow) &&
-        !skipTelegramBonusForThisCheckout;
+      const activeTelegramGift =
+        freshTelegramStatus?.activeGift ||
+        telegramCheckoutStatus?.activeGift ||
+        null;
+
+      const ordersCount = Number(
+        freshTelegramStatus?.ordersCount ??
+          telegramCheckoutStatus?.ordersCount ??
+          0
+      );
+
+      const availableAfterOrdersCount = activeTelegramGift
+        ? Number(activeTelegramGift.available_after_orders_count ?? 0)
+        : null;
+
+      const canUseTelegramGiftNow = Boolean(
+        activeTelegramGift &&
+          (Boolean(freshTelegramStatus?.canUseGiftNow) ||
+            availableAfterOrdersCount === null ||
+            availableAfterOrdersCount <= 0 ||
+            ordersCount >= availableAfterOrdersCount)
+      );
 
       const itemsForOrder = [
         ...cartItems.map((item) => ({
