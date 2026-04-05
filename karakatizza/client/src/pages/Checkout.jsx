@@ -93,6 +93,28 @@ export default function Checkout() {
 
   const activeTelegramGift = telegramCheckoutStatus?.activeGift || null;
 
+  const telegramOrdersCountForUi = Number(
+    telegramCheckoutStatus?.ordersCount ?? 0
+  );
+  
+  const telegramGiftAvailableAfterOrdersForUi = activeTelegramGift
+    ? Number(activeTelegramGift.available_after_orders_count ?? 0)
+    : null;
+  
+  const isWelcomeTelegramGiftForUi =
+    String(activeTelegramGift?.gift_roll_id || "") === "telegram-welcome";
+  
+  const telegramGiftReadyForUi = Boolean(
+    activeTelegramGift &&
+      (
+        isWelcomeTelegramGiftForUi
+          ? telegramOrdersCountForUi >= 1
+          : telegramGiftAvailableAfterOrdersForUi === null ||
+            telegramGiftAvailableAfterOrdersForUi <= 0 ||
+            telegramOrdersCountForUi >= telegramGiftAvailableAfterOrdersForUi
+      )
+  );
+
   const canUseTelegramGiftNow =
     Boolean(telegramCheckoutStatus?.canUseGiftNow) &&
     !skipTelegramBonusForThisCheckout;
@@ -962,16 +984,26 @@ export default function Checkout() {
         telegramCheckoutStatus?.activeGift ||
         null;
 
+      const ordersCount = Number(
+        freshTelegramStatus?.ordersCount ??
+          telegramCheckoutStatus?.ordersCount ??
+          0
+      );
+
+      const availableAfterOrdersCount = activeTelegramGift
+        ? Number(activeTelegramGift.available_after_orders_count ?? 0)
+        : null;
+
       const isWelcomeTelegramGift =
         String(activeTelegramGift?.gift_roll_id || "") === "telegram-welcome";
 
-      const shouldForceApplyTelegramGift = Boolean(
-        activeTelegramGift && isWelcomeTelegramGift
-      );
-      const telegramCanUseNowDirect = shouldForceApplyTelegramGift;
-
-      const telegramGiftReadyForUi = Boolean(
-        activeTelegramGift && isWelcomeTelegramGift
+      const telegramCanUseNowDirect = Boolean(
+        activeTelegramGift &&
+          (isWelcomeTelegramGift
+            ? ordersCount >= 1
+            : availableAfterOrdersCount === null ||
+              availableAfterOrdersCount <= 0 ||
+              ordersCount >= availableAfterOrdersCount)
       );
 
       const itemsForOrder = [
@@ -1456,9 +1488,7 @@ export default function Checkout() {
                           fontSize: 13,
                           lineHeight: 1.45,
                           fontWeight: 700,
-                          color: telegramGiftReadyForUi
-                            ? "#2f855a"
-                            : "#a16207",
+                          color: telegramGiftReadyForUi ? "#2f855a" : "#a16207",
                         }}
                       >
                         {telegramGiftReadyForUi
