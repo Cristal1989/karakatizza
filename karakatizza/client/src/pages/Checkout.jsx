@@ -89,7 +89,9 @@ export default function Checkout() {
   const activeTelegramGift = telegramCheckoutStatus?.activeGift || null;
 
   const shouldShowTelegramGiftCard = Boolean(
-    telegramCheckoutStatus &&
+    !telegramCheckoutLoading &&
+      !telegramCheckoutError &&
+      telegramCheckoutStatus &&
       telegramCheckoutStatus.telegramLinked === true &&
       activeTelegramGift &&
       !activeTelegramGift.used_at &&
@@ -855,7 +857,7 @@ export default function Checkout() {
   async function handleOpenTelegramForCheckout(e) {
     e.preventDefault();
     e.stopPropagation();
-
+  
     try {
       const payload = {
         name: form.name,
@@ -867,33 +869,24 @@ export default function Checkout() {
         needExactTime: form.needExactTime === true,
         exactTime: form.exactTime,
       };
-
+  
       try {
         localStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify(payload));
       } catch (error) {
         console.error("CHECKOUT LOCAL DRAFT SAVE ERROR:", error);
       }
-
+  
       const draftResponse = await createCheckoutDraft(payload);
       const token = draftResponse?.token;
-
+  
       if (!token) {
         throw new Error("Не вдалося отримати token чернетки");
       }
-
+  
       const startParam = `checkout_${token}`;
-      const appUrl = `tg://resolve?domain=${TELEGRAM_BOT_USERNAME}&start=${startParam}`;
-      const webUrl = `https://t.me/${TELEGRAM_BOT_USERNAME}?start=${startParam}`;
-
-      const openedAt = Date.now();
-
-      window.location.href = appUrl;
-
-      setTimeout(() => {
-        if (Date.now() - openedAt < 1800) {
-          window.location.href = webUrl;
-        }
-      }, 900);
+      const telegramUrl = `https://t.me/${TELEGRAM_BOT_USERNAME}?start=${startParam}`;
+  
+      window.location.assign(telegramUrl);
     } catch (error) {
       console.error("OPEN TELEGRAM FOR CHECKOUT ERROR:", error);
       alert(error?.message || "Не вдалося відкрити Telegram");
@@ -1305,9 +1298,56 @@ export default function Checkout() {
                   style={fieldStyle}
                 />
               </div>
-              {telegramCheckoutLoading ||
-              telegramCheckoutError ||
-              telegramCheckoutStatus ? (
+              {telegramCheckoutLoading && (
+                <div
+                  style={{
+                    marginTop: 10,
+                    marginBottom: 14,
+                    padding: "10px 12px",
+                    borderRadius: 14,
+                    border: "1px solid #e5e7eb",
+                    background: "#f8fafc",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: "#64748b",
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    Перевіряємо Telegram-бонус...
+                  </div>
+                </div>
+              )}
+
+              {!telegramCheckoutLoading && telegramCheckoutError ? (
+                <div
+                  style={{
+                    marginTop: 10,
+                    marginBottom: 14,
+                    padding: "10px 12px",
+                    borderRadius: 14,
+                    border: "1px solid #fecaca",
+                    background: "#fef2f2",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: "#dc2626",
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    {telegramCheckoutError}
+                  </div>
+                </div>
+              ) : null}
+
+              {!telegramCheckoutLoading &&
+              !telegramCheckoutError &&
+              telegramCheckoutStatus &&
+              telegramCheckoutStatus.telegramLinked === false ? (
                 <div
                   style={{
                     marginTop: 10,
@@ -1317,170 +1357,113 @@ export default function Checkout() {
                     border: "1px solid #e5e7eb",
                     background: "#f8fafc",
                     display: "grid",
-                    gap: 8,
+                    gap: 10,
                   }}
                 >
-                  {telegramCheckoutLoading ? (
-                    <div
-                      style={{
-                        fontSize: 13,
-                        color: "#64748b",
-                        lineHeight: 1.45,
-                      }}
-                    >
-                      Перевіряємо Telegram-бонус...
-                    </div>
-                  ) : null}
+                  <div
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 700,
+                      color: "#0f172a",
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    🎁 Хочеш бонус до наступного замовлення?
+                  </div>
 
-                  {!telegramCheckoutLoading && telegramCheckoutError ? (
-                    <div
-                      style={{
-                        fontSize: 13,
-                        color: "#dc2626",
-                        lineHeight: 1.45,
-                      }}
-                    >
-                      {telegramCheckoutError}
-                    </div>
-                  ) : null}
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: "#475569",
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    Підпишись на Telegram-бота та підтвердь номер.
+                  </div>
 
-                  {!telegramCheckoutLoading &&
-                  !telegramCheckoutError &&
-                  telegramCheckoutStatus &&
-                  telegramCheckoutStatus.telegramLinked === false ? (
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        gap: 12,
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <div
-                        style={{
-                          minWidth: 0,
-                          flex: "1 1 260px",
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: 14,
-                            fontWeight: 700,
-                            color: "#0f172a",
-                            lineHeight: 1.35,
-                            marginBottom: 4,
-                          }}
-                        >
-                          🎁 Хочеш бонус до наступного замовлення?
-                        </div>
-
-                        <div
-                          style={{
-                            fontSize: 13,
-                            color: "#475569",
-                            lineHeight: 1.45,
-                          }}
-                        >
-                          Підпиши Telegram-бота та підтвердь номер.
-                        </div>
-                      </div>
-
-                      <a
-                        type="button"
-                        onClick={handleOpenTelegramForCheckout}
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          minHeight: 36,
-                          padding: "0 14px",
-                          borderRadius: 10,
-                          background: "#d96f55",
-                          color: "#fff",
-                          textDecoration: "none",
-                          fontSize: 13,
-                          fontWeight: 700,
-                          whiteSpace: "nowrap",
-                          cursor: "pointer",
-                        }}
-                      >
-                        Перейти в Telegram
-                      </a>
-                    </div>
-                  ) : null}
-
-                  {!telegramCheckoutLoading &&
-                  !telegramCheckoutError &&
-                  shouldShowTelegramGiftCard ? (
-                    <div
-                      style={{
-                        marginTop: 12,
-                        padding: 14,
-                        borderRadius: 14,
-                        border: "1px solid #e7e5e4",
-                        background: "#fff",
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: 14,
-                          fontWeight: 800,
-                          color: "#1f2937",
-                        }}
-                      >
-                        🎁 Для цього номера є активний бонус
-                      </div>
-
-                      {!!(activeTelegramGift?.gift_roll_title || "").trim() && (
-                        <div
-                          style={{
-                            marginTop: 6,
-                            fontSize: 13,
-                            color: "#374151",
-                            fontWeight: 700,
-                          }}
-                        >
-                          {activeTelegramGift.gift_roll_title}
-                        </div>
-                      )}
-
-                      {!!(activeTelegramGift?.comment || "").trim() && (
-                        <div
-                          style={{
-                            marginTop: 4,
-                            fontSize: 12,
-                            color: "#64748b",
-                            lineHeight: 1.45,
-                          }}
-                        >
-                          {activeTelegramGift.comment}
-                        </div>
-                      )}
-
-                      <div
-                        style={{
-                          marginTop: 8,
-                          fontSize: 13,
-                          lineHeight: 1.45,
-                          fontWeight: 700,
-                          color: telegramCheckoutStatus?.canUseGiftNow
-                            ? "#2f855a"
-                            : "#a16207",
-                        }}
-                      >
-                        {telegramCheckoutStatus?.canUseGiftNow
-                          ? "Бонус буде використаний у цьому замовленні."
-                          : `Бонус активований, але буде доступний ${
-                              telegramCheckoutStatus?.ordersLeftUntilGift > 0
-                                ? `через ще ${telegramCheckoutStatus.ordersLeftUntilGift} замовлення`
-                                : "пізніше"
-                            }.`}
-                      </div>
-                    </div>
-                  ) : null}
+                  <button
+                    type="button"
+                    onClick={handleOpenTelegramForCheckout}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      minHeight: 36,
+                      padding: "0 14px",
+                      borderRadius: 10,
+                      background: "#d96f55",
+                      color: "#fff",
+                      textDecoration: "none",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      whiteSpace: "nowrap",
+                      cursor: "pointer",
+                      width: "fit-content",
+                      border: "none",
+                    }}
+                  >
+                    Перейти в Telegram
+                  </button>
                 </div>
               ) : null}
+
+              {shouldShowTelegramGiftCard && (
+                <div
+                  style={{
+                    marginTop: 12,
+                    marginBottom: 14,
+                    padding: 14,
+                    borderRadius: 14,
+                    border: "1px solid #e7e5e4",
+                    background: "#fff",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 800,
+                      color: "#1f2937",
+                    }}
+                  >
+                    🎁 Для цього номера є активний бонус
+                  </div>
+
+                  {!!String(
+                    activeTelegramGift?.gift_roll_title || ""
+                  ).trim() && (
+                    <div
+                      style={{
+                        marginTop: 8,
+                        fontSize: 13,
+                        color: "#374151",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {activeTelegramGift.gift_roll_title}
+                    </div>
+                  )}
+
+                  <div
+                    style={{
+                      marginTop: 8,
+                      fontSize: 13,
+                      lineHeight: 1.45,
+                      fontWeight: 700,
+                      color: telegramCheckoutStatus?.canUseGiftNow
+                        ? "#2f855a"
+                        : "#a16207",
+                    }}
+                  >
+                    {telegramCheckoutStatus?.canUseGiftNow
+                      ? "Бонус буде використаний у цьому замовленні."
+                      : typeof telegramCheckoutStatus?.ordersLeftUntilGift ===
+                          "number" &&
+                        telegramCheckoutStatus.ordersLeftUntilGift > 0
+                      ? "Бонус активований, але буде доступний наступного замовлення."
+                      : "Бонус активований, але поки що недоступний."}
+                  </div>
+                </div>
+              )}
 
               {checkoutMode === "delivery" ? (
                 <>
