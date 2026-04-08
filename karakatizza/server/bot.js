@@ -484,6 +484,24 @@ function buildReturnInlineKeyboard(returnUrl) {
   };
 }
 
+async function sendReturnAfterConfirm(chatId, text, returnUrl) {
+  await bot.sendMessage(chatId, text, {
+    reply_markup: {
+      remove_keyboard: true,
+    },
+  });
+
+  if (returnUrl) {
+    await bot.sendMessage(chatId, "Повернутися до оформлення:", {
+      reply_markup: buildReturnInlineKeyboard(returnUrl),
+    });
+  } else {
+    await bot.sendMessage(chatId, "Що далі?", {
+      reply_markup: buildMainKeyboard(true),
+    });
+  }
+}
+
 async function handleContact(bot, msg) {
   const chatId = msg.chat.id;
   const telegramUserId = String(msg.from?.id || "");
@@ -565,55 +583,51 @@ async function handleContact(bot, msg) {
     }
 
     if (issueResult?.created === true) {
-      await bot.sendMessage(
+      await sendReturnAfterConfirm(
         chatId,
         `Готово ✅
-
-Твій номер підтверджено.
-Telegram успішно прив'язаний до профілю.
-
-🎁 Одноразовий бонус за підписку нараховано.
-Він закріплений за твоїм номером і буде використаний при наступному замовленні.`,
-        {
-          reply_markup: buildReturnInlineKeyboard(returnUrl),
-        }
+    
+    Твій номер підтверджено.
+    Telegram успішно прив'язаний до профілю.
+    
+    🎁 Одноразовий бонус за підписку нараховано.
+    Він закріплений за твоїм номером і буде використаний при наступному замовленні.`,
+        returnUrl
       );
-
+    
       pendingReturnDrafts.delete(telegramUserId);
       return;
     }
 
     if (
       issueResult?.created === false &&
-      (issueResult?.reason === "active_gift_exists" ||
-        issueResult?.reason === "welcome_gift_already_issued")
+      (
+        issueResult?.reason === "active_gift_exists" ||
+        issueResult?.reason === "welcome_gift_already_issued"
+      )
     ) {
-      await bot.sendMessage(
+      await sendReturnAfterConfirm(
         chatId,
         `Номер підтверджено ✅
-
-Telegram уже прив'язаний до твого профілю.
-
-🎁 Бонус за підписку вже був нарахований раніше.`,
-        {
-          reply_markup: buildReturnInlineKeyboard(returnUrl),
-        }
+    
+    Telegram уже прив'язаний до твого профілю.
+    
+    🎁 Бонус за підписку вже був нарахований раніше.`,
+        returnUrl
       );
-
+    
       pendingReturnDrafts.delete(telegramUserId);
       return;
     }
 
-    await bot.sendMessage(
+    await sendReturnAfterConfirm(
       chatId,
       `Номер підтверджено ✅
-
-Telegram прив'язаний до твого профілю.`,
-      {
-        reply_markup: buildReturnInlineKeyboard(returnUrl),
-      }
+    
+    Telegram прив'язаний до твого профілю.`,
+      returnUrl
     );
-
+    
     pendingReturnDrafts.delete(telegramUserId);
     return;
   } catch (error) {
