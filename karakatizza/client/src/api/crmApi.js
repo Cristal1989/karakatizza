@@ -242,14 +242,38 @@ export async function getTelegramCheckoutStatus(phone) {
     );
   }
 
-  return {
+  const normalizedStatus = {
     success: Boolean(data?.success),
     customer: data?.customer || null,
     activeGift: data?.activeGift || null,
-    telegramLinked: Boolean(data?.customer?.telegram_user_id),
-    phoneConfirmed: Boolean(data?.customer?.is_phone_confirmed),
-    telegramSubscribed: Boolean(data?.customer?.is_telegram_subscribed),
+
+    telegramLinked:
+      typeof data?.telegramLinked === "boolean"
+        ? data.telegramLinked
+        : Boolean(data?.customer?.telegram_user_id),
+
+    phoneConfirmed:
+      typeof data?.phoneConfirmed === "boolean"
+        ? data.phoneConfirmed
+        : Boolean(data?.customer?.is_phone_confirmed),
+
+    telegramSubscribed:
+      typeof data?.telegramSubscribed === "boolean"
+        ? data.telegramSubscribed
+        : Boolean(data?.customer?.is_telegram_subscribed),
+
+    ordersCount: Number(data?.ordersCount ?? 0),
+    canUseGiftNow: Boolean(data?.canUseGiftNow),
+    ordersLeftUntilGift:
+      data?.ordersLeftUntilGift == null
+        ? null
+        : Number(data.ordersLeftUntilGift),
   };
+
+  console.log("TG STATUS RAW DATA", data);
+  console.log("TG STATUS RETURN VALUE", normalizedStatus);
+
+  return normalizedStatus;
 }
 
 export async function getCustomerBonusHistory(customerId) {
