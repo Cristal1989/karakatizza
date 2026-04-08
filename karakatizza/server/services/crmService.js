@@ -282,6 +282,7 @@ export async function issueTelegramGift(
       FROM telegram_gifts
       WHERE phone_normalized = $1
         AND source = 'telegram'
+        AND status IN ('issued', 'reserved')
       ORDER BY created_at DESC, id DESC
       LIMIT 1
     `,
@@ -303,25 +304,24 @@ export async function issueTelegramGift(
     };
   }
 
+  const ordersCountResult = await pool.query(
+    `
+      SELECT COUNT(*)::int AS count
+      FROM orders
+      WHERE phone_normalized = $1
+    `,
+    [phoneNormalized]
+  );
+
+  const currentOrdersCount = Number(ordersCountResult.rows[0]?.count || 0);
+
   let availableAfterOrdersCount = null;
 
-  // welcome-подарок должен быть доступен со 2-го заказа
-  // то есть после 1 завершенного заказа
+  // Welcome-подарок должен стать доступным только после следующего заказа
   if (String(giftRollId || "").trim() === "telegram-welcome") {
-    availableAfterOrdersCount = 1;
-  } else if (customerId) {
-    const customerOrdersResult = await pool.query(
-      `
-        SELECT orders_count
-        FROM customers
-        WHERE id = $1
-        LIMIT 1
-      `,
-      [Number(customerId)]
-    );
-
-    const customerRow = customerOrdersResult.rows[0] || null;
-    availableAfterOrdersCount = Number(customerRow?.orders_count || 0);
+    availableAfterOrdersCount = currentOrdersCount + 1;
+  } else {
+    availableAfterOrdersCount = currentOrdersCount;
   }
 
   console.log("ISSUE TG GIFT INSERT DATA", {
@@ -330,6 +330,7 @@ export async function issueTelegramGift(
     giftRollId,
     giftRollTitle,
     comment,
+    currentOrdersCount,
     availableAfterOrdersCount,
   });
 
