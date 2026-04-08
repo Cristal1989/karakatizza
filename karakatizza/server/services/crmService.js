@@ -193,11 +193,13 @@ export async function saveOrderToCrm(pool, orderData) {
 }
 
 export async function getActiveTelegramGiftByPhone(pool, phone) {
+  console.log("GET ACTIVE TG GIFT START", { phone });
   const phoneNormalized = normalizeUaPhone(phone);
 
   if (!phoneNormalized) {
     return null;
   }
+  console.log("GET ACTIVE TG GIFT NORMALIZED", { phoneNormalized });
 
   const result = await pool.query(
     `
@@ -223,6 +225,9 @@ export async function getActiveTelegramGiftByPhone(pool, phone) {
     `,
     [phoneNormalized]
   );
+  console.log("GET ACTIVE TG GIFT RESULT", {
+    rows: result.rows,
+  });
 
   return result.rows[0] || null;
 }
@@ -237,11 +242,21 @@ export async function issueTelegramGift(
     comment = "",
   }
 ) {
+  console.log("ISSUE TG GIFT START", {
+    customerId,
+    phone,
+    giftRollId,
+    giftRollTitle,
+  });
   const phoneNormalized = normalizeUaPhone(phone);
 
   if (!phoneNormalized) {
     throw new Error("Некоректний номер телефону");
   }
+  console.log("ISSUE TG GIFT NORMALIZED", {
+    phone,
+    phoneNormalized,
+  });
 
   const existingAnyGiftResult = await pool.query(
     `
@@ -266,6 +281,10 @@ export async function issueTelegramGift(
     `,
     [phoneNormalized]
   );
+
+  console.log("ISSUE TG GIFT EXISTING", {
+    rows: existingAnyGiftResult.rows,
+  });
 
   const existingAnyGift = existingAnyGiftResult.rows[0] || null;
 
@@ -302,6 +321,14 @@ export async function issueTelegramGift(
   } else if (customerId) {
     availableAfterOrdersCount = currentOrdersCount;
   }
+
+  console.log("ISSUE TG GIFT INSERT DATA", {
+    customerId: customerId ? Number(customerId) : null,
+    phoneNormalized,
+    giftRollId,
+    giftRollTitle,
+    availableAfterOrdersCount,
+  });
 
   const insertResult = await pool.query(
     `
@@ -357,6 +384,10 @@ export async function issueTelegramGift(
       availableAfterOrdersCount,
     ]
   );
+
+  console.log("ISSUE TG GIFT INSERT RESULT", {
+    gift: insertResult.rows[0] || null,
+  });
 
   return {
     success: true,
@@ -584,6 +615,10 @@ export async function getTelegramCheckoutStatusByPhone(pool, phone) {
   }
 
   const activeGift = await getActiveTelegramGiftByPhone(pool, phoneNormalized);
+  console.log("CHECKOUT STATUS ACTIVE GIFT RAW", {
+    phoneNormalized,
+    activeGift,
+  });
 
   const ordersCountResult = await pool.query(
     `
@@ -595,6 +630,11 @@ export async function getTelegramCheckoutStatusByPhone(pool, phone) {
   );
 
   const ordersCount = Number(ordersCountResult.rows[0]?.count || 0);
+
+  console.log("CHECKOUT STATUS ORDERS RAW", {
+    phoneNormalized,
+    ordersCount,
+  });
 
   const availableAfterOrdersCount = activeGift
     ? Number(activeGift.available_after_orders_count ?? 0)
