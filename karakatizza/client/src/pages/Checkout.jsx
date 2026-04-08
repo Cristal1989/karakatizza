@@ -88,6 +88,18 @@ export default function Checkout() {
 
   const activeTelegramGift = telegramCheckoutStatus?.activeGift || null;
 
+  const shouldShowTelegramGiftCard = Boolean(
+    telegramCheckoutStatus &&
+      telegramCheckoutStatus.telegramLinked === true &&
+      activeTelegramGift &&
+      !activeTelegramGift.used_at &&
+      ["issued", "reserved"].includes(
+        String(activeTelegramGift.status || "").toLowerCase()
+      ) &&
+      (telegramCheckoutStatus.canUseGiftNow === true ||
+        typeof telegramCheckoutStatus.ordersLeftUntilGift === "number")
+  );
+
   const telegramGiftReadyForUi = Boolean(
     telegramCheckoutStatus?.canUseGiftNow && activeTelegramGift
   );
@@ -1399,9 +1411,8 @@ export default function Checkout() {
                   ) : null}
 
                   {!telegramCheckoutLoading &&
-                  telegramCheckoutStatus &&
-                  telegramCheckoutStatus.telegramLinked === true &&
-                  activeTelegramGift ? (
+                  !telegramCheckoutError &&
+                  shouldShowTelegramGiftCard ? (
                     <div
                       style={{
                         marginTop: 12,
@@ -1421,19 +1432,20 @@ export default function Checkout() {
                         🎁 Для цього номера є активний бонус
                       </div>
 
-                      <div
-                        style={{
-                          marginTop: 6,
-                          fontSize: 13,
-                          color: "#374151",
-                          fontWeight: 700,
-                        }}
-                      >
-                        {activeTelegramGift.gift_roll_title ||
-                          "Подарунковий рол"}
-                      </div>
+                      {!!(activeTelegramGift?.gift_roll_title || "").trim() && (
+                        <div
+                          style={{
+                            marginTop: 6,
+                            fontSize: 13,
+                            color: "#374151",
+                            fontWeight: 700,
+                          }}
+                        >
+                          {activeTelegramGift.gift_roll_title}
+                        </div>
+                      )}
 
-                      {activeTelegramGift.comment ? (
+                      {!!(activeTelegramGift?.comment || "").trim() && (
                         <div
                           style={{
                             marginTop: 4,
@@ -1444,7 +1456,7 @@ export default function Checkout() {
                         >
                           {activeTelegramGift.comment}
                         </div>
-                      ) : null}
+                      )}
 
                       <div
                         style={{
@@ -1452,14 +1464,18 @@ export default function Checkout() {
                           fontSize: 13,
                           lineHeight: 1.45,
                           fontWeight: 700,
-                          color: telegramGiftReadyForUi ? "#2f855a" : "#a16207",
+                          color: telegramCheckoutStatus?.canUseGiftNow
+                            ? "#2f855a"
+                            : "#a16207",
                         }}
                       >
-                        {telegramGiftReadyForUi
+                        {telegramCheckoutStatus?.canUseGiftNow
                           ? "Бонус буде використаний у цьому замовленні."
-                          : telegramOrdersLeftUntilGift > 0
-                          ? `Бонус активований, але буде доступний через ще ${telegramOrdersLeftUntilGift} замовлення.`
-                          : "Бонус активований, але поки що недоступний для цього замовлення."}
+                          : `Бонус активований, але буде доступний ${
+                              telegramCheckoutStatus?.ordersLeftUntilGift > 0
+                                ? `через ще ${telegramCheckoutStatus.ordersLeftUntilGift} замовлення`
+                                : "пізніше"
+                            }.`}
                       </div>
                     </div>
                   ) : null}

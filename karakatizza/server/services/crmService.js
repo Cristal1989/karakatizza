@@ -245,19 +245,9 @@ export async function issueTelegramGift(
     comment = "",
   }
 ) {
-  console.log("ISSUE TG GIFT START", {
-    customerId,
-    phone,
-    giftRollId,
-    giftRollTitle,
-    comment,
-  });
 
   const phoneNormalized = normalizeUaPhone(phone);
 
-  console.log("ISSUE TG GIFT NORMALIZED", {
-    phoneNormalized,
-  });
 
   if (!phoneNormalized) {
     throw new Error("Некоректний номер телефону");
@@ -288,10 +278,6 @@ export async function issueTelegramGift(
     `,
     [phoneNormalized]
   );
-
-  console.log("ISSUE TG GIFT EXISTING RESULT", {
-    rows: existingAnyGiftResult.rows,
-  });
 
   const existingAnyGift = existingAnyGiftResult.rows[0] || null;
 
@@ -324,15 +310,6 @@ export async function issueTelegramGift(
     availableAfterOrdersCount = currentOrdersCount;
   }
 
-  console.log("ISSUE TG GIFT INSERT DATA", {
-    customerId: customerId ? Number(customerId) : null,
-    phoneNormalized,
-    giftRollId,
-    giftRollTitle,
-    comment,
-    currentOrdersCount,
-    availableAfterOrdersCount,
-  });
 
   const insertResult = await pool.query(
     `
