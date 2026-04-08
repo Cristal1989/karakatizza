@@ -230,11 +230,25 @@ export async function getTelegramCheckoutStatus(phone) {
   const text = await response.text();
 
   let data = null;
+
   try {
     data = text ? JSON.parse(text) : null;
   } catch {
     throw new Error(`Сервер повернув не JSON: ${text.slice(0, 120)}`);
   }
+
+  console.log("TG STATUS RAW DATA", data);
+  console.log("TG STATUS RETURN VALUE", {
+    success: Boolean(data?.success),
+    customer: data?.customer || null,
+    activeGift: data?.activeGift || null,
+    telegramLinked: Boolean(data?.telegramLinked),
+    phoneConfirmed: Boolean(data?.phoneConfirmed),
+    telegramSubscribed: Boolean(data?.telegramSubscribed),
+    ordersCount: Number(data?.ordersCount ?? 0),
+    canUseGiftNow: Boolean(data?.canUseGiftNow),
+    ordersLeftUntilGift: data?.ordersLeftUntilGift ?? null,
+  });
 
   if (!response.ok) {
     throw new Error(
@@ -242,38 +256,17 @@ export async function getTelegramCheckoutStatus(phone) {
     );
   }
 
-  const normalizedStatus = {
+  return {
     success: Boolean(data?.success),
     customer: data?.customer || null,
     activeGift: data?.activeGift || null,
-
-    telegramLinked:
-      typeof data?.telegramLinked === "boolean"
-        ? data.telegramLinked
-        : Boolean(data?.customer?.telegram_user_id),
-
-    phoneConfirmed:
-      typeof data?.phoneConfirmed === "boolean"
-        ? data.phoneConfirmed
-        : Boolean(data?.customer?.is_phone_confirmed),
-
-    telegramSubscribed:
-      typeof data?.telegramSubscribed === "boolean"
-        ? data.telegramSubscribed
-        : Boolean(data?.customer?.is_telegram_subscribed),
-
+    telegramLinked: Boolean(data?.telegramLinked),
+    phoneConfirmed: Boolean(data?.phoneConfirmed),
+    telegramSubscribed: Boolean(data?.telegramSubscribed),
     ordersCount: Number(data?.ordersCount ?? 0),
     canUseGiftNow: Boolean(data?.canUseGiftNow),
-    ordersLeftUntilGift:
-      data?.ordersLeftUntilGift == null
-        ? null
-        : Number(data.ordersLeftUntilGift),
+    ordersLeftUntilGift: data?.ordersLeftUntilGift ?? null,
   };
-
-  console.log("TG STATUS RAW DATA", data);
-  console.log("TG STATUS RETURN VALUE", normalizedStatus);
-
-  return normalizedStatus;
 }
 
 export async function getCustomerBonusHistory(customerId) {

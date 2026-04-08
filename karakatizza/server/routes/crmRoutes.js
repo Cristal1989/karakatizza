@@ -855,7 +855,11 @@ router.get("/telegram-checkout-status/:phone", async (req, res) => {
   try {
     const { phone } = req.params;
 
+    console.log("TG CHECKOUT STATUS ROUTE START", { phone });
+
     const status = await getTelegramCheckoutStatusByPhone(pool, phone);
+
+    console.log("TG CHECKOUT STATUS ROUTE RESULT", status);
 
     return res.json({
       success: true,
@@ -863,6 +867,7 @@ router.get("/telegram-checkout-status/:phone", async (req, res) => {
     });
   } catch (error) {
     console.error("TELEGRAM CHECKOUT STATUS ERROR:", error);
+
     return res.status(500).json({
       success: false,
       message: "Не вдалося отримати статус Telegram-бонусу",

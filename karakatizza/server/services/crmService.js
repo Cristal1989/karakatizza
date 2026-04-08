@@ -194,12 +194,14 @@ export async function saveOrderToCrm(pool, orderData) {
 
 export async function getActiveTelegramGiftByPhone(pool, phone) {
   console.log("GET ACTIVE TG GIFT START", { phone });
+
   const phoneNormalized = normalizeUaPhone(phone);
+
+  console.log("GET ACTIVE TG GIFT NORMALIZED", { phoneNormalized });
 
   if (!phoneNormalized) {
     return null;
   }
-  console.log("GET ACTIVE TG GIFT NORMALIZED", { phoneNormalized });
 
   const result = await pool.query(
     `
@@ -225,6 +227,7 @@ export async function getActiveTelegramGiftByPhone(pool, phone) {
     `,
     [phoneNormalized]
   );
+
   console.log("GET ACTIVE TG GIFT RESULT", {
     rows: result.rows,
   });
@@ -247,16 +250,18 @@ export async function issueTelegramGift(
     phone,
     giftRollId,
     giftRollTitle,
+    comment,
   });
+
   const phoneNormalized = normalizeUaPhone(phone);
+
+  console.log("ISSUE TG GIFT NORMALIZED", {
+    phoneNormalized,
+  });
 
   if (!phoneNormalized) {
     throw new Error("Некоректний номер телефону");
   }
-  console.log("ISSUE TG GIFT NORMALIZED", {
-    phone,
-    phoneNormalized,
-  });
 
   const existingAnyGiftResult = await pool.query(
     `
@@ -272,7 +277,8 @@ export async function issueTelegramGift(
         issued_at,
         used_at,
         created_at,
-        updated_at
+        updated_at,
+        available_after_orders_count
       FROM telegram_gifts
       WHERE phone_normalized = $1
         AND source = 'telegram'
@@ -282,7 +288,7 @@ export async function issueTelegramGift(
     [phoneNormalized]
   );
 
-  console.log("ISSUE TG GIFT EXISTING", {
+  console.log("ISSUE TG GIFT EXISTING RESULT", {
     rows: existingAnyGiftResult.rows,
   });
 
@@ -299,27 +305,23 @@ export async function issueTelegramGift(
 
   let availableAfterOrdersCount = null;
 
-  const normalizedGiftRollId = String(giftRollId || "").trim();
-
-  let currentOrdersCount = 0;
-
-  if (customerId) {
+  // welcome-подарок должен быть доступен со 2-го заказа
+  // то есть после 1 завершенного заказа
+  if (String(giftRollId || "").trim() === "telegram-welcome") {
+    availableAfterOrdersCount = 1;
+  } else if (customerId) {
     const customerOrdersResult = await pool.query(
       `
-        SELECT COUNT(*)::int AS count
-        FROM orders
-        WHERE customer_id = $1
+        SELECT orders_count
+        FROM customers
+        WHERE id = $1
+        LIMIT 1
       `,
       [Number(customerId)]
     );
-    
-    currentOrdersCount = Number(customerOrdersResult.rows[0]?.count || 0);
-  }
 
-  if (normalizedGiftRollId === "telegram-welcome") {
-    availableAfterOrdersCount = Math.max(1, currentOrdersCount);
-  } else if (customerId) {
-    availableAfterOrdersCount = currentOrdersCount;
+    const customerRow = customerOrdersResult.rows[0] || null;
+    availableAfterOrdersCount = Number(customerRow?.orders_count || 0);
   }
 
   console.log("ISSUE TG GIFT INSERT DATA", {
@@ -327,54 +329,55 @@ export async function issueTelegramGift(
     phoneNormalized,
     giftRollId,
     giftRollTitle,
+    comment,
     availableAfterOrdersCount,
   });
 
   const insertResult = await pool.query(
     `
-    INSERT INTO telegram_gifts (
-      customer_id,
-      phone_normalized,
-      gift_roll_id,
-      gift_roll_title,
-      status,
-      source,
-      comment,
-      available_after_orders_count,
-      issued_at,
-      used_at,
-      created_at,
-      updated_at
-    )
-    VALUES (
-      $1,
-      $2,
-      $3,
-      $4,
-      'issued',
-      'telegram',
-      $5,
-      $6,
-      NOW(),
-      NULL,
-      NOW(),
-      NOW()
-    )
-    RETURNING
-      id,
-      customer_id,
-      phone_normalized,
-      gift_roll_id,
-      gift_roll_title,
-      status,
-      source,
-      comment,
-      available_after_orders_count,
-      issued_at,
-      used_at,
-      created_at,
-      updated_at
-  `,
+      INSERT INTO telegram_gifts (
+        customer_id,
+        phone_normalized,
+        gift_roll_id,
+        gift_roll_title,
+        status,
+        source,
+        comment,
+        available_after_orders_count,
+        issued_at,
+        used_at,
+        created_at,
+        updated_at
+      )
+      VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        'issued',
+        'telegram',
+        $5,
+        $6,
+        NOW(),
+        NULL,
+        NOW(),
+        NOW()
+      )
+      RETURNING
+        id,
+        customer_id,
+        phone_normalized,
+        gift_roll_id,
+        gift_roll_title,
+        status,
+        source,
+        comment,
+        available_after_orders_count,
+        issued_at,
+        used_at,
+        created_at,
+        updated_at
+    `,
     [
       customerId ? Number(customerId) : null,
       phoneNormalized,
@@ -386,7 +389,7 @@ export async function issueTelegramGift(
   );
 
   console.log("ISSUE TG GIFT INSERT RESULT", {
-    gift: insertResult.rows[0] || null,
+    rows: insertResult.rows,
   });
 
   return {
@@ -435,56 +438,27 @@ export async function markTelegramGiftUsed(pool, giftId) {
 
 export async function linkTelegramToCustomerByPhone(
   pool,
-  { phone, telegramUserId, telegramUsername = "", telegramFirstName = "" }
+  {
+    phone,
+    telegramUserId,
+    telegramUsername = "",
+    telegramFirstName = "",
+  }
 ) {
+  console.log("LINK TG TO CUSTOMER START", {
+    phone,
+    telegramUserId,
+    telegramUsername,
+    telegramFirstName,
+  });
+
   const phoneNormalized = normalizeUaPhone(phone);
 
   if (!phoneNormalized) {
     throw new Error("Некоректний номер телефону");
   }
 
-  if (!telegramUserId) {
-    throw new Error("Відсутній telegramUserId");
-  }
-
-  const customerResult = await pool.query(
-    `
-      SELECT
-        id,
-        phone,
-        phone_normalized,
-        name,
-        telegram_user_id,
-        telegram_username,
-        telegram_first_name,
-        is_telegram_subscribed,
-        is_phone_confirmed,
-        first_order_at,
-        last_order_at,
-        orders_count,
-        total_spent,
-        last_order_amount,
-        created_at,
-        updated_at
-      FROM customers
-      WHERE phone_normalized = $1
-      ORDER BY id DESC
-      LIMIT 1
-    `,
-    [phoneNormalized]
-  );
-
-  const customer = customerResult.rows[0] || null;
-
-  if (!customer) {
-    return {
-      linked: false,
-      reason: "customer_not_found",
-      customer: null,
-    };
-  }
-
-  const updatedResult = await pool.query(
+  const updateResult = await pool.query(
     `
       UPDATE customers
       SET
@@ -494,7 +468,7 @@ export async function linkTelegramToCustomerByPhone(
         is_telegram_subscribed = TRUE,
         is_phone_confirmed = TRUE,
         updated_at = NOW()
-      WHERE id = $4
+      WHERE phone_normalized = $4
       RETURNING
         id,
         phone,
@@ -505,11 +479,11 @@ export async function linkTelegramToCustomerByPhone(
         telegram_first_name,
         is_telegram_subscribed,
         is_phone_confirmed,
-        first_order_at,
-        last_order_at,
         orders_count,
         total_spent,
         last_order_amount,
+        first_order_at,
+        last_order_at,
         created_at,
         updated_at
     `,
@@ -517,14 +491,47 @@ export async function linkTelegramToCustomerByPhone(
       String(telegramUserId),
       telegramUsername || "",
       telegramFirstName || "",
-      customer.id,
+      phoneNormalized,
     ]
   );
 
+  console.log("LINK TG TO CUSTOMER RESULT", {
+    rows: updateResult.rows,
+  });
+
+  const customer = updateResult.rows[0] || null;
+
+  if (!customer) {
+    return {
+      success: false,
+      linked: false,
+      customer: null,
+      reason: "customer_not_found",
+    };
+  }
+
+  console.log("TG LINK FLOW BEFORE ISSUE", {
+    customerId: customer.id || null,
+    phone: customer.phone || phone || null,
+    phoneNormalized: customer.phone_normalized || phoneNormalized,
+    telegramUserId,
+  });
+
+  const issueResult = await issueTelegramGift(pool, {
+    customerId: customer.id,
+    phone: customer.phone || phone,
+    giftRollId: "telegram-welcome",
+    giftRollTitle: "Подарунковий рол",
+    comment: "Telegram welcome gift",
+  });
+
+  console.log("TG LINK FLOW ISSUE RESULT", issueResult);
+
   return {
+    success: true,
     linked: true,
-    reason: "linked",
-    customer: updatedResult.rows[0] || customer,
+    customer,
+    issueResult,
   };
 }
 
@@ -615,6 +622,7 @@ export async function getTelegramCheckoutStatusByPhone(pool, phone) {
   }
 
   const activeGift = await getActiveTelegramGiftByPhone(pool, phoneNormalized);
+
   console.log("CHECKOUT STATUS ACTIVE GIFT RAW", {
     phoneNormalized,
     activeGift,
@@ -642,16 +650,24 @@ export async function getTelegramCheckoutStatusByPhone(pool, phone) {
 
   const canUseGiftNow = Boolean(
     activeGift &&
-      (
-        availableAfterOrdersCount === null ||
+      (availableAfterOrdersCount === null ||
         availableAfterOrdersCount <= 0 ||
-        ordersCount >= availableAfterOrdersCount
-      )
+        ordersCount >= availableAfterOrdersCount)
   );
 
   const ordersLeftUntilGift = activeGift
     ? Math.max(0, Number(availableAfterOrdersCount || 0) - ordersCount)
     : null;
+
+  console.log("CHECKOUT STATUS DEBUG", {
+    phoneNormalized,
+    customerId: customer.id,
+    activeGiftId: activeGift?.id || null,
+    availableAfterOrdersCount,
+    ordersCount,
+    canUseGiftNow,
+    ordersLeftUntilGift,
+  });
 
   return {
     telegramLinked: Boolean(
