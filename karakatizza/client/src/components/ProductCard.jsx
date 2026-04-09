@@ -30,12 +30,17 @@ function ProductCard({ product }) {
     Number(product.oldPrice) > 0 &&
     Number(product.oldPrice) > Number(product.price);
 
-  function handleAddToCart() {
-    addToCart(product);
-    if (imageRef.current) {
-      flyToCart(imageRef.current);
+    function handleAddToCart() {
+      addToCart(product);
+    
+      if (imageRef.current) {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            flyToCart(imageRef.current);
+          });
+        });
+      }
     }
-  }
 
   return (
     <div

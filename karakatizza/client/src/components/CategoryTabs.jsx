@@ -80,6 +80,9 @@ export default function CategoryTabs({ activeCategory, onChange }) {
         position: "relative",
         width: "100%",
         maxWidth: "100%",
+        minWidth: 0,
+        overflow: "hidden",
+        boxSizing: "border-box",
       }}
     >
       {canScrollLeft && (
@@ -89,7 +92,7 @@ export default function CategoryTabs({ activeCategory, onChange }) {
           aria-label="Прокрутити категорії вліво"
           style={{
             position: "absolute",
-            left: "2px",
+            left: 0,
             top: "37px",
             transform: "translateY(-50%)",
             width: "34px",
@@ -106,6 +109,7 @@ export default function CategoryTabs({ activeCategory, onChange }) {
             cursor: "pointer",
             zIndex: 8,
             padding: 0,
+            overflow: "hidden",
           }}
         >
           ‹
@@ -118,9 +122,11 @@ export default function CategoryTabs({ activeCategory, onChange }) {
         style={{
           display: "flex",
           gap: isMobile ? "12px" : "16px",
+          width: "100%",
+          maxWidth: "100%",
+          minWidth: 0,
           overflowX: "auto",
           overflowY: "hidden",
-          maxWidth: "100%",
           boxSizing: "border-box",
           paddingLeft: isMobile ? "12px" : "42px",
           paddingRight: isMobile ? "12px" : "42px",
@@ -204,7 +210,7 @@ export default function CategoryTabs({ activeCategory, onChange }) {
           aria-label="Прокрутити категорії вправо"
           style={{
             position: "absolute",
-            right: "2px",
+            right: 0,
             top: "37px",
             transform: "translateY(-50%)",
             width: "34px",
@@ -221,6 +227,7 @@ export default function CategoryTabs({ activeCategory, onChange }) {
             cursor: "pointer",
             zIndex: 8,
             padding: 0,
+            overflow: "hidden",
           }}
         >
           ›

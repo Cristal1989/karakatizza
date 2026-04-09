@@ -41,14 +41,18 @@ export default function HitSlider({ products = [] }) {
     Number(product.oldPrice) > 0 &&
     Number(product.oldPrice) > Number(product.price);
 
-  function handleAddToCart() {
-    addToCart(product);
-
-    const imageElement = document.getElementById(`hit-image-${product.id}`);
-    if (imageElement) {
-      flyToCart(imageElement);
+    function handleAddToCart() {
+      addToCart(product);
+    
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const imageElement = document.getElementById(`hit-image-${product.id}`);
+          if (imageElement) {
+            flyToCart(imageElement);
+          }
+        });
+      });
     }
-  }
 
   return (
     <section

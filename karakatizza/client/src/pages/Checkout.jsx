@@ -530,6 +530,12 @@ export default function Checkout() {
   const finalCheckoutTotal = checkoutTotalPrice + condimentsExtraPrice;
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, []);
+
+  useEffect(() => {
     try {
       const raw = localStorage.getItem(CHECKOUT_DRAFT_KEY);
       if (!raw) return;
