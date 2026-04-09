@@ -518,32 +518,6 @@ function buildReturnInlineKeyboard(returnUrl) {
   };
 }
 
-async function sendReturnAfterConfirm(bot, chatId, text, returnUrl) {
-  await bot.sendMessage(chatId, "✅", {
-    reply_markup: {
-      remove_keyboard: true,
-    },
-  });
-
-  if (returnUrl) {
-    await bot.sendMessage(chatId, text, {
-      reply_markup: {
-        inline_keyboard: [
-          [
-            {
-              text: "Повернутися до оформлення",
-              url: returnUrl,
-            },
-          ],
-        ],
-      },
-    });
-    return;
-  }
-
-  await bot.sendMessage(chatId, text);
-}
-
 async function handleContact(bot, msg) {
   if (!bot || !msg || !msg.chat) {
     console.error("TELEGRAM CONTACT FLOW ERROR: invalid message payload", {
