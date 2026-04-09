@@ -485,21 +485,25 @@ function buildReturnInlineKeyboard(returnUrl) {
 }
 
 async function sendReturnAfterConfirm(bot, chatId, text, returnUrl) {
-  await bot.sendMessage(chatId, text, {
-    reply_markup: {
-      remove_keyboard: true,
-    },
-  });
-
   if (returnUrl) {
-    await bot.sendMessage(chatId, "Повернутися до оформлення:", {
-      reply_markup: buildReturnInlineKeyboard(returnUrl),
+    await bot.sendMessage(chatId, text, {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: "Повернутися до оформлення",
+              url: returnUrl,
+            },
+          ],
+        ],
+      },
     });
-  } else {
-    await bot.sendMessage(chatId, "Що далі?", {
-      reply_markup: buildMainKeyboard(true),
-    });
+    return;
   }
+
+  await bot.sendMessage(chatId, text, {
+    reply_markup: buildMainKeyboard(true),
+  });
 }
 
 async function handleContact(bot, msg) {
