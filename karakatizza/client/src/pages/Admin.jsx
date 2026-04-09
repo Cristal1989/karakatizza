@@ -1731,6 +1731,7 @@ export default function Admin() {
               padding: "10px 14px",
               cursor: "pointer",
               fontWeight: 700,
+              marginTop: "30px",
             }}
           >
             Вийти

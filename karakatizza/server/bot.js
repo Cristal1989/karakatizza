@@ -485,6 +485,12 @@ function buildReturnInlineKeyboard(returnUrl) {
 }
 
 async function sendReturnAfterConfirm(bot, chatId, text, returnUrl) {
+  await bot.sendMessage(chatId, "✅", {
+    reply_markup: {
+      remove_keyboard: true,
+    },
+  });
+
   if (returnUrl) {
     await bot.sendMessage(chatId, text, {
       reply_markup: {
@@ -501,73 +507,55 @@ async function sendReturnAfterConfirm(bot, chatId, text, returnUrl) {
     return;
   }
 
-  await bot.sendMessage(chatId, text, {
-    reply_markup: buildMainKeyboard(true),
-  });
+  await bot.sendMessage(chatId, text);
 }
 
-async function handleContact(bot, msg) {
+async function handleContact(msg) {
   const chatId = msg.chat.id;
-  const telegramUserId = String(msg.from?.id || "");
-  const telegramUsername = msg.from?.username || "";
-  const telegramFirstName = msg.from?.first_name || "";
+  const telegramUserId = msg.from.id;
   const contact = msg.contact;
 
-  const draftToken = pendingReturnDrafts.get(telegramUserId) || "";
-  const returnUrl = buildCheckoutReturnUrl(draftToken);
-
-  if (!contact?.phone_number) {
-    await bot.sendMessage(
-      chatId,
-      'Не вдалося отримати номер телефону. Спробуй ще раз через кнопку "Підтвердити номер".',
-      {
-        reply_markup: draftToken
-          ? buildReturnInlineKeyboard(returnUrl)
-          : buildMainKeyboard(false),
-      }
-    );
-    return;
-  }
-
-  if (String(contact.user_id || "") !== telegramUserId) {
-    await bot.sendMessage(
-      chatId,
-      "Будь ласка, надішли саме свій номер через кнопку Telegram, а не чужий контакт.",
-      {
-        reply_markup: draftToken
-          ? buildReturnInlineKeyboard(returnUrl)
-          : buildMainKeyboard(false),
-      }
-    );
-    return;
-  }
-
-  const normalizedPhone = normalizePhone(contact.phone_number);
-  pendingPhones.set(telegramUserId, normalizedPhone);
-
   try {
-    const linkResult = await tryLinkTelegramByPhone({
-      phone: normalizedPhone,
-      telegramUserId,
-      telegramUsername,
-      telegramFirstName,
-    });
-
-    if (!linkResult?.success || !linkResult?.customer) {
+    if (!contact?.phone_number) {
       await bot.sendMessage(
         chatId,
-        "Не вдалося прив'язати Telegram до клієнта. Спробуй пізніше.",
+        "Не вдалося отримати номер телефону. Спробуй ще раз.",
         {
-          reply_markup: draftToken
-            ? buildReturnInlineKeyboard(returnUrl)
-            : buildMainKeyboard(false),
+          reply_markup: buildMainKeyboard(false),
         }
       );
       return;
     }
 
-    const customer = linkResult.customer;
-    pendingPhones.delete(telegramUserId);
+    const normalizedPhone = normalizePhone(contact.phone_number);
+    const draftToken = pendingReturnDrafts.get(telegramUserId) || "";
+    const returnUrl = buildCheckoutReturnUrl(draftToken);
+
+    const customer = await findCustomerByPhone(normalizedPhone);
+
+    if (!customer) {
+      await sendReturnAfterConfirm(
+        bot,
+        chatId,
+        `Я поки не знайшов замовлень з цим номером у базі 😔
+
+Перевір, чи саме цей номер ти вказував при оформленні замовлення.
+
+Якщо ти оформиш перше замовлення пізніше — просто натисни "Мій бонус" або ще раз відкрий бота з сайту.`,
+        returnUrl
+      );
+      pendingPhones.delete(telegramUserId);
+      pendingReturnDrafts.delete(telegramUserId);
+      return;
+    }
+
+    await linkTelegramToCustomer({
+      phone: normalizedPhone,
+      telegramUserId,
+      username: msg.from.username || "",
+      firstName: msg.from.first_name || "",
+      lastName: msg.from.last_name || "",
+    });
 
     let issueResult = null;
 
@@ -590,20 +578,20 @@ async function handleContact(bot, msg) {
       await sendReturnAfterConfirm(
         bot,
         chatId,
-        `Готово ✅
-    
-    Твій номер підтверджено.
-    Telegram успішно прив'язаний до профілю.
-    
-    🎁 Одноразовий бонус за підписку нараховано.
-    Він закріплений за твоїм номером і буде використаний при наступному замовленні.`,
+        `Номер підтверджено ✅
+
+Telegram успішно прив'язаний до твого профілю.
+
+🎁 Одноразовий бонус за підписку нараховано.
+Він буде використаний при наступному замовленні.`,
         returnUrl
       );
-    
+
+      pendingPhones.delete(telegramUserId);
       pendingReturnDrafts.delete(telegramUserId);
       return;
     }
-    
+
     if (
       issueResult?.created === false &&
       (issueResult?.reason === "active_gift_exists" ||
@@ -613,46 +601,44 @@ async function handleContact(bot, msg) {
         bot,
         chatId,
         `Номер підтверджено ✅
-    
-    Telegram уже прив'язаний до твого профілю.
-    
-    🎁 Бонус за підписку вже був нарахований раніше.`,
+
+Telegram уже прив'язаний до твого профілю.
+
+🎁 Бонус за підписку вже був нарахований раніше.`,
         returnUrl
       );
-    
+
+      pendingPhones.delete(telegramUserId);
       pendingReturnDrafts.delete(telegramUserId);
       return;
     }
-    
+
     await sendReturnAfterConfirm(
       bot,
       chatId,
       `Номер підтверджено ✅
-    
-    Telegram прив'язаний до твого профілю.`,
+
+Telegram прив'язаний до твого профілю.`,
       returnUrl
     );
-    
+
+    pendingPhones.delete(telegramUserId);
     pendingReturnDrafts.delete(telegramUserId);
-    return;
   } catch (error) {
     console.error("TELEGRAM CONTACT FLOW ERROR:", error);
 
-    const messageText =
-      error?.message === "Клієнта з таким номером не знайдено"
-        ? `Я поки не знайшов замовлень з цим номером у базі 😕
-Перевір, чи саме цей номер ти вказував при оформленні замовлення.
+    const draftToken = pendingReturnDrafts.get(telegramUserId) || "";
+    const returnUrl = buildCheckoutReturnUrl(draftToken);
 
-Якщо ти оформиш перше замовлення пізніше — просто натисни "Мій бонус" або ще раз відкрий бота.`
-        : "Сталася помилка під час підтвердження номера. Спробуй трохи пізніше.";
+    await sendReturnAfterConfirm(
+      bot,
+      chatId,
+      "Сталася помилка під час підтвердження номера. Спробуй трохи пізніше.",
+      returnUrl
+    );
 
-    await bot.sendMessage(chatId, messageText, {
-      reply_markup: draftToken
-        ? buildReturnInlineKeyboard(returnUrl)
-        : buildMainKeyboard(false),
-    });
-
-    return;
+    pendingPhones.delete(telegramUserId);
+    pendingReturnDrafts.delete(telegramUserId);
   }
 }
 
