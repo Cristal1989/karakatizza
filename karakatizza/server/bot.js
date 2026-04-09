@@ -91,28 +91,62 @@ async function tryLinkTelegramByPhone({
 }
 
 async function postJson(url, body) {
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
 
-  const text = await response.text();
-
-  let data;
   try {
-    data = JSON.parse(text);
-  } catch {
-    throw new Error(`Сервер повернув не JSON: ${text.slice(0, 300)}`);
-  }
+    console.log("BOT POST JSON START", {
+      url,
+      body,
+    });
 
-  if (!response.ok) {
-    throw new Error(data?.message || "HTTP request failed");
-  }
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
 
-  return data;
+    const text = await response.text();
+
+    console.log("BOT POST JSON RESPONSE", {
+      url,
+      status: response.status,
+      ok: response.ok,
+      text,
+    });
+
+    let data = null;
+
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      throw new Error(`Сервер повернув не JSON: ${text.slice(0, 300)}`);
+    }
+
+    if (!response.ok) {
+      throw new Error(data?.message || "HTTP request failed");
+    }
+
+    return data;
+  } catch (error) {
+    console.error("BOT POST JSON ERROR", {
+      url,
+      body,
+      message: error?.message || error,
+      name: error?.name || null,
+    });
+
+    if (error?.name === "AbortError") {
+      throw new Error("CRM API не відповів за 15 секунд");
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 async function getJson(url) {

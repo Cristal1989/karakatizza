@@ -332,7 +332,16 @@ router.post("/telegram/link", async (req, res) => {
       telegramFirstName = "",
     } = req.body || {};
 
+    console.log("LINK TG TO CUSTOMER START", {
+      phone,
+      telegramUserId,
+      telegramUsername,
+      telegramFirstName,
+      body: req.body || null,
+    });
+
     if (!phone) {
+      console.log("LINK TG TO CUSTOMER FAIL: no phone");
       return res.status(400).json({
         success: false,
         message: "Потрібен номер телефону",
@@ -340,6 +349,7 @@ router.post("/telegram/link", async (req, res) => {
     }
 
     if (!telegramUserId) {
+      console.log("LINK TG TO CUSTOMER FAIL: no telegramUserId");
       return res.status(400).json({
         success: false,
         message: "Потрібен telegramUserId",
@@ -352,6 +362,8 @@ router.post("/telegram/link", async (req, res) => {
       telegramUsername,
       telegramFirstName,
     });
+
+    console.log("LINK TG TO CUSTOMER RESULT", result);
 
     if (!result.linked) {
       return res.status(404).json({
@@ -369,7 +381,12 @@ router.post("/telegram/link", async (req, res) => {
       customer: result.customer,
     });
   } catch (error) {
-    console.error("CRM TELEGRAM LINK ERROR:", error);
+    console.error("CRM TELEGRAM LINK ERROR:", {
+      message: error?.message || error,
+      stack: error?.stack || null,
+      body: req.body || null,
+    });
+
     return res.status(500).json({
       success: false,
       message: "Не вдалося прив'язати Telegram до клієнта",

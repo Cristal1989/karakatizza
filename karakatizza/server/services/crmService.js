@@ -423,7 +423,7 @@ export async function linkTelegramToCustomerByPhone(
     telegramFirstName = "",
   }
 ) {
-  console.log("LINK TG TO CUSTOMER START", {
+  console.log("CRM LINK SERVICE START", {
     phone,
     telegramUserId,
     telegramUsername,
@@ -432,11 +432,62 @@ export async function linkTelegramToCustomerByPhone(
 
   const phoneNormalized = normalizeUaPhone(phone);
 
+  console.log("CRM LINK SERVICE NORMALIZED", {
+    phone,
+    phoneNormalized,
+  });
+
   if (!phoneNormalized) {
     throw new Error("Некоректний номер телефону");
   }
 
-  const updateResult = await pool.query(
+  if (!telegramUserId) {
+    throw new Error("Відсутній telegramUserId");
+  }
+
+  const customerResult = await pool.query(
+    `
+      SELECT
+        id,
+        phone,
+        phone_normalized,
+        name,
+        telegram_user_id,
+        telegram_username,
+        telegram_first_name,
+        is_telegram_subscribed,
+        is_phone_confirmed,
+        first_order_at,
+        last_order_at,
+        orders_count,
+        total_spent,
+        last_order_amount,
+        created_at,
+        updated_at
+      FROM customers
+      WHERE phone_normalized = $1
+      ORDER BY id DESC
+      LIMIT 1
+    `,
+    [phoneNormalized]
+  );
+
+  const customer = customerResult.rows[0] || null;
+
+  console.log("CRM LINK SERVICE CUSTOMER FOUND", {
+    found: Boolean(customer),
+    customer,
+  });
+
+  if (!customer) {
+    return {
+      linked: false,
+      reason: "customer_not_found",
+      customer: null,
+    };
+  }
+
+  const updatedResult = await pool.query(
     `
       UPDATE customers
       SET
@@ -446,7 +497,7 @@ export async function linkTelegramToCustomerByPhone(
         is_telegram_subscribed = TRUE,
         is_phone_confirmed = TRUE,
         updated_at = NOW()
-      WHERE phone_normalized = $4
+      WHERE id = $4
       RETURNING
         id,
         phone,
@@ -457,11 +508,11 @@ export async function linkTelegramToCustomerByPhone(
         telegram_first_name,
         is_telegram_subscribed,
         is_phone_confirmed,
+        first_order_at,
+        last_order_at,
         orders_count,
         total_spent,
         last_order_amount,
-        first_order_at,
-        last_order_at,
         created_at,
         updated_at
     `,
@@ -469,47 +520,21 @@ export async function linkTelegramToCustomerByPhone(
       String(telegramUserId),
       telegramUsername || "",
       telegramFirstName || "",
-      phoneNormalized,
+      customer.id,
     ]
   );
 
-  console.log("LINK TG TO CUSTOMER RESULT", {
-    rows: updateResult.rows,
+  const updatedCustomer = updatedResult.rows[0] || customer;
+
+  console.log("CRM LINK SERVICE UPDATED", {
+    rows: updatedResult.rows.length,
+    customer: updatedCustomer,
   });
-
-  const customer = updateResult.rows[0] || null;
-
-  if (!customer) {
-    return {
-      success: false,
-      linked: false,
-      customer: null,
-      reason: "customer_not_found",
-    };
-  }
-
-  console.log("TG LINK FLOW BEFORE ISSUE", {
-    customerId: customer.id || null,
-    phone: customer.phone || phone || null,
-    phoneNormalized: customer.phone_normalized || phoneNormalized,
-    telegramUserId,
-  });
-
-  const issueResult = await issueTelegramGift(pool, {
-    customerId: customer.id,
-    phone: customer.phone || phone,
-    giftRollId: "telegram-welcome",
-    giftRollTitle: "Подарунковий рол",
-    comment: "Telegram welcome gift",
-  });
-
-  console.log("TG LINK FLOW ISSUE RESULT", issueResult);
 
   return {
-    success: true,
     linked: true,
-    customer,
-    issueResult,
+    reason: "linked",
+    customer: updatedCustomer,
   };
 }
 
