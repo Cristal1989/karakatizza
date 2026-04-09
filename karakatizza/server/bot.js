@@ -484,7 +484,7 @@ function buildReturnInlineKeyboard(returnUrl) {
   };
 }
 
-async function sendReturnAfterConfirm(chatId, text, returnUrl) {
+async function sendReturnAfterConfirm(bot, chatId, text, returnUrl) {
   await bot.sendMessage(chatId, text, {
     reply_markup: {
       remove_keyboard: true,
@@ -584,6 +584,7 @@ async function handleContact(bot, msg) {
 
     if (issueResult?.created === true) {
       await sendReturnAfterConfirm(
+        bot,
         chatId,
         `Готово ✅
     
@@ -598,15 +599,14 @@ async function handleContact(bot, msg) {
       pendingReturnDrafts.delete(telegramUserId);
       return;
     }
-
+    
     if (
       issueResult?.created === false &&
-      (
-        issueResult?.reason === "active_gift_exists" ||
-        issueResult?.reason === "welcome_gift_already_issued"
-      )
+      (issueResult?.reason === "active_gift_exists" ||
+        issueResult?.reason === "welcome_gift_already_issued")
     ) {
       await sendReturnAfterConfirm(
+        bot,
         chatId,
         `Номер підтверджено ✅
     
@@ -619,8 +619,9 @@ async function handleContact(bot, msg) {
       pendingReturnDrafts.delete(telegramUserId);
       return;
     }
-
+    
     await sendReturnAfterConfirm(
+      bot,
       chatId,
       `Номер підтверджено ✅
     
