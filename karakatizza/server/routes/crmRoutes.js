@@ -1008,36 +1008,71 @@ router.post("/telegram/reset-test-user", requireAdminAuth, async (req, res) => {
       });
     }
 
-    const clientResult = await pool.query(
-      `
-      UPDATE customers
-      SET
-        telegram_user_id = NULL,
-        telegram_username = NULL,
-        telegram_first_name = NULL,
-        is_telegram_subscribed = false,
-        is_phone_confirmed = false,
-        updated_at = NOW()
-      WHERE phone_normalized = $1
-         OR phone = $2
-      RETURNING id, name, phone, phone_normalized
-      `,
-      [phoneNormalized, phone]
-    );
+    const client = await pool.connect();
 
-    await pool.query(
-      `
-      DELETE FROM telegram_gifts
-      WHERE phone_normalized = $1
-      `,
-      [phoneNormalized]
-    );
+    try {
+      await client.query("BEGIN");
 
-    return res.json({
-      success: true,
-      message: "Тестові дані користувача скинуто",
-      customer: clientResult.rows[0] || null,
-    });
+      const customerResult = await client.query(
+        `
+          SELECT id, name, phone, phone_normalized
+          FROM customers
+          WHERE phone_normalized = $1
+             OR phone = $2
+          ORDER BY id DESC
+          LIMIT 1
+        `,
+        [phoneNormalized, phone]
+      );
+
+      const customer = customerResult.rows[0] || null;
+
+      await client.query(
+        `
+          DELETE FROM telegram_gifts
+          WHERE phone_normalized = $1
+        `,
+        [phoneNormalized]
+      );
+
+      await client.query(
+        `
+          DELETE FROM orders
+          WHERE phone_normalized = $1
+             OR phone = $2
+             OR customer_id IN (
+               SELECT id
+               FROM customers
+               WHERE phone_normalized = $1
+                  OR phone = $2
+             )
+        `,
+        [phoneNormalized, phone]
+      );
+
+      await client.query(
+        `
+          DELETE FROM customers
+          WHERE phone_normalized = $1
+             OR phone = $2
+        `,
+        [phoneNormalized, phone]
+      );
+
+      await client.query("COMMIT");
+
+      return res.json({
+        success: true,
+        message: "Тестового користувача повністю скинуто",
+        customer: customer,
+        phoneNormalized,
+      });
+    } catch (dbError) {
+      await client.query("ROLLBACK");
+      throw dbError;
+    } finally {
+      client.release();
+    }
   } catch (error) {
     console.error("RESET TEST USER ERROR:", error);
     return res.status(500).json({
