@@ -574,7 +574,39 @@ async function handleContact(bot, msg) {
       telegramFirstName,
     });
 
-    if (!linkResult?.success || !linkResult?.customer) {
+    if (!linkResult?.success) {
+      await bot.sendMessage(
+        chatId,
+        "Не вдалося прив'язати Telegram до клієнта. Спробуй пізніше.",
+        {
+          reply_markup: draftToken
+            ? buildReturnInlineKeyboard(returnUrl)
+            : buildMainKeyboard(false),
+        }
+      );
+      return;
+    }
+    
+    if (linkResult?.reason === "pending_until_first_order") {
+      pendingPhones.delete(telegramUserId);
+    
+      await bot.sendMessage(
+        chatId,
+        "Готово ✅\n\nНомер підтверджено.\nTelegram буде автоматично прив'язаний після першого замовлення.\n\n🎁 Бонус за підписку буде підготовлено та стане доступним на наступне замовлення.",
+        {
+          reply_markup: buildReturnInlineKeyboard(returnUrl),
+        }
+      );
+    
+      await bot.sendMessage(chatId, "Що далі?", {
+        reply_markup: buildMainKeyboard(false),
+      });
+    
+      pendingReturnDrafts.delete(telegramUserId);
+      return;
+    }
+    
+    if (!linkResult?.customer) {
       await bot.sendMessage(
         chatId,
         "Не вдалося прив'язати Telegram до клієнта. Спробуй пізніше.",
