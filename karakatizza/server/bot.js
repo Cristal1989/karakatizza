@@ -82,12 +82,54 @@ async function tryLinkTelegramByPhone({
   telegramUsername = "",
   telegramFirstName = "",
 }) {
-  return await postJson(`${API_BASE_URL}/api/crm/telegram/link`, {
-    phone,
-    telegramUserId,
-    telegramUsername,
-    telegramFirstName,
-  });
+  try {
+    const result = await postJson(`${API_BASE_URL}/api/crm/telegram/link`, {
+      phone,
+      telegramUserId,
+      telegramUsername,
+      telegramFirstName,
+    });
+
+    console.log("BOT TRY LINK RESULT", result);
+
+    if (result?.reason === "pending_until_first_order") {
+      return {
+        success: true,
+        linked: false,
+        reason: "pending_until_first_order",
+        customer: null,
+        pendingLink: result.pendingLink || null,
+      };
+    }
+
+    if (result?.linked === true && result?.customer) {
+      return {
+        success: true,
+        linked: true,
+        reason: "linked",
+        customer: result.customer,
+        pendingLink: null,
+      };
+    }
+
+    return {
+      success: false,
+      linked: false,
+      reason: result?.reason || "link_failed",
+      customer: result?.customer || null,
+      pendingLink: result?.pendingLink || null,
+    };
+  } catch (error) {
+    console.error("BOT TRY LINK ERROR", error);
+
+    return {
+      success: false,
+      linked: false,
+      reason: error?.message || "link_failed",
+      customer: null,
+      pendingLink: null,
+    };
+  }
 }
 
 async function postJson(url, body) {
@@ -290,6 +332,17 @@ async function handleMyBonus(bot, msg) {
             telegramUsername,
             telegramFirstName,
           });
+
+          if (linkResult?.reason === "pending_until_first_order") {
+            await bot.sendMessage(
+              chatId,
+              "Номер підтверджено ✅\n\nTelegram буде автоматично прив'язаний після першого замовлення.\n🎁 Бонус за підписку буде нараховано після першого замовлення та стане доступним на наступному.",
+              {
+                reply_markup: buildMainKeyboard(false),
+              }
+            );
+            return;
+          }
 
           if (linkResult?.success && linkResult?.customer) {
             customer = linkResult.customer;
@@ -573,26 +626,13 @@ async function handleContact(bot, msg) {
       telegramUsername,
       telegramFirstName,
     });
-
-    if (!linkResult?.success) {
-      await bot.sendMessage(
-        chatId,
-        "Не вдалося прив'язати Telegram до клієнта. Спробуй пізніше.",
-        {
-          reply_markup: draftToken
-            ? buildReturnInlineKeyboard(returnUrl)
-            : buildMainKeyboard(false),
-        }
-      );
-      return;
-    }
     
     if (linkResult?.reason === "pending_until_first_order") {
       pendingPhones.delete(telegramUserId);
     
       await bot.sendMessage(
         chatId,
-        "Готово ✅\n\nНомер підтверджено.\nTelegram буде автоматично прив'язаний після першого замовлення.\n\n🎁 Бонус за підписку буде підготовлено та стане доступним на наступне замовлення.",
+        "Готово ✅\n\nНомер підтверджено.\nTelegram буде автоматично прив'язаний після першого замовлення.\n\n🎁 Бонус за підписку буде нараховано після першого замовлення та стане доступним на наступному.",
         {
           reply_markup: buildReturnInlineKeyboard(returnUrl),
         }
@@ -603,6 +643,19 @@ async function handleContact(bot, msg) {
       });
     
       pendingReturnDrafts.delete(telegramUserId);
+      return;
+    }
+    
+    if (!linkResult?.success) {
+      await bot.sendMessage(
+        chatId,
+        "Не вдалося прив'язати Telegram до клієнта. Спробуй пізніше.",
+        {
+          reply_markup: draftToken
+            ? buildReturnInlineKeyboard(returnUrl)
+            : buildMainKeyboard(false),
+        }
+      );
       return;
     }
     
@@ -618,7 +671,7 @@ async function handleContact(bot, msg) {
       );
       return;
     }
-
+    
     const customer = linkResult.customer;
     pendingPhones.delete(telegramUserId);
 
