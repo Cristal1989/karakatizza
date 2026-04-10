@@ -810,4 +810,26 @@ await pool.query(`
   CREATE INDEX IF NOT EXISTS idx_telegram_gifts_available_after_orders_count
   ON telegram_gifts(available_after_orders_count);
 `);
+
+await pool.query(`
+  CREATE TABLE IF NOT EXISTS telegram_pending_links (
+    id SERIAL PRIMARY KEY,
+    phone_normalized VARCHAR(32) NOT NULL UNIQUE,
+    telegram_user_id VARCHAR(64) NOT NULL,
+    telegram_username VARCHAR(255) NOT NULL DEFAULT '',
+    telegram_first_name VARCHAR(255) NOT NULL DEFAULT '',
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+  );
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_telegram_pending_links_phone
+  ON telegram_pending_links(phone_normalized);
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_telegram_pending_links_created_at
+  ON telegram_pending_links(created_at DESC);
+`);
 }

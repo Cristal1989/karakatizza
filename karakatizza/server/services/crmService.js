@@ -127,13 +127,84 @@ export async function saveOrderToCrm(pool, orderData) {
     totalAmount: totalPrice,
   });
 
+  let effectiveCustomer = customer;
+let effectiveTelegramBonusMeta = telegramBonusMeta || null;
+
+const pendingLinkResult = await pool.query(
+  `
+    SELECT *
+    FROM telegram_pending_links
+    WHERE phone_normalized = $1
+    LIMIT 1
+  `,
+  [customer.phone_normalized || normalizeUaPhone(phone)]
+);
+
+const pendingLink = pendingLinkResult.rows[0] || null;
+
+if (
+  pendingLink &&
+  !effectiveCustomer.telegram_user_id
+) {
+  const linkedResult = await pool.query(
+    `
+      UPDATE customers
+      SET
+        telegram_user_id = $1,
+        telegram_username = $2,
+        telegram_first_name = $3,
+        is_telegram_subscribed = TRUE,
+        is_phone_confirmed = TRUE,
+        updated_at = NOW()
+      WHERE id = $4
+      RETURNING *
+    `,
+    [
+      String(pendingLink.telegram_user_id),
+      pendingLink.telegram_username || "",
+      pendingLink.telegram_first_name || "",
+      effectiveCustomer.id,
+    ]
+  );
+
+  effectiveCustomer = linkedResult.rows[0] || effectiveCustomer;
+
+  const issueResult = await issueTelegramGift(pool, {
+    customerId: effectiveCustomer.id,
+    phone: effectiveCustomer.phone,
+    giftRollId: "telegram-welcome",
+    giftRollTitle: "Подарунковий рол",
+    comment: "Telegram welcome gift",
+  });
+
+  if (issueResult?.success && issueResult?.gift) {
+    effectiveTelegramBonusMeta = {
+      applied: false,
+      justIssuedAfterFirstOrder: true,
+      giftId: issueResult.gift.id,
+      giftRollId: issueResult.gift.gift_roll_id,
+      giftRollTitle: issueResult.gift.gift_roll_title,
+      availableAfterOrdersCount: issueResult.gift.available_after_orders_count,
+      message: "Бонус активований після першого замовлення та буде доступний з наступного.",
+    };
+  }
+
+  await pool.query(
+    `
+      DELETE FROM telegram_pending_links
+      WHERE phone_normalized = $1
+    `,
+    [pendingLink.phone_normalized]
+  );
+}
+
   const phoneNormalized = normalizeUaPhone(phone);
   const itemsSummary = buildItemsSummary(items);
 
   const result = await pool.query(
     `
       INSERT INTO orders (
-        customer_id,
+        effectiveCustomer.id,
         phone,
         phone_normalized,
         name,
@@ -187,9 +258,9 @@ export async function saveOrderToCrm(pool, orderData) {
   );
 
   return {
-    customer,
+    customer: effectiveCustomer,
     order: result.rows[0],
-  };
+  };``
 }
 
 export async function getActiveTelegramGiftByPhone(pool, phone) {
@@ -480,10 +551,38 @@ export async function linkTelegramToCustomerByPhone(
   });
 
   if (!customer) {
+    const pendingResult = await pool.query(
+      `
+        INSERT INTO telegram_pending_links (
+          phone_normalized,
+          telegram_user_id,
+          telegram_username,
+          telegram_first_name,
+          created_at,
+          updated_at
+        )
+        VALUES ($1, $2, $3, $4, NOW(), NOW())
+        ON CONFLICT (phone_normalized)
+        DO UPDATE SET
+          telegram_user_id = EXCLUDED.telegram_user_id,
+          telegram_username = EXCLUDED.telegram_username,
+          telegram_first_name = EXCLUDED.telegram_first_name,
+          updated_at = NOW()
+        RETURNING *
+      `,
+      [
+        phoneNormalized,
+        String(telegramUserId),
+        telegramUsername || "",
+        telegramFirstName || "",
+      ]
+    );
+  
     return {
       linked: false,
-      reason: "customer_not_found",
+      reason: "pending_until_first_order",
       customer: null,
+      pendingLink: pendingResult.rows[0],
     };
   }
 
