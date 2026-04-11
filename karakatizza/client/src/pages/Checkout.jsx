@@ -102,13 +102,6 @@ export default function Checkout() {
         typeof telegramCheckoutStatus.ordersLeftUntilGift === "number")
   );
 
-  const telegramGiftReadyForUi = Boolean(
-    telegramCheckoutStatus?.canUseGiftNow && activeTelegramGift
-  );
-
-  const telegramOrdersLeftUntilGift =
-    telegramCheckoutStatus?.ordersLeftUntilGift ?? null;
-
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -863,7 +856,7 @@ export default function Checkout() {
   async function handleOpenTelegramForCheckout(e) {
     e.preventDefault();
     e.stopPropagation();
-  
+
     try {
       const payload = {
         name: form.name,
@@ -875,23 +868,23 @@ export default function Checkout() {
         needExactTime: form.needExactTime === true,
         exactTime: form.exactTime,
       };
-  
+
       try {
         localStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify(payload));
       } catch (error) {
         console.error("CHECKOUT LOCAL DRAFT SAVE ERROR:", error);
       }
-  
+
       const draftResponse = await createCheckoutDraft(payload);
       const token = draftResponse?.token;
-  
+
       if (!token) {
         throw new Error("Не вдалося отримати token чернетки");
       }
-  
+
       const startParam = `checkout_${token}`;
       const telegramUrl = `https://t.me/${TELEGRAM_BOT_USERNAME}?start=${startParam}`;
-  
+
       window.location.assign(telegramUrl);
     } catch (error) {
       console.error("OPEN TELEGRAM FOR CHECKOUT ERROR:", error);
@@ -1127,6 +1120,15 @@ export default function Checkout() {
       displayName: data[0].display_name,
     };
   }
+
+  console.log("CHECKOUT TELEGRAM STATUS", telegramCheckoutStatus);
+  console.log("CHECKOUT ACTIVE GIFT", telegramCheckoutStatus?.activeGift);
+  console.log("CHECKOUT LINKED", telegramCheckoutStatus?.telegramLinked);
+  console.log("CHECKOUT canUseGiftNow", telegramCheckoutStatus?.canUseGiftNow);
+  console.log(
+    "CHECKOUT ordersLeftUntilGift",
+    telegramCheckoutStatus?.ordersLeftUntilGift
+  );
 
   return (
     <div
