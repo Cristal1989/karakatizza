@@ -1,6 +1,4 @@
 import TelegramBot from "node-telegram-bot-api";
-import { getTelegramPendingLinkByTelegramUserId } from "./services/crmService.js";
-import { pool } from "./db.js";
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const API_BASE_URL =
@@ -60,6 +58,7 @@ async function getCustomerByTelegramUserId(telegramUserId) {
   const response = await fetch(
     `${API_BASE_URL}/api/crm/telegram/customer/${telegramUserId}`
   );
+
 
   const rawText = await response.text();
 
@@ -152,6 +151,7 @@ async function postJson(url, body) {
   const timeout = setTimeout(() => controller.abort(), 15000);
 
   try {
+
     const response = await fetch(url, {
       method: "POST",
       headers: {
@@ -648,7 +648,7 @@ async function handleContact(bot, msg) {
       telegramUserId,
       linkResult,
     });
-
+    
     if (linkResult?.reason === "pending_until_first_order") {
       pendingPhones.delete(telegramUserId);
 
@@ -658,7 +658,7 @@ async function handleContact(bot, msg) {
         reason: linkResult?.reason,
         pendingLink: linkResult?.pendingLink || null,
       });
-
+    
       await bot.sendMessage(
         chatId,
         "Готово ✅\n\nНомер підтверджено.\nTelegram буде автоматично прив'язаний після першого замовлення.\n\n🎁 Бонус за підписку буде нараховано після першого замовлення та стане доступним на наступному.",
@@ -666,15 +666,15 @@ async function handleContact(bot, msg) {
           reply_markup: buildReturnInlineKeyboard(returnUrl),
         }
       );
-
+    
       await bot.sendMessage(chatId, "Що далі?", {
         reply_markup: buildMainKeyboard(false),
       });
-
+    
       pendingReturnDrafts.delete(telegramUserId);
       return;
     }
-
+    
     if (!linkResult?.success) {
       await bot.sendMessage(
         chatId,
@@ -687,7 +687,7 @@ async function handleContact(bot, msg) {
       );
       return;
     }
-
+    
     if (!linkResult?.customer) {
       await bot.sendMessage(
         chatId,
@@ -700,7 +700,7 @@ async function handleContact(bot, msg) {
       );
       return;
     }
-
+    
     const customer = linkResult.customer;
     pendingPhones.delete(telegramUserId);
 
@@ -735,15 +735,15 @@ async function handleContact(bot, msg) {
           reply_markup: buildReturnInlineKeyboard(returnUrl),
         }
       );
-
+    
       await bot.sendMessage(chatId, "Що далі?", {
         reply_markup: buildMainKeyboard(true),
       });
-
+    
       pendingReturnDrafts.delete(telegramUserId);
       return;
     }
-
+    
     if (
       issueResult?.created === false &&
       (issueResult?.reason === "active_gift_exists" ||
@@ -760,15 +760,15 @@ async function handleContact(bot, msg) {
           reply_markup: buildReturnInlineKeyboard(returnUrl),
         }
       );
-
+    
       await bot.sendMessage(chatId, "Що далі?", {
         reply_markup: buildMainKeyboard(true),
       });
-
+    
       pendingReturnDrafts.delete(telegramUserId);
       return;
     }
-
+    
     await bot.sendMessage(
       chatId,
       `Номер підтверджено ✅
@@ -778,11 +778,11 @@ async function handleContact(bot, msg) {
         reply_markup: buildReturnInlineKeyboard(returnUrl),
       }
     );
-
+    
     await bot.sendMessage(chatId, "Що далі?", {
       reply_markup: buildMainKeyboard(true),
     });
-
+    
     pendingReturnDrafts.delete(telegramUserId);
     return;
   } catch (error) {
@@ -819,93 +819,57 @@ export function startTelegramBot() {
     polling: true,
   });
 
-  bot.onText(/^\/start(?:\s+(.+))?$/, async (msg, match) => {
-    const chatId = msg.chat.id;
-    const telegramUserId = msg.from?.id ? String(msg.from.id) : "";
-    const telegramUsername = msg.from?.username || "";
-    const telegramFirstName = msg.from?.first_name || "";
-    const startParam = match?.[1] || "";
-  
-    const draftToken = getDraftTokenFromStartParam(startParam);
-    const returnUrl = buildCheckoutReturnUrl(draftToken);
-  
-    console.log("BOT /START HIT", {
-      text: msg.text,
-      telegramUserId,
-      telegramUsername,
-      telegramFirstName,
-      startParam,
-      draftToken,
-      returnUrl,
-      ts: new Date().toISOString(),
-    });
-  
+  bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
     try {
+      const chatId = msg.chat.id;
+      const telegramUserId = msg.from?.id ? String(msg.from.id) : "";
+      const firstName = msg.from?.first_name || "друже";
+  
+      const startParam = match?.[1] || "";
+      const draftToken = getDraftTokenFromStartParam(startParam);
+  
+      if (telegramUserId && draftToken) {
+        pendingReturnDrafts.set(telegramUserId, draftToken);
+      }
+  
       const customer = await getCustomerByTelegramUserId(telegramUserId);
       const isLinked = Boolean(customer?.telegram_user_id);
   
-      console.log("BOT /START CUSTOMER", {
-        telegramUserId,
-        customerId: customer?.id || null,
-        isLinked,
-        customerTelegramUserId: customer?.telegram_user_id || null,
-        phone: customer?.phone || null,
-      });
-  
       if (isLinked) {
-        console.log("BOT /START BRANCH", "linked");
+        const returnUrl = buildCheckoutReturnUrl(draftToken);
+  
+        if (draftToken) {
+          await bot.sendMessage(
+            chatId,
+            `Привіт, ${firstName}! 👋
+  
+  Telegram уже прив'язаний до твого профілю в Karakatizza.
+  
+  Повернутися до оформлення замовлення:`,
+            {
+              reply_markup: buildReturnInlineKeyboard(returnUrl),
+            }
+          );
+  
+          pendingReturnDrafts.delete(telegramUserId);
+          return;
+        }
   
         await bot.sendMessage(
           chatId,
-          `Привіт, ${telegramFirstName || "друже"}! 👋
+          `Привіт, ${firstName}! 👋
   
-  Telegram уже прив'язаний до твого профілю.
-  
-  Що хочеш зробити далі?`,
+  Telegram уже прив'язаний до твого профілю в Karakatizza.`,
           {
             reply_markup: buildMainKeyboard(true),
           }
         );
-  
         return;
       }
-  
-      const pendingLink = await getTelegramPendingLinkByTelegramUserId(
-        pool,
-        telegramUserId
-      );
-  
-      console.log("BOT /START PENDING LINK", {
-        telegramUserId,
-        found: Boolean(pendingLink),
-        pendingLinkId: pendingLink?.id || null,
-        pendingPhone: pendingLink?.phone_normalized || null,
-      });
-  
-      if (pendingLink) {
-        console.log("BOT /START BRANCH", "pending");
-  
-        await bot.sendMessage(
-          chatId,
-          `Готово ✅
-  
-  Номер вже підтверджено.
-  Telegram буде автоматично прив'язаний після першого замовлення.
-  
-  🎁 Бонус за підписку буде нараховано після першого замовлення та стане доступним на наступному.`,
-          {
-            reply_markup: buildMainKeyboard(false),
-          }
-        );
-  
-        return;
-      }
-  
-      console.log("BOT /START BRANCH", "onboarding");
   
       await bot.sendMessage(
         chatId,
-        `Привіт, ${telegramFirstName || "друже"}! 👋
+        `Привіт, ${firstName}! 👋
   
   Підтверди свій номер телефону, який ти вказував у замовленні в Karakatizza, і ми закріпимо за тобою Telegram-профіль.
   
@@ -913,27 +877,11 @@ export function startTelegramBot() {
   
   Натисни кнопку нижче:`,
         {
-          reply_markup: draftToken
-            ? buildReturnInlineKeyboard(returnUrl)
-            : buildMainKeyboard(false),
-        }
-      );
-    } catch (error) {
-      console.error("BOT /START ERROR", {
-        message: error?.message || error,
-        stack: error?.stack || null,
-        telegramUserId,
-        startParam,
-        draftToken,
-      });
-  
-      await bot.sendMessage(
-        chatId,
-        "Сталася помилка. Спробуй ще раз трохи пізніше.",
-        {
           reply_markup: buildMainKeyboard(false),
         }
       );
+    } catch (error) {
+      console.error("TELEGRAM /start ERROR:", error);
     }
   });
 
