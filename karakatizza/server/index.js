@@ -33,6 +33,18 @@ if (process.env.ENABLE_TELEGRAM_BOT === "true") {
   console.log("Telegram bot disabled");
 }
 
+console.log("INDEX CALL startTelegramBot", {
+  pid: process.pid,
+  ts: new Date().toISOString(),
+  enableTelegramBot: process.env.ENABLE_TELEGRAM_BOT,
+});
+
+if (process.env.ENABLE_TELEGRAM_BOT === "true") {
+  startTelegramBot();
+} else {
+  console.log("Telegram bot disabled");
+}
+
 app.use(
   cors({
     origin: "*",

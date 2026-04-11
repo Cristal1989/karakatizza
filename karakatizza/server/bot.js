@@ -781,9 +781,8 @@ export function startTelegramBot() {
   console.log("TELEGRAM BOT START", {
     pid: process.pid,
     ts: new Date().toISOString(),
-    railwayService: process.env.RAILWAY_SERVICE_NAME || null,
-    railwayEnvironment: process.env.RAILWAY_ENVIRONMENT_NAME || null,
-    enableTelegramBot: process.env.ENABLE_TELEGRAM_BOT || null,
+    hasBotInstance: Boolean(botInstance),
+    enableTelegramBot: process.env.ENABLE_TELEGRAM_BOT,
   });
   if (!BOT_TOKEN) {
     console.log("Telegram bot disabled: TELEGRAM_BOT_TOKEN is missing");
@@ -863,7 +862,7 @@ export function startTelegramBot() {
       console.error("TELEGRAM /start ERROR:", error);
     }
   });
-  console.log("1");
+
 
   bot.on("message", async (msg) => {
     const text = msg.text || "";
@@ -928,6 +927,14 @@ export function startTelegramBot() {
       console.error("TELEGRAM BOT STOP ERROR:", error);
     }
   });
+
+  if (botInstance) {
+    console.log("TELEGRAM BOT REUSE", {
+      pid: process.pid,
+      ts: new Date().toISOString(),
+    });
+    return botInstance;
+  }
 
   return botInstance;
 }
