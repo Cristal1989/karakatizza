@@ -332,7 +332,6 @@ router.post("/telegram/link", async (req, res) => {
       telegramFirstName = "",
     } = req.body || {};
 
-
     if (!phone) {
       return res.status(400).json({
         success: false,
@@ -354,7 +353,6 @@ router.post("/telegram/link", async (req, res) => {
       telegramFirstName,
     });
 
-
     if (result?.reason === "pending_until_first_order") {
       return res.json({
         success: true,
@@ -365,7 +363,7 @@ router.post("/telegram/link", async (req, res) => {
         pendingLink: result.pendingLink || null,
       });
     }
-    
+
     if (!result.linked) {
       return res.status(404).json({
         success: false,
@@ -812,7 +810,6 @@ router.post("/telegram-gifts/use-active", async (req, res) => {
       `,
       [phoneNormalized]
     );
-    
 
     if (!activeResult.rows.length) {
       return res.json({
@@ -1104,6 +1101,9 @@ router.post("/checkout-drafts", async (req, res) => {
       checkoutMode,
       needExactTime: needExactTime === true,
       exactTime,
+      items,
+      regularSticksCount,
+      trainingSticksCount,
     });
 
     return res.json({
