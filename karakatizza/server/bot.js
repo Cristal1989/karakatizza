@@ -839,6 +839,7 @@ export function startTelegramBot() {
         isLinked,
         customerId: customer?.id || null,
         phone: customer?.phone || null,
+        draftToken,
       });
   
       if (isLinked) {
@@ -846,13 +847,19 @@ export function startTelegramBot() {
           chatId,
           `Привіт, ${telegramFirstName || "друже"}! 👋
   
-  Telegram вже прив'язаний до твого профілю.
-  
-  Обери, що хочеш зробити далі:`,
+  Telegram вже прив'язаний до твого профілю.`,
           {
-            reply_markup: buildMainKeyboard(true),
+            reply_markup: draftToken
+              ? buildReturnInlineKeyboard(returnUrl)
+              : buildMainKeyboard(true),
           }
         );
+  
+        if (draftToken) {
+          await bot.sendMessage(chatId, "Що далі?", {
+            reply_markup: buildMainKeyboard(true),
+          });
+        }
   
         return;
       }
@@ -874,14 +881,6 @@ export function startTelegramBot() {
       );
     } catch (error) {
       console.error("BOT START ERROR", error);
-  
-      await bot.sendMessage(
-        chatId,
-        "Сталася помилка. Спробуй ще раз трохи пізніше.",
-        {
-          reply_markup: buildMainKeyboard(false),
-        }
-      );
     }
   });
 
