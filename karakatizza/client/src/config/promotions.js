@@ -1,6 +1,6 @@
 export const promotionsConfig = {
   giftFrom700: {
-    enabled: false, // ← ВКЛ/ВЫКЛ
+    enabled: false, 
     minSum: 700,
   },
 
