@@ -638,11 +638,6 @@ export async function getTelegramGiftsByPhone(pool, phone) {
 export async function getTelegramCheckoutStatusByPhone(pool, phone) {
   const phoneNormalized = normalizeUaPhone(phone);
 
-  console.log("CHECKOUT STATUS INPUT", {
-    phone,
-    phoneNormalized,
-  });
-
   if (!phoneNormalized) {
     return {
       success: true,
@@ -685,11 +680,6 @@ export async function getTelegramCheckoutStatusByPhone(pool, phone) {
     [phoneNormalized]
   );
 
-  console.log("CHECKOUT STATUS CUSTOMER ROWS", {
-    count: customerResult.rows.length,
-    rows: customerResult.rows,
-  });
-
   const customer = customerResult.rows[0] || null;
 
   if (!customer) {
@@ -712,11 +702,6 @@ export async function getTelegramCheckoutStatusByPhone(pool, phone) {
     );
 
     const pendingLink = pendingResult.rows[0] || null;
-
-    console.log("CHECKOUT STATUS PENDING ROWS", {
-      count: pendingResult.rows.length,
-      rows: pendingResult.rows,
-    });
 
     const result = pendingLink
       ? {
@@ -746,7 +731,6 @@ export async function getTelegramCheckoutStatusByPhone(pool, phone) {
           ordersLeftUntilGift: null,
         };
 
-    console.log("CHECKOUT STATUS RESULT", result);
     return result;
   }
 
@@ -794,7 +778,6 @@ export async function getTelegramCheckoutStatusByPhone(pool, phone) {
     ordersLeftUntilGift,
   };
 
-  console.log("CHECKOUT STATUS RESULT", result);
   return result;
 }
 

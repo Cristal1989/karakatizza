@@ -1140,15 +1140,6 @@ const shouldShowTelegramGiftCard =
     };
   }
 
-  console.log("CHECKOUT TELEGRAM STATUS", telegramCheckoutStatus);
-  console.log("CHECKOUT ACTIVE GIFT", telegramCheckoutStatus?.activeGift);
-  console.log("CHECKOUT LINKED", telegramCheckoutStatus?.telegramLinked);
-  console.log("CHECKOUT canUseGiftNow", telegramCheckoutStatus?.canUseGiftNow);
-  console.log(
-    "CHECKOUT ordersLeftUntilGift",
-    telegramCheckoutStatus?.ordersLeftUntilGift
-  );
-
   return (
     <div
       style={{

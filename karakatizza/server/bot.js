@@ -778,6 +778,13 @@ async function handleContact(bot, msg) {
 
 
 export function startTelegramBot() {
+  console.log("TELEGRAM BOT START", {
+    pid: process.pid,
+    ts: new Date().toISOString(),
+    railwayService: process.env.RAILWAY_SERVICE_NAME || null,
+    railwayEnvironment: process.env.RAILWAY_ENVIRONMENT_NAME || null,
+    enableTelegramBot: process.env.ENABLE_TELEGRAM_BOT || null,
+  });
   if (!BOT_TOKEN) {
     console.log("Telegram bot disabled: TELEGRAM_BOT_TOKEN is missing");
     return null;
@@ -843,11 +850,11 @@ export function startTelegramBot() {
         chatId,
         `Привіт, ${firstName}! 👋
   
-  Підтверди свій номер телефону, який ти вказував у замовленні в Karakatizza, і ми закріпимо за тобою Telegram-профіль.
+Підтверди свій номер телефону, який ти вказував у замовленні в Karakatizza, і ми закріпимо за тобою Telegram-профіль.
   
-  🎁 За перше підтвердження номера — одноразовий бонус до наступного замовлення.
+🎁 За перше підтвердження номера — одноразовий бонус до наступного замовлення.
   
-  Натисни кнопку нижче:`,
+Натисни кнопку нижче:`,
         {
           reply_markup: buildMainKeyboard(false),
         }
@@ -896,6 +903,31 @@ export function startTelegramBot() {
 
   console.log("Telegram bot started");
   botInstance = bot;
+
+  process.once("SIGTERM", async () => {
+    try {
+      console.log("TELEGRAM BOT STOPPING", {
+        pid: process.pid,
+        ts: new Date().toISOString(),
+      });
+      await bot.stopPolling();
+    } catch (error) {
+      console.error("TELEGRAM BOT STOP ERROR:", error);
+    }
+  });
+  
+  process.once("SIGINT", async () => {
+    try {
+      console.log("TELEGRAM BOT STOPPING", {
+        pid: process.pid,
+        ts: new Date().toISOString(),
+      });
+      await bot.stopPolling();
+    } catch (error) {
+      console.error("TELEGRAM BOT STOP ERROR:", error);
+    }
+  });
+
   return botInstance;
 }
 
