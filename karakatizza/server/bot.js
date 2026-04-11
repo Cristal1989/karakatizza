@@ -788,7 +788,7 @@ export function startTelegramBot() {
   }
 
   const bot = new TelegramBot(BOT_TOKEN, {
-    polling: true,
+    polling: false,
   });
 
   bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
