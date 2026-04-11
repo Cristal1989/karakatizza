@@ -121,11 +121,14 @@ export async function saveOrderToCrm(pool, orderData) {
     telegramBonusMeta,
   } = orderData;
 
+  const phoneNormalized = normalizeUaPhone(phone);
+
   const customer = await findOrCreateCustomer(pool, {
     phone,
     name,
     totalAmount: totalPrice,
   });
+  
 
   console.log("SAVE ORDER CUSTOMER RESULT", {
     phone,
@@ -228,8 +231,6 @@ if (
     phoneNormalized: pendingLink.phone_normalized,
   });
 }
-
-  const phoneNormalized = normalizeUaPhone(phone);
   const itemsSummary = buildItemsSummary(items);
 
   const result = await pool.query(

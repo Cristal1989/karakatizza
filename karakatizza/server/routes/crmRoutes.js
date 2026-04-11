@@ -364,6 +364,17 @@ router.post("/telegram/link", async (req, res) => {
       console.log("ROUTE TELEGRAM LINK RETURNING PENDING", result);
     }
 
+    if (result?.reason === "pending_until_first_order") {
+      return res.json({
+        success: true,
+        linked: false,
+        reason: "pending_until_first_order",
+        message: "Telegram буде прив'язаний після першого замовлення",
+        customer: null,
+        pendingLink: result.pendingLink || null,
+      });
+    }
+    
     if (!result.linked) {
       return res.status(404).json({
         success: false,
