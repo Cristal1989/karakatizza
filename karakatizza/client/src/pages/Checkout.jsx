@@ -762,6 +762,10 @@ const shouldShowTelegramGiftCard =
       try {
         const response = await getCheckoutDraft(draftToken);
         const draft = response?.draft;
+
+        console.log("RESTORED DRAFT RESPONSE", response);
+console.log("RESTORED DRAFT", draft);
+console.log("RESTORED DRAFT ITEMS", draft?.items);
     
         if (!isMounted || !draft) return;
     
@@ -910,6 +914,7 @@ const shouldShowTelegramGiftCard =
         console.error("CHECKOUT LOCAL DRAFT SAVE ERROR:", error);
       }
 
+      console.log("OPEN TG DRAFT PAYLOAD", payload);
       const draftResponse = await createCheckoutDraft(payload);
       const token = draftResponse?.token;
 
