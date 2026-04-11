@@ -31,7 +31,10 @@ function buildMainKeyboard(isPhoneConfirmed = false) {
     : [{ text: "Підтвердити номер", request_contact: true }];
 
   return {
-    keyboard: [firstRow, [{ text: "Написати нам" }, { text: "Допомога" }]],
+    keyboard: [
+      firstRow,
+      [{ text: "Написати нам" }, { text: "Допомога" }],
+    ],
     resize_keyboard: true,
     persistent: true,
   };
@@ -820,56 +823,43 @@ export function startTelegramBot() {
   });
 
   bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
+    const chatId = msg.chat.id;
+    const telegramUserId = msg.from?.id ? String(msg.from.id) : "";
+    const telegramFirstName = msg.from?.first_name || "";
+    const startParam = match?.[1] || "";
+    const draftToken = getDraftTokenFromStartParam(startParam);
+    const returnUrl = buildCheckoutReturnUrl(draftToken);
+  
     try {
-      const chatId = msg.chat.id;
-      const telegramUserId = msg.from?.id ? String(msg.from.id) : "";
-      const firstName = msg.from?.first_name || "друже";
-  
-      const startParam = match?.[1] || "";
-      const draftToken = getDraftTokenFromStartParam(startParam);
-  
-      if (telegramUserId && draftToken) {
-        pendingReturnDrafts.set(telegramUserId, draftToken);
-      }
-  
       const customer = await getCustomerByTelegramUserId(telegramUserId);
       const isLinked = Boolean(customer?.telegram_user_id);
   
+      console.log("BOT START STATUS", {
+        telegramUserId,
+        isLinked,
+        customerId: customer?.id || null,
+        phone: customer?.phone || null,
+      });
+  
       if (isLinked) {
-        const returnUrl = buildCheckoutReturnUrl(draftToken);
-  
-        if (draftToken) {
-          await bot.sendMessage(
-            chatId,
-            `Привіт, ${firstName}! 👋
-  
-  Telegram уже прив'язаний до твого профілю в Karakatizza.
-  
-  Повернутися до оформлення замовлення:`,
-            {
-              reply_markup: buildReturnInlineKeyboard(returnUrl),
-            }
-          );
-  
-          pendingReturnDrafts.delete(telegramUserId);
-          return;
-        }
-  
         await bot.sendMessage(
           chatId,
-          `Привіт, ${firstName}! 👋
+          `Привіт, ${telegramFirstName || "друже"}! 👋
   
-  Telegram уже прив'язаний до твого профілю в Karakatizza.`,
+  Telegram вже прив'язаний до твого профілю.
+  
+  Обери, що хочеш зробити далі:`,
           {
             reply_markup: buildMainKeyboard(true),
           }
         );
+  
         return;
       }
   
       await bot.sendMessage(
         chatId,
-        `Привіт, ${firstName}! 👋
+        `Привіт, ${telegramFirstName || "друже"}! 👋
   
   Підтверди свій номер телефону, який ти вказував у замовленні в Karakatizza, і ми закріпимо за тобою Telegram-профіль.
   
@@ -877,11 +867,21 @@ export function startTelegramBot() {
   
   Натисни кнопку нижче:`,
         {
-          reply_markup: buildMainKeyboard(false),
+          reply_markup: draftToken
+            ? buildReturnInlineKeyboard(returnUrl)
+            : buildMainKeyboard(false),
         }
       );
     } catch (error) {
-      console.error("TELEGRAM /start ERROR:", error);
+      console.error("BOT START ERROR", error);
+  
+      await bot.sendMessage(
+        chatId,
+        "Сталася помилка. Спробуй ще раз трохи пізніше.",
+        {
+          reply_markup: buildMainKeyboard(false),
+        }
+      );
     }
   });
 
