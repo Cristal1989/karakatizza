@@ -88,37 +88,34 @@ export default function Checkout() {
 
   const activeTelegramGift = telegramCheckoutStatus?.activeGift || null;
 
-const isPendingTelegramConfirmation =
-  telegramCheckoutStatus?.phoneConfirmed === true &&
-  telegramCheckoutStatus?.pendingUntilFirstOrder === true;
+  const isPendingTelegramConfirmation =
+    telegramCheckoutStatus?.phoneConfirmed === true &&
+    telegramCheckoutStatus?.pendingUntilFirstOrder === true;
 
-const shouldShowTelegramConnectCard =
-  Boolean(
+  const shouldShowTelegramConnectCard = Boolean(
     !telegramCheckoutLoading &&
-    !telegramCheckoutError &&
-    telegramCheckoutStatus &&
-    telegramCheckoutStatus.phoneConfirmed !== true
+      !telegramCheckoutError &&
+      telegramCheckoutStatus &&
+      telegramCheckoutStatus.phoneConfirmed !== true
   );
 
-const shouldShowTelegramPendingCard =
-  Boolean(
+  const shouldShowTelegramPendingCard = Boolean(
     !telegramCheckoutLoading &&
-    !telegramCheckoutError &&
-    telegramCheckoutStatus &&
-    isPendingTelegramConfirmation
+      !telegramCheckoutError &&
+      telegramCheckoutStatus &&
+      isPendingTelegramConfirmation
   );
 
-const shouldShowTelegramGiftCard =
-  Boolean(
+  const shouldShowTelegramGiftCard = Boolean(
     !telegramCheckoutLoading &&
-    !telegramCheckoutError &&
-    telegramCheckoutStatus &&
-    telegramCheckoutStatus.telegramLinked === true &&
-    activeTelegramGift &&
-    !activeTelegramGift.used_at &&
-    ["issued", "reserved"].includes(
-      String(activeTelegramGift.status || "").toLowerCase()
-    )
+      !telegramCheckoutError &&
+      telegramCheckoutStatus &&
+      telegramCheckoutStatus.telegramLinked === true &&
+      activeTelegramGift &&
+      !activeTelegramGift.used_at &&
+      ["issued", "reserved"].includes(
+        String(activeTelegramGift.status || "").toLowerCase()
+      )
   );
 
   useEffect(() => {
@@ -764,11 +761,11 @@ const shouldShowTelegramGiftCard =
         const draft = response?.draft;
 
         console.log("RESTORED DRAFT RESPONSE", response);
-console.log("RESTORED DRAFT", draft);
-console.log("RESTORED DRAFT ITEMS", draft?.items);
-    
+        console.log("RESTORED DRAFT", draft);
+        console.log("RESTORED DRAFT ITEMS", draft?.items);
+
         if (!isMounted || !draft) return;
-    
+
         setForm((prev) => ({
           ...prev,
           name: draft.name ?? prev.name,
@@ -782,28 +779,28 @@ console.log("RESTORED DRAFT ITEMS", draft?.items);
               : prev.needExactTime,
           exactTime: draft.exactTime ?? prev.exactTime,
         }));
-    
+
         if (
           draft.checkoutMode === "pickup" ||
           draft.checkoutMode === "delivery"
         ) {
           setCheckoutMode(draft.checkoutMode);
         }
-    
+
         if (Array.isArray(draft.items)) {
           setCartItems(draft.items);
         }
-    
+
         if (typeof draft.regularSticksCount === "number") {
           setRegularSticksCount(draft.regularSticksCount);
         }
-    
+
         if (typeof draft.trainingSticksCount === "number") {
           setTrainingSticksCount(draft.trainingSticksCount);
         }
-    
+
         await deleteCheckoutDraft(draftToken);
-    
+
         const nextParams = new URLSearchParams(searchParams);
         nextParams.delete("draft");
         nextParams.delete("tg");
@@ -902,7 +899,7 @@ console.log("RESTORED DRAFT ITEMS", draft?.items);
         checkoutMode,
         needExactTime: form.needExactTime === true,
         exactTime: form.exactTime,
-      
+
         items: cartItems,
         regularSticksCount,
         trainingSticksCount,
@@ -914,7 +911,8 @@ console.log("RESTORED DRAFT ITEMS", draft?.items);
         console.error("CHECKOUT LOCAL DRAFT SAVE ERROR:", error);
       }
 
-      console.log("OPEN TG DRAFT PAYLOAD", payload);
+      console.log("OPEN TG PAYLOAD", payload);
+      console.log("OPEN TG ITEMS", payload.items);
       const draftResponse = await createCheckoutDraft(payload);
       const token = draftResponse?.token;
 
@@ -1362,113 +1360,114 @@ console.log("RESTORED DRAFT ITEMS", draft?.items);
                 </div>
               ) : null}
 
-{shouldShowTelegramConnectCard && (
-  <div
-    style={{
-      marginTop: 10,
-      marginBottom: 14,
-      padding: "10px 12px",
-      borderRadius: 14,
-      border: "1px solid #e5e7eb",
-      background: "#f8fafc",
-      display: "grid",
-      gap: 10,
-    }}
-  >
-    <div
-      style={{
-        fontSize: 14,
-        fontWeight: 700,
-        color: "#0f172a",
-        lineHeight: 1.35,
-      }}
-    >
-      🎁 Хочеш бонус до наступного замовлення?
-    </div>
+              {shouldShowTelegramConnectCard && (
+                <div
+                  style={{
+                    marginTop: 10,
+                    marginBottom: 14,
+                    padding: "10px 12px",
+                    borderRadius: 14,
+                    border: "1px solid #e5e7eb",
+                    background: "#f8fafc",
+                    display: "grid",
+                    gap: 10,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 700,
+                      color: "#0f172a",
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    🎁 Хочеш бонус до наступного замовлення?
+                  </div>
 
-    <div
-      style={{
-        fontSize: 13,
-        color: "#475569",
-        lineHeight: 1.45,
-      }}
-    >
-      Підпишись на Telegram-бота та підтвердь номер.
-    </div>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: "#475569",
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    Підпишись на Telegram-бота та підтвердь номер.
+                  </div>
 
-    <button
-      type="button"
-      onClick={handleOpenTelegramForCheckout}
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: 36,
-        padding: "0 14px",
-        borderRadius: 10,
-        background: "#d96f55",
-        color: "#fff",
-        textDecoration: "none",
-        fontSize: 13,
-        fontWeight: 700,
-        whiteSpace: "nowrap",
-        cursor: "pointer",
-        width: "fit-content",
-        border: "none",
-      }}
-    >
-      Перейти в Telegram
-    </button>
-  </div>
-)}
+                  <button
+                    type="button"
+                    onClick={handleOpenTelegramForCheckout}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      minHeight: 36,
+                      padding: "0 14px",
+                      borderRadius: 10,
+                      background: "#d96f55",
+                      color: "#fff",
+                      textDecoration: "none",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      whiteSpace: "nowrap",
+                      cursor: "pointer",
+                      width: "fit-content",
+                      border: "none",
+                    }}
+                  >
+                    Перейти в Telegram
+                  </button>
+                </div>
+              )}
 
-{shouldShowTelegramPendingCard && (
-  <div
-    style={{
-      marginTop: 10,
-      marginBottom: 14,
-      padding: "12px 14px",
-      borderRadius: 14,
-      border: "1px solid #fde68a",
-      background: "#fffbeb",
-      display: "grid",
-      gap: 8,
-    }}
-  >
-    <div
-      style={{
-        fontSize: 14,
-        fontWeight: 700,
-        color: "#92400e",
-        lineHeight: 1.35,
-      }}
-    >
-      ✅ Номер підтверджено
-    </div>
+              {shouldShowTelegramPendingCard && (
+                <div
+                  style={{
+                    marginTop: 10,
+                    marginBottom: 14,
+                    padding: "12px 14px",
+                    borderRadius: 14,
+                    border: "1px solid #fde68a",
+                    background: "#fffbeb",
+                    display: "grid",
+                    gap: 8,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 700,
+                      color: "#92400e",
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    ✅ Номер підтверджено
+                  </div>
 
-    <div
-      style={{
-        fontSize: 13,
-        color: "#78350f",
-        lineHeight: 1.45,
-      }}
-    >
-      Telegram уже підтверджений для цього номера.
-      Прив’язка завершиться автоматично після першого замовлення.
-    </div>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: "#78350f",
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    Telegram уже підтверджений для цього номера. Прив’язка
+                    завершиться автоматично після першого замовлення.
+                  </div>
 
-    <div
-      style={{
-        fontSize: 13,
-        color: "#a16207",
-        lineHeight: 1.45,
-        fontWeight: 700,
-      }}
-    >
-      🎁 Бонус буде нараховано після першого замовлення та стане доступним на наступному.
-    </div>
-  </div>
-)}
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: "#a16207",
+                      lineHeight: 1.45,
+                      fontWeight: 700,
+                    }}
+                  >
+                    🎁 Бонус буде нараховано після першого замовлення та стане
+                    доступним на наступному.
+                  </div>
+                </div>
+              )}
 
               {shouldShowTelegramGiftCard && (
                 <div
