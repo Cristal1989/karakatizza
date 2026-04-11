@@ -778,12 +778,7 @@ async function handleContact(bot, msg) {
 
 
 export function startTelegramBot() {
-  console.log("TELEGRAM BOT START", {
-    pid: process.pid,
-    ts: new Date().toISOString(),
-    hasBotInstance: Boolean(botInstance),
-    enableTelegramBot: process.env.ENABLE_TELEGRAM_BOT,
-  });
+  console.log("TELEGRAM BOT START STACK", new Error().stack);
   if (!BOT_TOKEN) {
     console.log("Telegram bot disabled: TELEGRAM_BOT_TOKEN is missing");
     return null;
