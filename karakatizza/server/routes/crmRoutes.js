@@ -1044,6 +1044,14 @@ router.post("/telegram/reset-test-user", requireAdminAuth, async (req, res) => {
 
       await client.query(
         `
+          DELETE FROM telegram_pending_links
+          WHERE phone_normalized = $1
+        `,
+        [phoneNormalized]
+      );
+
+      await client.query(
+        `
           DELETE FROM customers
           WHERE phone_normalized = $1
              OR phone = $2
@@ -1056,7 +1064,7 @@ router.post("/telegram/reset-test-user", requireAdminAuth, async (req, res) => {
       return res.json({
         success: true,
         message: "Тестового користувача повністю скинуто",
-        customer: customer,
+        customer,
         phoneNormalized,
       });
     } catch (dbError) {

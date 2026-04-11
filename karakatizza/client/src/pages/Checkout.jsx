@@ -1458,7 +1458,7 @@ const shouldShowTelegramGiftCard =
   </div>
 )}
 
-              {shouldShowTelegramGiftCard && (
+              {/* {shouldShowTelegramGiftCard && (
                 <div
                   style={{
                     marginTop: 12,
@@ -1514,7 +1514,7 @@ const shouldShowTelegramGiftCard =
                       : "Бонус активований, але поки що недоступний."}
                   </div>
                 </div>
-              )}
+              )} */}
 
               {checkoutMode === "delivery" ? (
                 <>
