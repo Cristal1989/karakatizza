@@ -336,25 +336,16 @@ async function handleMyBonus(bot, msg) {
             telegramFirstName,
           });
 
-          console.log("BOT MY BONUS LINK RESULT", {
-            pendingPhone,
-            telegramUserId,
-            linkResult,
-          });
-
           if (linkResult?.reason === "pending_until_first_order") {
-            console.log("BOT MY BONUS PENDING FLOW", {
-              pendingPhone,
-              telegramUserId,
-              reason: linkResult?.reason,
-              pendingLink: linkResult?.pendingLink || null,
-            });
-
             await bot.sendMessage(
               chatId,
-              "Номер підтверджено ✅\n\nTelegram буде автоматично прив'язаний після першого замовлення.\n🎁 Бонус за підписку буде нараховано після першого замовлення та стане доступним на наступному.",
+              `🎁 Номер вже підтверджено ✅
+
+Telegram буде автоматично прив'язаний після першого замовлення.
+
+Бонус за підписку буде нараховано після першого замовлення та стане доступним на наступному.`,
               {
-                reply_markup: buildMainKeyboard(false),
+                reply_markup: buildMainKeyboard(true),
               }
             );
             return;
@@ -368,7 +359,7 @@ async function handleMyBonus(bot, msg) {
         } catch (linkError) {
           if (linkError?.message !== "Клієнта з таким номером не знайдено") {
             console.error(
-              "TELEGRAM RE-LINK FROM PENDING PHONE ERROR:",
+              "TELEGRAM MY BONUS RE-LINK ERROR:",
               linkError
             );
           }
@@ -381,9 +372,7 @@ async function handleMyBonus(bot, msg) {
         chatId,
         `Я ще не бачу прив'язаний номер телефону 🙁
 
-Натисни "Підтвердити номер", щоб я зміг знайти твій профіль і перевірити бонус.
-
-Якщо ти вже підтверджував номер, але оформив перше замовлення тільки після цього — просто натисни "Підтвердити номер" ще раз.`,
+Натисни "Підтвердити номер", щоб я зміг знайти твій профіль і перевірити бонус.`,
         {
           reply_markup: buildMainKeyboard(false),
         }
@@ -393,9 +382,7 @@ async function handleMyBonus(bot, msg) {
 
     const bonusSettings = await getJson(`${API_BASE_URL}/gift-roll/settings`);
     const activeGiftResponse = await getJson(
-      `${API_BASE_URL}/api/crm/telegram-gifts/active/${encodeURIComponent(
-        customer.phone
-      )}`
+      `${API_BASE_URL}/api/crm/telegram-gifts/active/${encodeURIComponent(customer.phone)}`
     );
 
     const activeGift = activeGiftResponse?.gift || null;
@@ -420,7 +407,7 @@ async function handleMyBonus(bot, msg) {
 
 ${description}
 
-Він уже закріплений за твоїм номером і буде використаний при наступному замовленні.`;
+Він уже закріплений за твоїм номером 📱 буде використаний при наступному замовленні.`;
 
         if (image) {
           try {
@@ -445,7 +432,7 @@ ${description}
 
 Знижка: ${discountPercent || "0"}% на наступне замовлення
 
-Бонус уже закріплений за твоїм номером і буде використаний при наступному замовленні.`;
+Бонус уже закріплений за твоїм номером 📱 буде використаний при наступному замовленні.`;
 
         await bot.sendMessage(chatId, text, {
           reply_markup: buildMainKeyboard(isLinked),
@@ -457,8 +444,7 @@ ${description}
         const text = `🎁 У тебе є активний бонус
 
 ${customText || "Для тебе діє спеціальна пропозиція."}
-
-Бонус уже закріплений за твоїм номером і буде використаний при наступному замовленні.`;
+[11.04.2026 16:35] Dmitry: Бонус уже закріплений за твоїм номером 📱 буде використаний при наступному замовленні.`;
 
         await bot.sendMessage(chatId, text, {
           reply_markup: buildMainKeyboard(isLinked),
@@ -471,9 +457,7 @@ ${customText || "Для тебе діє спеціальна пропозиці�
 
     try {
       const usedGiftResponse = await getJson(
-        `${API_BASE_URL}/api/crm/telegram-gifts/history/${encodeURIComponent(
-          customer.phone
-        )}`
+        `${API_BASE_URL}/api/crm/telegram-gifts/history/${encodeURIComponent(customer.phone)}`
       );
 
       const giftsHistory = Array.isArray(usedGiftResponse?.gifts)
@@ -497,7 +481,7 @@ ${customText || "Для тебе діє спеціальна пропозиці�
 
 Подарунок: ${title}
 
-Якщо з'являться нові акції — я напишу тобі тут у Telegram.`;
+Якщо з'являться нові акції — я напишу тобі тут в Telegram.`;
 
         if (image) {
           try {
@@ -522,7 +506,7 @@ ${customText || "Для тебе діє спеціальна пропозиці�
 
 Знижка: ${discountPercent || "0"}%
 
-Якщо з'являться нові акції — я напишу тобі тут у Telegram.`;
+Якщо з'являться нові акції — я напишу тобі тут в Telegram.`;
 
         await bot.sendMessage(chatId, text, {
           reply_markup: buildMainKeyboard(isLinked),
@@ -535,7 +519,7 @@ ${customText || "Для тебе діє спеціальна пропозиці�
 
 ${customText || "Спеціальна пропозиція вже була використана."}
 
-Якщо з'являться нові акції — я напишу тобі тут у Telegram.`;
+Якщо з'являться нові акції — я напишу тобі тут в Telegram.`;
 
         await bot.sendMessage(chatId, text, {
           reply_markup: buildMainKeyboard(isLinked),
@@ -546,27 +530,18 @@ ${customText || "Спеціальна пропозиція вже була ви�
 
     await bot.sendMessage(
       chatId,
-      `Зараз у тебе немає активного бонусу.
-
-Якщо з'являться нові акції — я напишу тобі тут у Telegram.`,
+      "Поки що активного бонусу немає. Коли він з'явиться — я покажу його тут.",
       {
         reply_markup: buildMainKeyboard(isLinked),
       }
     );
   } catch (error) {
     console.error("TELEGRAM MY BONUS ERROR:", error);
-
-    let isLinked = false;
-    try {
-      const customer = await getCustomerByTelegramUserId(telegramUserId);
-      isLinked = Boolean(customer?.telegram_user_id);
-    } catch {}
-
     await bot.sendMessage(
       chatId,
-      "Не вдалося перевірити бонус. Спробуй ще раз трохи пізніше.",
+      "Сталася помилка при перевірці бонусу. Спробуй трохи пізніше.",
       {
-        reply_markup: buildMainKeyboard(isLinked),
+        reply_markup: buildMainKeyboard(false),
       }
     );
   }
