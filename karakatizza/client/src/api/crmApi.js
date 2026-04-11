@@ -250,6 +250,8 @@ export async function getTelegramCheckoutStatus(phone) {
     telegramLinked: Boolean(data?.telegramLinked),
     phoneConfirmed: Boolean(data?.phoneConfirmed),
     telegramSubscribed: Boolean(data?.telegramSubscribed),
+    pendingUntilFirstOrder: Boolean(data?.pendingUntilFirstOrder),
+    pendingLink: data?.pendingLink || null,
     ordersCount: Number(data?.ordersCount ?? 0),
     canUseGiftNow: Boolean(data?.canUseGiftNow),
     ordersLeftUntilGift: data?.ordersLeftUntilGift ?? null,

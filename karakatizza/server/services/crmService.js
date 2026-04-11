@@ -643,6 +643,21 @@ export async function getTelegramCheckoutStatusByPhone(pool, phone) {
     phoneNormalized,
   });
 
+  if (!phoneNormalized) {
+    return {
+      success: true,
+      telegramLinked: false,
+      phoneConfirmed: false,
+      telegramSubscribed: false,
+      pendingUntilFirstOrder: false,
+      customer: null,
+      activeGift: null,
+      ordersCount: 0,
+      canUseGiftNow: false,
+      ordersLeftUntilGift: null,
+    };
+  }
+
   const customerResult = await pool.query(
     `
       SELECT
@@ -678,31 +693,61 @@ export async function getTelegramCheckoutStatusByPhone(pool, phone) {
   const customer = customerResult.rows[0] || null;
 
   if (!customer) {
-    console.log("CHECKOUT STATUS RESULT", {
-      success: true,
-      phone,
-      phoneNormalized,
-      customer: null,
-      activeGift: null,
-      telegramLinked: false,
-      phoneConfirmed: false,
-      telegramSubscribed: false,
-      ordersCount: 0,
-      canUseGiftNow: false,
-      ordersLeftUntilGift: null,
+    const pendingResult = await pool.query(
+      `
+        SELECT
+          id,
+          phone_normalized,
+          telegram_user_id,
+          telegram_username,
+          telegram_first_name,
+          created_at,
+          updated_at
+        FROM telegram_pending_links
+        WHERE phone_normalized = $1
+        ORDER BY id DESC
+        LIMIT 1
+      `,
+      [phoneNormalized]
+    );
+
+    const pendingLink = pendingResult.rows[0] || null;
+
+    console.log("CHECKOUT STATUS PENDING ROWS", {
+      count: pendingResult.rows.length,
+      rows: pendingResult.rows,
     });
 
-    return {
-      success: true,
-      telegramLinked: false,
-      phoneConfirmed: false,
-      telegramSubscribed: false,
-      customer: null,
-      activeGift: null,
-      ordersCount: 0,
-      canUseGiftNow: false,
-      ordersLeftUntilGift: null,
-    };
+    const result = pendingLink
+      ? {
+          success: true,
+          telegramLinked: false,
+          phoneConfirmed: true,
+          telegramSubscribed: true,
+          pendingUntilFirstOrder: true,
+          pendingLink,
+          customer: null,
+          activeGift: null,
+          ordersCount: 0,
+          canUseGiftNow: false,
+          ordersLeftUntilGift: 1,
+        }
+      : {
+          success: true,
+          telegramLinked: false,
+          phoneConfirmed: false,
+          telegramSubscribed: false,
+          pendingUntilFirstOrder: false,
+          pendingLink: null,
+          customer: null,
+          activeGift: null,
+          ordersCount: 0,
+          canUseGiftNow: false,
+          ordersLeftUntilGift: null,
+        };
+
+    console.log("CHECKOUT STATUS RESULT", result);
+    return result;
   }
 
   const activeGift = await getActiveTelegramGiftByPhone(pool, phoneNormalized);
@@ -737,9 +782,11 @@ export async function getTelegramCheckoutStatusByPhone(pool, phone) {
 
   const result = {
     success: true,
-    telegramLinked: Boolean(customer.telegram_user_id),
+    telegramLinked: Boolean(customer.telegram_user_id && customer.is_telegram_subscribed),
     phoneConfirmed: Boolean(customer.is_phone_confirmed),
     telegramSubscribed: Boolean(customer.is_telegram_subscribed),
+    pendingUntilFirstOrder: false,
+    pendingLink: null,
     customer,
     activeGift,
     ordersCount,
@@ -748,7 +795,6 @@ export async function getTelegramCheckoutStatusByPhone(pool, phone) {
   };
 
   console.log("CHECKOUT STATUS RESULT", result);
-
   return result;
 }
 
