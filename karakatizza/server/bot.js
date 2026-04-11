@@ -78,12 +78,6 @@ async function tryLinkTelegramByPhone({
   telegramFirstName = "",
 }) {
   try {
-    console.log("BOT TRY LINK START", {
-      phone,
-      telegramUserId,
-      telegramUsername,
-      telegramFirstName,
-    });
 
     const result = await postJson(`${API_BASE_URL}/api/crm/telegram/link`, {
       phone,
@@ -91,8 +85,6 @@ async function tryLinkTelegramByPhone({
       telegramUsername,
       telegramFirstName,
     });
-
-    console.log("BOT TRY LINK RAW RESULT", result);
 
     if (result?.reason === "pending_until_first_order") {
       const normalized = {
@@ -103,7 +95,6 @@ async function tryLinkTelegramByPhone({
         pendingLink: result.pendingLink || null,
       };
 
-      console.log("BOT TRY LINK NORMALIZED RESULT", normalized);
       return normalized;
     }
 
@@ -116,7 +107,6 @@ async function tryLinkTelegramByPhone({
         pendingLink: null,
       };
 
-      console.log("BOT TRY LINK NORMALIZED RESULT", normalized);
       return normalized;
     }
 
@@ -128,7 +118,6 @@ async function tryLinkTelegramByPhone({
       pendingLink: result?.pendingLink || null,
     };
 
-    console.log("BOT TRY LINK NORMALIZED RESULT", normalized);
     return normalized;
   } catch (error) {
     console.error("BOT TRY LINK ERROR", {
@@ -636,22 +625,9 @@ async function handleContact(bot, msg) {
       telegramUsername,
       telegramFirstName,
     });
-
-    console.log("BOT HANDLE CONTACT LINK RESULT", {
-      phone: normalizedPhone,
-      telegramUserId,
-      linkResult,
-    });
     
     if (linkResult?.reason === "pending_until_first_order") {
       pendingPhones.delete(telegramUserId);
-
-      console.log("BOT HANDLE CONTACT PENDING FLOW", {
-        phone: normalizedPhone,
-        telegramUserId,
-        reason: linkResult?.reason,
-        pendingLink: linkResult?.pendingLink || null,
-      });
     
       await bot.sendMessage(
         chatId,

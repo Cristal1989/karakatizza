@@ -332,10 +332,6 @@ router.post("/telegram/link", async (req, res) => {
       telegramFirstName = "",
     } = req.body || {};
 
-    console.log("ROUTE TELEGRAM LINK START", {
-      body: req.body || null,
-    });
-
 
     if (!phone) {
       return res.status(400).json({
@@ -358,11 +354,6 @@ router.post("/telegram/link", async (req, res) => {
       telegramFirstName,
     });
 
-    console.log("ROUTE TELEGRAM LINK SERVICE RESULT", result);
-
-    if (result?.reason === "pending_until_first_order") {
-      console.log("ROUTE TELEGRAM LINK RETURNING PENDING", result);
-    }
 
     if (result?.reason === "pending_until_first_order") {
       return res.json({
