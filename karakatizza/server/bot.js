@@ -863,6 +863,7 @@ export function startTelegramBot() {
       console.error("TELEGRAM /start ERROR:", error);
     }
   });
+  console.log("1");
 
   bot.on("message", async (msg) => {
     const text = msg.text || "";
