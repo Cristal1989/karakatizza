@@ -668,7 +668,7 @@ async function handleContact(bot, msg) {
       );
     
       await bot.sendMessage(chatId, "Що далі?", {
-        reply_markup: buildMainKeyboard(false),
+        reply_markup: buildMainKeyboard(true),
       });
     
       pendingReturnDrafts.delete(telegramUserId);
@@ -805,6 +805,8 @@ async function handleContact(bot, msg) {
     return;
   }
 }
+
+
 export function startTelegramBot() {
   if (!BOT_TOKEN) {
     console.log("Telegram bot disabled: TELEGRAM_BOT_TOKEN is missing");
