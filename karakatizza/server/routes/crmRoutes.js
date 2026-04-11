@@ -1082,14 +1082,17 @@ router.post("/telegram/reset-test-user", requireAdminAuth, async (req, res) => {
 router.post("/checkout-drafts", async (req, res) => {
   try {
     const {
-      name = "",
-      phone = "",
-      address = "",
-      entrance = "",
-      comment = "",
-      checkoutMode = "delivery",
-      needExactTime = false,
-      exactTime = "",
+      name,
+      phone,
+      address,
+      entrance,
+      comment,
+      checkoutMode,
+      needExactTime,
+      exactTime,
+      items = [],
+      regularSticksCount = 0,
+      trainingSticksCount = 0,
     } = req.body || {};
 
     const draft = await createCheckoutDraft(pool, {
