@@ -236,7 +236,7 @@ if (
   const result = await pool.query(
     `
       INSERT INTO orders (
-        effectiveCustomer.id,
+        customer.id,
         phone,
         phone_normalized,
         name,
