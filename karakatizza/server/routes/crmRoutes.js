@@ -1177,4 +1177,39 @@ router.delete("/checkout-drafts/:token", async (req, res) => {
   }
 });
 
+router.get("/telegram/pending/:telegramUserId", async (req, res) => {
+  try {
+    const { telegramUserId } = req.params;
+
+    if (!telegramUserId) {
+      return res.status(400).json({
+        success: false,
+        message: "Потрібен telegramUserId",
+      });
+    }
+
+    const result = await pool.query(
+      `
+      SELECT *
+      FROM telegram_pending_links
+      WHERE telegram_user_id = $1
+      ORDER BY updated_at DESC
+      LIMIT 1
+      `,
+      [String(telegramUserId)]
+    );
+
+    return res.json({
+      success: true,
+      pendingLink: result.rows[0] || null,
+    });
+  } catch (error) {
+    console.error("CRM TELEGRAM PENDING LOOKUP ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Не вдалося отримати pending link",
+    });
+  }
+});
+
 export default router;

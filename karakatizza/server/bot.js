@@ -314,6 +314,19 @@ async function handlePromotions(bot, msg) {
   }
 }
 
+async function getPendingLinkByTelegramUserId(telegramUserId) {
+  const response = await fetch(
+    `${API_BASE_URL}/api/crm/telegram/pending/${telegramUserId}`
+  );
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const data = await response.json();
+  return data?.pendingLink || null;
+}
+
 async function handleMyBonus(bot, msg) {
   const chatId = msg.chat.id;
   const telegramUserId = msg.from?.id ? String(msg.from.id) : "";
@@ -336,43 +349,49 @@ async function handleMyBonus(bot, msg) {
             telegramFirstName,
           });
 
+          if (linkResult?.success && linkResult?.customer) {
+            customer = linkResult.customer;
+            isLinked = Boolean(customer?.telegram_user_id);
+            pendingPhones.delete(telegramUserId);
+          }
+
           if (linkResult?.reason === "pending_until_first_order") {
             await bot.sendMessage(
               chatId,
-              `🎁 Номер вже підтверджено ✅
-
-Telegram буде автоматично прив'язаний після першого замовлення.
-
-Бонус за підписку буде нараховано після першого замовлення та стане доступним на наступному.`,
+              "✅ Номер вже підтверджено.\n\nTelegram буде автоматично прив'язаний після першого замовлення.\n\n🎁 Бонус за підписку буде нараховано після першого замовлення та стане доступним на наступному.",
               {
                 reply_markup: buildMainKeyboard(true),
               }
             );
             return;
           }
-
-          if (linkResult?.success && linkResult?.customer) {
-            customer = linkResult.customer;
-            isLinked = Boolean(customer?.telegram_user_id);
-            pendingPhones.delete(telegramUserId);
-          }
         } catch (linkError) {
           if (linkError?.message !== "Клієнта з таким номером не знайдено") {
-            console.error(
-              "TELEGRAM MY BONUS RE-LINK ERROR:",
-              linkError
-            );
+            console.error("TELEGRAM RE-LINK FROM PENDING PHONE ERROR:", linkError);
           }
         }
       }
     }
 
     if (!customer) {
+      const pendingLink = await getPendingLinkByTelegramUserId(telegramUserId);
+
+      if (pendingLink) {
+        await bot.sendMessage(
+          chatId,
+          "✅ Номер вже підтверджено.\n\nTelegram буде автоматично прив'язаний після першого замовлення.\n\n🎁 Бонус за підписку буде нараховано після першого замовлення та стане доступним на наступному.",
+          {
+            reply_markup: buildMainKeyboard(true),
+          }
+        );
+        return;
+      }
+    }
+
+    if (!customer) {
       await bot.sendMessage(
         chatId,
-        `Я ще не бачу прив'язаний номер телефону 🙁
-
-Натисни "Підтвердити номер", щоб я зміг знайти твій профіль і перевірити бонус.`,
+        "Я ще не бачу прив'язаний номер телефону 🙁\n\nНатисни \"Підтвердити номер\", щоб я зміг знайти твій профіль і перевірити бонус.",
         {
           reply_markup: buildMainKeyboard(false),
         }
