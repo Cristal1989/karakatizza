@@ -799,16 +799,17 @@ export async function getTelegramCheckoutStatusByPhone(pool, phone) {
     ? Math.max(0, Number(availableAfterOrdersCount || 0) - ordersCount)
     : null;
 
-  return {
-    telegramLinked: Boolean(
-      customer.telegram_user_id && customer.is_telegram_subscribed
-    ),
-    customer,
-    activeGift,
-    ordersCount,
-    canUseGiftNow,
-    ordersLeftUntilGift,
-  };
+    return {
+      success: true,
+      telegramLinked: Boolean(customer.telegram_user_id),
+      phoneConfirmed: Boolean(customer.is_phone_confirmed),
+      telegramSubscribed: Boolean(customer.is_telegram_subscribed),
+      customer,
+      activeGift,
+      ordersCount,
+      canUseGiftNow,
+      ordersLeftUntilGift,
+    };
 }
 
 export async function getTelegramGiftsByTelegramUserId(pool, telegramUserId) {
