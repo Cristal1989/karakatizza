@@ -778,6 +778,7 @@ async function handleContact(bot, msg) {
 
 
 export function startTelegramBot() {
+  console.log("TELEGRAM BOT TOKEN PREFIX", BOT_TOKEN?.slice(0, 10));
   console.log("TELEGRAM BOT START", {
     pid: process.pid,
     ts: new Date().toISOString(),

@@ -27,7 +27,7 @@ const app = express();
 app.use(compression());
 
 
-console.log("TELEGRAM BOT TOKEN PREFIX", BOT_TOKEN?.slice(0, 10));
+
 await initDb();
 if (process.env.ENABLE_TELEGRAM_BOT === "true") {
   startTelegramBot();
