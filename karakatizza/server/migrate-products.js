@@ -43,7 +43,6 @@ async function migrate() {
     );
   }
 
-  console.log("Products migrated successfully");
   await pool.end();
   process.exit(0);
 }

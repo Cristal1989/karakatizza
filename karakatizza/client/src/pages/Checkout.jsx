@@ -960,19 +960,6 @@ export default function Checkout() {
             freshOrdersCount >= freshAvailableAfterOrdersCount)
       );
 
-      console.log("TG STATUS BEFORE ORDER", {
-        phone: form.phone.trim(),
-        freshTelegramStatus,
-        telegramCheckoutStatus,
-      });
-
-      console.log("TG CLIENT DECISION", {
-        activeTelegramGift,
-        freshOrdersCount,
-        freshAvailableAfterOrdersCount,
-        telegramCanUseNowDirect,
-      });
-
       const itemsForOrder = [
         ...cartItems.map((item) => ({
           name: item.name,
@@ -1000,8 +987,6 @@ export default function Checkout() {
           discountLabel: "Telegram bonus",
         });
       }
-
-      console.log("TG ITEMS FOR ORDER", itemsForOrder);
 
       const orderData = {
         name: form.name.trim(),
@@ -1051,12 +1036,6 @@ export default function Checkout() {
             }
           : null,
       };
-
-      console.log("TG ORDER DATA FINAL", {
-        telegramBonusMeta: orderData.telegramBonusMeta,
-        items: orderData.items,
-        totalPrice: orderData.totalPrice,
-      });
 
       await createOrder(orderData);
 

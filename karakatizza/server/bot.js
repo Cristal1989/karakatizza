@@ -55,23 +55,18 @@ function buildCheckoutReturnUrl(draftToken = "") {
 async function getCustomerByTelegramUserId(telegramUserId) {
   if (!telegramUserId) return null;
 
-  console.log("BOT LOOKUP START", { telegramUserId, API_BASE_URL });
-
   const response = await fetch(
     `${API_BASE_URL}/api/crm/telegram/customer/${telegramUserId}`
   );
 
-  console.log("BOT LOOKUP STATUS", response.status);
 
   const rawText = await response.text();
-  console.log("BOT LOOKUP RAW", rawText);
 
   if (!response.ok) {
     return null;
   }
 
   const data = rawText ? JSON.parse(rawText) : null;
-  console.log("BOT LOOKUP PARSED", data);
 
   return data?.customer || null;
 }
@@ -83,6 +78,13 @@ async function tryLinkTelegramByPhone({
   telegramFirstName = "",
 }) {
   try {
+    console.log("BOT TRY LINK START", {
+      phone,
+      telegramUserId,
+      telegramUsername,
+      telegramFirstName,
+    });
+
     const result = await postJson(`${API_BASE_URL}/api/crm/telegram/link`, {
       phone,
       telegramUserId,
@@ -90,37 +92,49 @@ async function tryLinkTelegramByPhone({
       telegramFirstName,
     });
 
-    console.log("BOT TRY LINK RESULT", result);
+    console.log("BOT TRY LINK RAW RESULT", result);
 
     if (result?.reason === "pending_until_first_order") {
-      return {
+      const normalized = {
         success: true,
         linked: false,
         reason: "pending_until_first_order",
         customer: null,
         pendingLink: result.pendingLink || null,
       };
+
+      console.log("BOT TRY LINK NORMALIZED RESULT", normalized);
+      return normalized;
     }
 
     if (result?.linked === true && result?.customer) {
-      return {
+      const normalized = {
         success: true,
         linked: true,
         reason: "linked",
         customer: result.customer,
         pendingLink: null,
       };
+
+      console.log("BOT TRY LINK NORMALIZED RESULT", normalized);
+      return normalized;
     }
 
-    return {
+    const normalized = {
       success: false,
       linked: false,
       reason: result?.reason || "link_failed",
       customer: result?.customer || null,
       pendingLink: result?.pendingLink || null,
     };
+
+    console.log("BOT TRY LINK NORMALIZED RESULT", normalized);
+    return normalized;
   } catch (error) {
-    console.error("BOT TRY LINK ERROR", error);
+    console.error("BOT TRY LINK ERROR", {
+      message: error?.message || error,
+      stack: error?.stack || null,
+    });
 
     return {
       success: false,
@@ -137,10 +151,6 @@ async function postJson(url, body) {
   const timeout = setTimeout(() => controller.abort(), 15000);
 
   try {
-    console.log("BOT POST JSON START", {
-      url,
-      body,
-    });
 
     const response = await fetch(url, {
       method: "POST",
@@ -152,13 +162,6 @@ async function postJson(url, body) {
     });
 
     const text = await response.text();
-
-    console.log("BOT POST JSON RESPONSE", {
-      url,
-      status: response.status,
-      ok: response.ok,
-      text,
-    });
 
     let data = null;
 
@@ -333,7 +336,20 @@ async function handleMyBonus(bot, msg) {
             telegramFirstName,
           });
 
+          console.log("BOT MY BONUS LINK RESULT", {
+            pendingPhone,
+            telegramUserId,
+            linkResult,
+          });
+
           if (linkResult?.reason === "pending_until_first_order") {
+            console.log("BOT MY BONUS PENDING FLOW", {
+              pendingPhone,
+              telegramUserId,
+              reason: linkResult?.reason,
+              pendingLink: linkResult?.pendingLink || null,
+            });
+
             await bot.sendMessage(
               chatId,
               "Номер підтверджено ✅\n\nTelegram буде автоматично прив'язаний після першого замовлення.\n🎁 Бонус за підписку буде нараховано після першого замовлення та стане доступним на наступному.",
@@ -626,9 +642,22 @@ async function handleContact(bot, msg) {
       telegramUsername,
       telegramFirstName,
     });
+
+    console.log("BOT HANDLE CONTACT LINK RESULT", {
+      phone: normalizedPhone,
+      telegramUserId,
+      linkResult,
+    });
     
     if (linkResult?.reason === "pending_until_first_order") {
       pendingPhones.delete(telegramUserId);
+
+      console.log("BOT HANDLE CONTACT PENDING FLOW", {
+        phone: normalizedPhone,
+        telegramUserId,
+        reason: linkResult?.reason,
+        pendingLink: linkResult?.pendingLink || null,
+      });
     
       await bot.sendMessage(
         chatId,

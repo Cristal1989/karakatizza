@@ -82,7 +82,6 @@ const legacyRedirects = {
 
 Object.entries(legacyRedirects).forEach(([oldPath, newPath]) => {
   app.get(oldPath, (req, res) => {
-    console.log("REDIRECT HIT:", oldPath);
     return res.redirect(301, newPath);
   });
 });
@@ -474,7 +473,6 @@ app.put("/products/:id", requireAdminAuth, (req, res) => {
       let imageUrl = oldProduct.image || "";
 
       if (req.file) {
-        console.log("UPLOAD FILE:", req.file);
 
         imageUrl = req.file.path || req.file.secure_url || oldProduct.image;
 
@@ -887,11 +885,6 @@ app.post("/order", async (req, res) => {
       telegramBonusMeta = null,
     } = req.body;
 
-    console.log("ORDER REQUEST TELEGRAM", {
-      phone,
-      telegramBonusMeta,
-      items,
-    });
 
     let sticksText = "";
 
@@ -1065,10 +1058,6 @@ app.post("/order", async (req, res) => {
       });
 
       try {
-        console.log("ORDER AUTO USE INPUT", {
-          hasOrder: Boolean(crmResult?.order),
-          telegramBonusMeta,
-        });
         if (
           crmResult?.order &&
           telegramBonusMeta?.applied === true &&

@@ -515,11 +515,6 @@ export default function Admin() {
       setProductsLoading(true);
 
       const data = await getProducts(true);
-      console.log("LOADED PRODUCTS:", data);
-      console.log(
-        "HIDDEN PRODUCTS:",
-        Array.isArray(data) ? data.filter((p) => p.isVisible === false) : data
-      );
 
       setProducts(Array.isArray(data) ? data : []);
     } catch (err) {

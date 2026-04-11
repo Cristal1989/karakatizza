@@ -67,7 +67,6 @@ export default function Home() {
     async function testRoute() {
       try {
         const km = await getRouteDistanceKm(46.975, 31.994);
-        console.log("TEST DISTANCE KM:", km);
       } catch (error) {
         console.error("TEST ROUTE ERROR:", error);
       }
@@ -144,7 +143,6 @@ export default function Home() {
   async function loadBanners() {
     try {
       const data = await getBanners();
-      console.log("HOME BANNERS:", data);
       setBanners(data);
     } catch (error) {
       console.error("Помилка завантаження банерів:", error);

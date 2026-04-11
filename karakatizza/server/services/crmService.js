@@ -127,6 +127,15 @@ export async function saveOrderToCrm(pool, orderData) {
     totalAmount: totalPrice,
   });
 
+  console.log("SAVE ORDER CUSTOMER RESULT", {
+    phone,
+    phoneNormalized,
+    customerId: customer?.id || null,
+    customerPhone: customer?.phone || null,
+    customerPhoneNormalized: customer?.phone_normalized || null,
+    customerTelegramUserId: customer?.telegram_user_id || null,
+  });
+
   let effectiveCustomer = customer;
 let effectiveTelegramBonusMeta = telegramBonusMeta || null;
 
@@ -140,12 +149,21 @@ const pendingLinkResult = await pool.query(
   [customer.phone_normalized || normalizeUaPhone(phone)]
 );
 
+console.log("SAVE ORDER PENDING LOOKUP", {
+  phoneNormalized: customer.phone_normalized || normalizeUaPhone(phone),
+  pendingRows: pendingLinkResult.rows,
+});
+
 const pendingLink = pendingLinkResult.rows[0] || null;
 
 if (
   pendingLink &&
   !effectiveCustomer.telegram_user_id
 ) {
+  console.log("SAVE ORDER APPLY PENDING START", {
+    customerId: effectiveCustomer?.id || null,
+    pendingLink,
+  });
   const linkedResult = await pool.query(
     `
       UPDATE customers
@@ -169,6 +187,13 @@ if (
 
   effectiveCustomer = linkedResult.rows[0] || effectiveCustomer;
 
+  console.log("SAVE ORDER APPLY PENDING LINKED CUSTOMER", {
+    customerId: effectiveCustomer?.id || null,
+    telegramUserId: effectiveCustomer?.telegram_user_id || null,
+    isTelegramSubscribed: effectiveCustomer?.is_telegram_subscribed,
+    isPhoneConfirmed: effectiveCustomer?.is_phone_confirmed,
+  });
+
   const issueResult = await issueTelegramGift(pool, {
     customerId: effectiveCustomer.id,
     phone: effectiveCustomer.phone,
@@ -176,6 +201,8 @@ if (
     giftRollTitle: "Подарунковий рол",
     comment: "Telegram welcome gift",
   });
+
+  console.log("SAVE ORDER ISSUE GIFT RESULT", issueResult);
 
   if (issueResult?.success && issueResult?.gift) {
     effectiveTelegramBonusMeta = {
@@ -196,6 +223,10 @@ if (
     `,
     [pendingLink.phone_normalized]
   );
+
+  console.log("SAVE ORDER PENDING DELETED", {
+    phoneNormalized: pendingLink.phone_normalized,
+  });
 }
 
   const phoneNormalized = normalizeUaPhone(phone);
@@ -257,6 +288,13 @@ if (
     ]
   );
 
+  console.log("SAVE ORDER FINAL RESULT", {
+    customerId: effectiveCustomer?.id || null,
+    orderId: result.rows[0]?.id || null,
+    telegramUserId: effectiveCustomer?.telegram_user_id || null,
+    telegramBonusMeta: effectiveTelegramBonusMeta || null,
+  });
+
   return {
     customer: effectiveCustomer,
     order: result.rows[0],
@@ -264,11 +302,8 @@ if (
 }
 
 export async function getActiveTelegramGiftByPhone(pool, phone) {
-  console.log("GET ACTIVE TG GIFT START", { phone });
 
   const phoneNormalized = normalizeUaPhone(phone);
-
-  console.log("GET ACTIVE TG GIFT NORMALIZED", { phoneNormalized });
 
   if (!phoneNormalized) {
     return null;
@@ -299,10 +334,6 @@ export async function getActiveTelegramGiftByPhone(pool, phone) {
     [phoneNormalized]
   );
 
-  console.log("GET ACTIVE TG GIFT RESULT", {
-    rows: result.rows,
-  });
-
   return result.rows[0] || null;
 }
 
@@ -316,6 +347,14 @@ export async function issueTelegramGift(
     comment = "",
   }
 ) {
+
+  console.log("ISSUE TG GIFT START", {
+    customerId,
+    phone,
+    giftRollId,
+    giftRollTitle,
+    comment,
+  });
 
   const phoneNormalized = normalizeUaPhone(phone);
 
@@ -352,6 +391,10 @@ export async function issueTelegramGift(
 
   const existingAnyGift = existingAnyGiftResult.rows[0] || null;
 
+  console.log("ISSUE TG GIFT EXISTING CHECK", {
+    existingAnyGift: existingAnyGiftResult.rows[0] || null,
+  });
+
   if (existingAnyGift) {
     return {
       success: true,
@@ -380,6 +423,14 @@ export async function issueTelegramGift(
   } else {
     availableAfterOrdersCount = currentOrdersCount;
   }
+
+  console.log("ISSUE TG GIFT INSERT PREPARE", {
+    customerId,
+    phoneNormalized,
+    currentOrdersCount,
+    availableAfterOrdersCount,
+    giftRollId,
+  });
 
 
   const insertResult = await pool.query(
@@ -438,7 +489,7 @@ export async function issueTelegramGift(
   );
 
   console.log("ISSUE TG GIFT INSERT RESULT", {
-    rows: insertResult.rows,
+    gift: insertResult.rows[0] || null,
   });
 
   return {
@@ -450,7 +501,6 @@ export async function issueTelegramGift(
 }
 
 export async function markTelegramGiftUsed(pool, giftId) {
-  console.log("MARK GIFT USED START", { giftId });
   const result = await pool.query(
     `
       UPDATE telegram_gifts
@@ -476,11 +526,6 @@ export async function markTelegramGiftUsed(pool, giftId) {
     `,
     [giftId]
   );
-  console.log("MARK GIFT USED RESULT", {
-    giftId,
-    rows: result.rows.length,
-    gift: result.rows[0] || null,
-  });
 
   return result.rows[0] || null;
 }
@@ -494,19 +539,10 @@ export async function linkTelegramToCustomerByPhone(
     telegramFirstName = "",
   }
 ) {
-  console.log("CRM LINK SERVICE START", {
-    phone,
-    telegramUserId,
-    telegramUsername,
-    telegramFirstName,
-  });
 
   const phoneNormalized = normalizeUaPhone(phone);
 
-  console.log("CRM LINK SERVICE NORMALIZED", {
-    phone,
-    phoneNormalized,
-  });
+  
 
   if (!phoneNormalized) {
     throw new Error("Некоректний номер телефону");
@@ -543,10 +579,15 @@ export async function linkTelegramToCustomerByPhone(
     [phoneNormalized]
   );
 
+  console.log("SERVICE LINK TG NORMALIZED", {
+    phoneNormalized,
+  });
+
   const customer = customerResult.rows[0] || null;
 
-  console.log("CRM LINK SERVICE CUSTOMER FOUND", {
+  console.log("SERVICE LINK TG CUSTOMER LOOKUP", {
     found: Boolean(customer),
+    customerId: customer?.id || null,
     customer,
   });
 
@@ -577,6 +618,10 @@ export async function linkTelegramToCustomerByPhone(
         telegramFirstName || "",
       ]
     );
+
+    console.log("SERVICE LINK TG SAVED PENDING", {
+      pendingLink: pendingResult.rows[0] || null,
+    });
   
     return {
       linked: false,
@@ -625,9 +670,11 @@ export async function linkTelegramToCustomerByPhone(
 
   const updatedCustomer = updatedResult.rows[0] || customer;
 
-  console.log("CRM LINK SERVICE UPDATED", {
-    rows: updatedResult.rows.length,
-    customer: updatedCustomer,
+  console.log("SERVICE LINK TG LINKED CUSTOMER", {
+    customerId: updatedCustomer?.id || null,
+    telegramUserId: updatedCustomer?.telegram_user_id || null,
+    isTelegramSubscribed: updatedCustomer?.is_telegram_subscribed,
+    isPhoneConfirmed: updatedCustomer?.is_phone_confirmed,
   });
 
   return {
@@ -725,11 +772,6 @@ export async function getTelegramCheckoutStatusByPhone(pool, phone) {
 
   const activeGift = await getActiveTelegramGiftByPhone(pool, phoneNormalized);
 
-  console.log("CHECKOUT STATUS ACTIVE GIFT RAW", {
-    phoneNormalized,
-    activeGift,
-  });
-
   const ordersCountResult = await pool.query(
     `
       SELECT COUNT(*)::int AS count
@@ -740,11 +782,6 @@ export async function getTelegramCheckoutStatusByPhone(pool, phone) {
   );
 
   const ordersCount = Number(ordersCountResult.rows[0]?.count || 0);
-
-  console.log("CHECKOUT STATUS ORDERS RAW", {
-    phoneNormalized,
-    ordersCount,
-  });
 
   const availableAfterOrdersCount = activeGift
     ? Number(activeGift.available_after_orders_count ?? 0)
@@ -760,16 +797,6 @@ export async function getTelegramCheckoutStatusByPhone(pool, phone) {
   const ordersLeftUntilGift = activeGift
     ? Math.max(0, Number(availableAfterOrdersCount || 0) - ordersCount)
     : null;
-
-  console.log("CHECKOUT STATUS DEBUG", {
-    phoneNormalized,
-    customerId: customer.id,
-    activeGiftId: activeGift?.id || null,
-    availableAfterOrdersCount,
-    ordersCount,
-    canUseGiftNow,
-    ordersLeftUntilGift,
-  });
 
   return {
     telegramLinked: Boolean(

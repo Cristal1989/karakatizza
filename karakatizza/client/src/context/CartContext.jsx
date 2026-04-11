@@ -101,7 +101,6 @@ export function CartProvider({ children }) {
       `${product.id}-${product.isGiftRoll ? "gift" : "normal"}`;
 
     setCartItems((prev) => {
-      console.log("ADD TO CART PRODUCT", product);
       if (product.category === "sets") {
         setSoySauceCount(
           (prevCount) => prevCount + (product.freeSoySauce || 0)

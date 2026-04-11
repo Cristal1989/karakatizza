@@ -237,19 +237,6 @@ export async function getTelegramCheckoutStatus(phone) {
     throw new Error(`Сервер повернув не JSON: ${text.slice(0, 120)}`);
   }
 
-  console.log("TG STATUS RAW DATA", data);
-  console.log("TG STATUS RETURN VALUE", {
-    success: Boolean(data?.success),
-    customer: data?.customer || null,
-    activeGift: data?.activeGift || null,
-    telegramLinked: Boolean(data?.telegramLinked),
-    phoneConfirmed: Boolean(data?.phoneConfirmed),
-    telegramSubscribed: Boolean(data?.telegramSubscribed),
-    ordersCount: Number(data?.ordersCount ?? 0),
-    canUseGiftNow: Boolean(data?.canUseGiftNow),
-    ordersLeftUntilGift: data?.ordersLeftUntilGift ?? null,
-  });
-
   if (!response.ok) {
     throw new Error(
       data?.message || "Не вдалося перевірити Telegram-бонус для цього номера"

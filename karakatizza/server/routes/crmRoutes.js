@@ -332,16 +332,12 @@ router.post("/telegram/link", async (req, res) => {
       telegramFirstName = "",
     } = req.body || {};
 
-    console.log("LINK TG TO CUSTOMER START", {
-      phone,
-      telegramUserId,
-      telegramUsername,
-      telegramFirstName,
+    console.log("ROUTE TELEGRAM LINK START", {
       body: req.body || null,
     });
 
+
     if (!phone) {
-      console.log("LINK TG TO CUSTOMER FAIL: no phone");
       return res.status(400).json({
         success: false,
         message: "Потрібен номер телефону",
@@ -349,7 +345,6 @@ router.post("/telegram/link", async (req, res) => {
     }
 
     if (!telegramUserId) {
-      console.log("LINK TG TO CUSTOMER FAIL: no telegramUserId");
       return res.status(400).json({
         success: false,
         message: "Потрібен telegramUserId",
@@ -363,7 +358,11 @@ router.post("/telegram/link", async (req, res) => {
       telegramFirstName,
     });
 
-    console.log("LINK TG TO CUSTOMER RESULT", result);
+    console.log("ROUTE TELEGRAM LINK SERVICE RESULT", result);
+
+    if (result?.reason === "pending_until_first_order") {
+      console.log("ROUTE TELEGRAM LINK RETURNING PENDING", result);
+    }
 
     if (!result.linked) {
       return res.status(404).json({
@@ -639,11 +638,6 @@ router.get("/telegram/customer/:telegramUserId", async (req, res) => {
       `,
       [String(telegramUserId)]
     );
-    console.log("CRM TELEGRAM CUSTOMER LOOKUP", {
-      telegramUserId,
-      found: Boolean(result.rows[0]),
-      customer: result.rows[0] || null,
-    });
 
     return res.json({
       success: true,
@@ -872,11 +866,7 @@ router.get("/telegram-checkout-status/:phone", async (req, res) => {
   try {
     const { phone } = req.params;
 
-    console.log("TG CHECKOUT STATUS ROUTE START", { phone });
-
     const status = await getTelegramCheckoutStatusByPhone(pool, phone);
-
-    console.log("TG CHECKOUT STATUS ROUTE RESULT", status);
 
     return res.json({
       success: true,

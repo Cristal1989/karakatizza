@@ -17,9 +17,7 @@ export default function AdminLogin() {
     setError("");
   
     try {
-      console.log("LOGIN URL =", `${API_BASE}/admin-auth/login`);
-  
-      const res = await fetch(`${API_BASE}/admin-auth/login`, {
+        const res = await fetch(`${API_BASE}/admin-auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -28,7 +26,6 @@ export default function AdminLogin() {
       });
   
       const text = await res.text();
-      console.log("LOGIN RAW RESPONSE =", text);
   
       let data;
       try {

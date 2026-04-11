@@ -20,7 +20,6 @@ async function migratePromotionSettings() {
       );
     `);
 
-    console.log("OK, таблица promotion_settings создана");
     process.exit(0);
   } catch (error) {
     console.error("Ошибка миграции promotion_settings:", error);
