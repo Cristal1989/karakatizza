@@ -762,9 +762,9 @@ const shouldShowTelegramGiftCard =
       try {
         const response = await getCheckoutDraft(draftToken);
         const draft = response?.draft;
-
+    
         if (!isMounted || !draft) return;
-
+    
         setForm((prev) => ({
           ...prev,
           name: draft.name ?? prev.name,
@@ -778,16 +778,28 @@ const shouldShowTelegramGiftCard =
               : prev.needExactTime,
           exactTime: draft.exactTime ?? prev.exactTime,
         }));
-
+    
         if (
           draft.checkoutMode === "pickup" ||
           draft.checkoutMode === "delivery"
         ) {
           setCheckoutMode(draft.checkoutMode);
         }
-
+    
+        if (Array.isArray(draft.items)) {
+          setCartItems(draft.items);
+        }
+    
+        if (typeof draft.regularSticksCount === "number") {
+          setRegularSticksCount(draft.regularSticksCount);
+        }
+    
+        if (typeof draft.trainingSticksCount === "number") {
+          setTrainingSticksCount(draft.trainingSticksCount);
+        }
+    
         await deleteCheckoutDraft(draftToken);
-
+    
         const nextParams = new URLSearchParams(searchParams);
         nextParams.delete("draft");
         nextParams.delete("tg");
@@ -886,6 +898,10 @@ const shouldShowTelegramGiftCard =
         checkoutMode,
         needExactTime: form.needExactTime === true,
         exactTime: form.exactTime,
+      
+        items: cartItems,
+        regularSticksCount,
+        trainingSticksCount,
       };
 
       try {
