@@ -236,7 +236,7 @@ if (
   const result = await pool.query(
     `
       INSERT INTO orders (
-        customer.id,
+        customer_id,
         phone,
         phone_normalized,
         name,
@@ -266,7 +266,7 @@ if (
       RETURNING *
     `,
     [
-      customer.id,
+      effectiveCustomer.id,
       phone,
       phoneNormalized,
       String(name || "").trim(),
@@ -285,7 +285,7 @@ if (
       Number(regularSticksCount || 0),
       Number(trainingSticksCount || 0),
       Number(sticksExtraPrice || 0),
-      JSON.stringify(telegramBonusMeta || null),
+      JSON.stringify(effectiveTelegramBonusMeta || null),
     ]
   );
 
