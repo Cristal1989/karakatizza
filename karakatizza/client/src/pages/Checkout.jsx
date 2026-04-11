@@ -148,6 +148,7 @@ export default function Checkout() {
     hasAnyPromoInCart,
     finalTotal,
     pickupDiscount,
+    setCartItems
   } = useCart();
 
   const [deliveryInfo, setDeliveryInfo] = useState(null);
