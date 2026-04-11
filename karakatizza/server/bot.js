@@ -858,60 +858,64 @@ export function startTelegramBot() {
       if (isLinked) {
         console.log("BOT /START BRANCH", "linked");
   
-        if (draftToken) {
-          await bot.sendMessage(
-            chatId,
-            `Привіт, ${telegramFirstName || "друже"}! 👋
-  
-  Telegram уже прив'язаний до твого профілю.
-  
-  Можеш повернутися до оформлення або скористатися меню нижче.`,
-            {
-              reply_markup: buildReturnInlineKeyboard(returnUrl),
-            }
-          );
-  
-          await bot.sendMessage(chatId, "Що далі?", {
-            reply_markup: buildMainKeyboard(true),
-          });
-  
-          return;
-        }
-  
         await bot.sendMessage(
           chatId,
           `Привіт, ${telegramFirstName || "друже"}! 👋
   
-  Telegram уже прив'язаний до твого профілю.
-  
-  Що хочеш зробити далі?`,
+  Telegram уже прив'язаний до твого профілю.`,
           {
-            reply_markup: buildMainKeyboard(true),
+            reply_markup: draftToken
+              ? buildReturnInlineKeyboard(returnUrl)
+              : buildMainKeyboard(true),
           }
         );
+  
+        if (draftToken) {
+          await bot.sendMessage(chatId, "Що далі?", {
+            reply_markup: buildMainKeyboard(true),
+          });
+        }
+  
+        return;
+      }
+  
+      const pendingLink = await getTelegramPendingLinkByTelegramUserId(pool, telegramUserId);
+  
+      console.log("BOT /START PENDING LINK", {
+        telegramUserId,
+        found: Boolean(pendingLink),
+        pendingLinkId: pendingLink?.id || null,
+        pendingPhone: pendingLink?.phone_normalized || null,
+      });
+  
+      if (pendingLink) {
+        console.log("BOT /START BRANCH", "pending");
+  
+        await bot.sendMessage(
+          chatId,
+          `Готово ✅
+  
+  Номер уже підтверджено.
+  Telegram буде автоматично прив'язаний після першого замовлення.
+  
+  🎁 Бонус за підписку буде нараховано після першого замовлення та стане доступним на наступному.`,
+          {
+            reply_markup: draftToken
+              ? buildReturnInlineKeyboard(returnUrl)
+              : buildMainKeyboard(false),
+          }
+        );
+  
+        if (draftToken) {
+          await bot.sendMessage(chatId, "Що далі?", {
+            reply_markup: buildMainKeyboard(false),
+          });
+        }
   
         return;
       }
   
       console.log("BOT /START BRANCH", "onboarding");
-  
-      if (draftToken) {
-        await bot.sendMessage(
-          chatId,
-          `Привіт, ${telegramFirstName || "друже"}! 👋
-  
-  Підтверди свій номер телефону, який ти вказував у замовленні в Karakatizza, і ми закріпимо за тобою Telegram-профіль.
-  
-  🎁 За перше підтвердження номера — одноразовий бонус до наступного замовлення.
-  
-  Натисни кнопку нижче:`,
-          {
-            reply_markup: buildReturnInlineKeyboard(returnUrl),
-          }
-        );
-  
-        return;
-      }
   
       await bot.sendMessage(
         chatId,
@@ -923,7 +927,9 @@ export function startTelegramBot() {
   
   Натисни кнопку нижче:`,
         {
-          reply_markup: buildMainKeyboard(false),
+          reply_markup: draftToken
+            ? buildReturnInlineKeyboard(returnUrl)
+            : buildMainKeyboard(false),
         }
       );
     } catch (error) {

@@ -1097,6 +1097,21 @@ export async function getTelegramBroadcastHistory(pool, limit = 20) {
   }));
 }
 
+export async function getTelegramPendingLinkByTelegramUserId(pool, telegramUserId) {
+  const result = await pool.query(
+    `
+      SELECT *
+      FROM telegram_pending_links
+      WHERE telegram_user_id = $1
+      ORDER BY id DESC
+      LIMIT 1
+    `,
+    [String(telegramUserId)]
+  );
+
+  return result.rows[0] || null;
+}
+
 function safeJsonParse(value, fallback) {
   try {
     return JSON.parse(value);
