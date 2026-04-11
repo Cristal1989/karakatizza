@@ -1,5 +1,6 @@
 import TelegramBot from "node-telegram-bot-api";
 import { getTelegramPendingLinkByTelegramUserId } from "./services/crmService.js";
+import { pool } from "./db.js";
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const API_BASE_URL =
@@ -818,16 +819,16 @@ export function startTelegramBot() {
     polling: true,
   });
 
-  bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
+  bot.onText(/^\/start(?:\s+(.+))?$/, async (msg, match) => {
     const chatId = msg.chat.id;
     const telegramUserId = msg.from?.id ? String(msg.from.id) : "";
     const telegramUsername = msg.from?.username || "";
     const telegramFirstName = msg.from?.first_name || "";
     const startParam = match?.[1] || "";
-
+  
     const draftToken = getDraftTokenFromStartParam(startParam);
     const returnUrl = buildCheckoutReturnUrl(draftToken);
-
+  
     console.log("BOT /START HIT", {
       text: msg.text,
       telegramUserId,
@@ -838,11 +839,11 @@ export function startTelegramBot() {
       returnUrl,
       ts: new Date().toISOString(),
     });
-
+  
     try {
       const customer = await getCustomerByTelegramUserId(telegramUserId);
       const isLinked = Boolean(customer?.telegram_user_id);
-
+  
       console.log("BOT /START CUSTOMER", {
         telegramUserId,
         customerId: customer?.id || null,
@@ -850,72 +851,58 @@ export function startTelegramBot() {
         customerTelegramUserId: customer?.telegram_user_id || null,
         phone: customer?.phone || null,
       });
-
+  
       if (isLinked) {
         console.log("BOT /START BRANCH", "linked");
-
+  
         await bot.sendMessage(
           chatId,
           `Привіт, ${telegramFirstName || "друже"}! 👋
   
-  Telegram уже прив'язаний до твого профілю.`,
+  Telegram уже прив'язаний до твого профілю.
+  
+  Що хочеш зробити далі?`,
           {
-            reply_markup: draftToken
-              ? buildReturnInlineKeyboard(returnUrl)
-              : buildMainKeyboard(true),
+            reply_markup: buildMainKeyboard(true),
           }
         );
-
-        if (draftToken) {
-          await bot.sendMessage(chatId, "Що далі?", {
-            reply_markup: buildMainKeyboard(true),
-          });
-        }
-
+  
         return;
       }
-
+  
       const pendingLink = await getTelegramPendingLinkByTelegramUserId(
         pool,
         telegramUserId
       );
-
+  
       console.log("BOT /START PENDING LINK", {
         telegramUserId,
         found: Boolean(pendingLink),
         pendingLinkId: pendingLink?.id || null,
         pendingPhone: pendingLink?.phone_normalized || null,
       });
-
+  
       if (pendingLink) {
         console.log("BOT /START BRANCH", "pending");
-
+  
         await bot.sendMessage(
           chatId,
           `Готово ✅
   
-  Номер уже підтверджено.
+  Номер вже підтверджено.
   Telegram буде автоматично прив'язаний після першого замовлення.
   
   🎁 Бонус за підписку буде нараховано після першого замовлення та стане доступним на наступному.`,
           {
-            reply_markup: draftToken
-              ? buildReturnInlineKeyboard(returnUrl)
-              : buildMainKeyboard(false),
+            reply_markup: buildMainKeyboard(false),
           }
         );
-
-        if (draftToken) {
-          await bot.sendMessage(chatId, "Що далі?", {
-            reply_markup: buildMainKeyboard(false),
-          });
-        }
-
+  
         return;
       }
-
+  
       console.log("BOT /START BRANCH", "onboarding");
-
+  
       await bot.sendMessage(
         chatId,
         `Привіт, ${telegramFirstName || "друже"}! 👋
@@ -939,7 +926,7 @@ export function startTelegramBot() {
         startParam,
         draftToken,
       });
-
+  
       await bot.sendMessage(
         chatId,
         "Сталася помилка. Спробуй ще раз трохи пізніше.",
