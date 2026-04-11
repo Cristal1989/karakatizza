@@ -1082,25 +1082,6 @@ router.post("/telegram/reset-test-user", requireAdminAuth, async (req, res) => {
 router.post("/checkout-drafts", async (req, res) => {
   try {
     const {
-      name = "",
-      phone = "",
-      address = "",
-      entrance = "",
-      comment = "",
-      checkoutMode = "delivery",
-      needExactTime = false,
-      exactTime = "",
-      items = [],
-      regularSticksCount = 0,
-      trainingSticksCount = 0,
-      soySauceCount = 0,
-      gingerCount = 0,
-      wasabiCount = 0,
-    } = req.body || {};
-
-    const token = crypto.randomUUID();
-
-    const draft = {
       name,
       phone,
       address,
@@ -1109,26 +1090,45 @@ router.post("/checkout-drafts", async (req, res) => {
       checkoutMode,
       needExactTime,
       exactTime,
-      items: Array.isArray(items) ? items : [],
-      regularSticksCount: Number(regularSticksCount || 0),
-      trainingSticksCount: Number(trainingSticksCount || 0),
-      soySauceCount: Number(soySauceCount || 0),
-      gingerCount: Number(gingerCount || 0),
-      wasabiCount: Number(wasabiCount || 0),
-    };
+      items = [],
+      regularSticksCount = 0,
+      trainingSticksCount = 0,
+      soySauceCount = 0,
+      gingerCount = 0,
+      wasabiCount = 0,
+      paymentMethod = "cash",
+    } = req.body || {};
 
-    await saveCheckoutDraft(token, draft);
+    const draft = await createCheckoutDraft(pool, {
+      name,
+      phone,
+      address,
+      entrance,
+      comment,
+      checkoutMode,
+      needExactTime: needExactTime === true,
+      exactTime,
+      items,
+      regularSticksCount,
+      trainingSticksCount,
+      soySauceCount,
+      gingerCount,
+      wasabiCount,
+      paymentMethod,
+    });
 
     return res.json({
       success: true,
-      token,
-      draft,
+      token: draft.token,
+      draft: draft.payload,
+      expiresAt: draft.expires_at,
     });
   } catch (error) {
     console.error("CREATE CHECKOUT DRAFT ERROR:", error);
     return res.status(500).json({
       success: false,
       message: "Не вдалося створити чернетку checkout",
+      error: error?.message || "Unknown error",
     });
   }
 });
