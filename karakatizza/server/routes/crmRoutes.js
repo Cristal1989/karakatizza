@@ -1082,6 +1082,25 @@ router.post("/telegram/reset-test-user", requireAdminAuth, async (req, res) => {
 router.post("/checkout-drafts", async (req, res) => {
   try {
     const {
+      name = "",
+      phone = "",
+      address = "",
+      entrance = "",
+      comment = "",
+      checkoutMode = "delivery",
+      needExactTime = false,
+      exactTime = "",
+      items = [],
+      regularSticksCount = 0,
+      trainingSticksCount = 0,
+      soySauceCount = 0,
+      gingerCount = 0,
+      wasabiCount = 0,
+    } = req.body || {};
+
+    const token = crypto.randomUUID();
+
+    const draft = {
       name,
       phone,
       address,
@@ -1090,37 +1109,26 @@ router.post("/checkout-drafts", async (req, res) => {
       checkoutMode,
       needExactTime,
       exactTime,
-      items = [],
-      regularSticksCount = 0,
-      trainingSticksCount = 0,
-    } = req.body || {};
+      items: Array.isArray(items) ? items : [],
+      regularSticksCount: Number(regularSticksCount || 0),
+      trainingSticksCount: Number(trainingSticksCount || 0),
+      soySauceCount: Number(soySauceCount || 0),
+      gingerCount: Number(gingerCount || 0),
+      wasabiCount: Number(wasabiCount || 0),
+    };
 
-    const draft = await createCheckoutDraft(pool, {
-      name,
-      phone,
-      address,
-      entrance,
-      comment,
-      checkoutMode,
-      needExactTime: needExactTime === true,
-      exactTime,
-      items,
-      regularSticksCount,
-      trainingSticksCount,
-    });
+    await saveCheckoutDraft(token, draft);
 
     return res.json({
       success: true,
-      token: draft.token,
-      draft: draft.payload,
-      expiresAt: draft.expires_at,
+      token,
+      draft,
     });
   } catch (error) {
     console.error("CREATE CHECKOUT DRAFT ERROR:", error);
     return res.status(500).json({
       success: false,
       message: "Не вдалося створити чернетку checkout",
-      error: error?.message || "Unknown error",
     });
   }
 });

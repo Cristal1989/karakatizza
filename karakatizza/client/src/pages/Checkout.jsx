@@ -148,7 +148,13 @@ export default function Checkout() {
     hasAnyPromoInCart,
     finalTotal,
     pickupDiscount,
-    setCartItems
+    setCartItems,
+    soySauceCount,
+    setSoySauceCount,
+    gingerCount,
+    setGingerCount,
+    wasabiCount,
+    setWasabiCount,
   } = useCart();
 
   const [deliveryInfo, setDeliveryInfo] = useState(null);
@@ -751,22 +757,22 @@ export default function Checkout() {
 
   useEffect(() => {
     const draftToken = searchParams.get("draft");
-
+  
     if (!draftToken) return;
-
+  
     let isMounted = true;
-
+  
     async function restoreDraftFromServer() {
       try {
         const response = await getCheckoutDraft(draftToken);
         const draft = response?.draft;
-
+  
         console.log("RESTORED DRAFT RESPONSE", response);
         console.log("RESTORED DRAFT", draft);
         console.log("RESTORED DRAFT ITEMS", draft?.items);
-
+  
         if (!isMounted || !draft) return;
-
+  
         setForm((prev) => ({
           ...prev,
           name: draft.name ?? prev.name,
@@ -780,28 +786,46 @@ export default function Checkout() {
               : prev.needExactTime,
           exactTime: draft.exactTime ?? prev.exactTime,
         }));
-
+  
         if (
           draft.checkoutMode === "pickup" ||
           draft.checkoutMode === "delivery"
         ) {
           setCheckoutMode(draft.checkoutMode);
         }
-
+  
         if (Array.isArray(draft.items)) {
           setCartItems(draft.items);
         }
-
+  
         if (typeof draft.regularSticksCount === "number") {
           setRegularSticksCount(draft.regularSticksCount);
         }
-
+  
         if (typeof draft.trainingSticksCount === "number") {
           setTrainingSticksCount(draft.trainingSticksCount);
         }
-
+  
+        if (typeof draft.soySauceCount === "number") {
+          setSoySauceCount(draft.soySauceCount);
+        }
+  
+        if (typeof draft.gingerCount === "number") {
+          setGingerCount(draft.gingerCount);
+        }
+  
+        if (typeof draft.wasabiCount === "number") {
+          setWasabiCount(draft.wasabiCount);
+        }
+  
+        try {
+          localStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify(draft));
+        } catch (error) {
+          console.error("CHECKOUT LOCAL DRAFT RESTORE ERROR:", error);
+        }
+  
         await deleteCheckoutDraft(draftToken);
-
+  
         const nextParams = new URLSearchParams(searchParams);
         nextParams.delete("draft");
         nextParams.delete("tg");
@@ -810,13 +834,23 @@ export default function Checkout() {
         console.error("RESTORE CHECKOUT DRAFT ERROR:", error);
       }
     }
-
+  
     restoreDraftFromServer();
-
+  
     return () => {
       isMounted = false;
     };
-  }, [searchParams, setSearchParams, setCheckoutMode]);
+  }, [
+    searchParams,
+    setSearchParams,
+    setCheckoutMode,
+    setCartItems,
+    setRegularSticksCount,
+    setTrainingSticksCount,
+    setSoySauceCount,
+    setGingerCount,
+    setWasabiCount,
+  ]);
 
   const handleNameChange = (e) => {
     const value = e.target.value;
@@ -901,9 +935,16 @@ export default function Checkout() {
         needExactTime: form.needExactTime === true,
         exactTime: form.exactTime,
 
-        items: cartItems,
-        regularSticksCount,
-        trainingSticksCount,
+        items: Array.isArray(cartItems) ? cartItems : [],
+
+        regularSticksCount:
+          typeof regularSticksCount === "number" ? regularSticksCount : 0,
+        trainingSticksCount:
+          typeof trainingSticksCount === "number" ? trainingSticksCount : 0,
+
+        soySauceCount: typeof soySauceCount === "number" ? soySauceCount : 0,
+        gingerCount: typeof gingerCount === "number" ? gingerCount : 0,
+        wasabiCount: typeof wasabiCount === "number" ? wasabiCount : 0,
       };
 
       try {
@@ -912,8 +953,6 @@ export default function Checkout() {
         console.error("CHECKOUT LOCAL DRAFT SAVE ERROR:", error);
       }
 
-      console.log("OPEN TG PAYLOAD", payload);
-      console.log("OPEN TG ITEMS", payload.items);
       const draftResponse = await createCheckoutDraft(payload);
       const token = draftResponse?.token;
 
