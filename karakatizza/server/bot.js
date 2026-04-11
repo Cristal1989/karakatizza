@@ -790,6 +790,10 @@ export function startTelegramBot() {
   }
 
   if (botInstance) {
+    console.log("TELEGRAM BOT REUSE", {
+      pid: process.pid,
+      ts: new Date().toISOString(),
+    });
     return botInstance;
   }
 
