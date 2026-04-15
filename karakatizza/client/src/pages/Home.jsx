@@ -433,11 +433,6 @@ export default function Home() {
               );
             })}
 
-            {/* {upsellProducts.length > 0 && (
-              <div style={{ marginTop: "40px" }}>
-                <UpsellSection products={upsellProducts} />
-              </div>
-            )} */}
             {showPopup && (
               <div
                 style={{

@@ -60,7 +60,7 @@ const phonePrimary = contacts?.phonePrimary || "";
           <a
             href="#menu"
             style={{
-              width: isMobile ? "56px" : "72px",
+              width: isMobile ? "62px" : "102px",
               height: isMobile ? "56px" : "72px",
               display: "inline-flex",
               textDecoration: "none",

@@ -818,16 +818,6 @@ export default function Checkout() {
     };
   }, [searchParams, setSearchParams, setCheckoutMode]);
 
-  const handleNameChange = (e) => {
-    const value = e.target.value;
-
-    if (value === "" || nameRegex.test(value)) {
-      setForm((prev) => ({
-        ...prev,
-        name: value,
-      }));
-    }
-  };
 
   const handlePhoneChange = (e) => {
     let value = e.target.value.replace(/[^\d+]/g, "");
@@ -911,9 +901,7 @@ export default function Checkout() {
       } catch (error) {
         console.error("CHECKOUT LOCAL DRAFT SAVE ERROR:", error);
       }
-
-      console.log("OPEN TG PAYLOAD", payload);
-      console.log("OPEN TG ITEMS", payload.items);
+      
       const draftResponse = await createCheckoutDraft(payload);
       const token = draftResponse?.token;
 

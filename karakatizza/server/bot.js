@@ -10,7 +10,6 @@ const TELEGRAM_SUPPORT_USERNAME = "@karakatizza_sushi";
 let botInstance = null;
 
 const pendingPhones = new Map();
-const pendingReturnUrls = new Map();
 const pendingReturnDrafts = new Map();
 
 function normalizePhone(phone = "") {

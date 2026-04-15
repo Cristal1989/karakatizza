@@ -35,11 +35,6 @@ if (process.env.ENABLE_TELEGRAM_BOT === "true") {
   console.log("Telegram bot disabled");
 }
 
-if (process.env.ENABLE_TELEGRAM_BOT === "true") {
-  startTelegramBot();
-} else {
-  console.log("Telegram bot disabled");
-}
 
 app.use(
   cors({
@@ -123,26 +118,8 @@ const upload = multer({ storage });
 
 app.use("/api/settings", siteSettingsRoutes);
 
-function readProducts() {
-  try {
-    const data = fs.readFileSync(productsFilePath, "utf-8");
-    return JSON.parse(data);
-  } catch (error) {
-    return [];
-  }
-}
-
-function writeProducts(products) {
-  fs.writeFileSync(
-    productsFilePath,
-    JSON.stringify(products, null, 2),
-    "utf-8"
-  );
-}
 
 const PORT = process.env.PORT || 5000;
-const BOT_TOKEN = process.env.BOT_TOKEN;
-const CHAT_ID = process.env.CHAT_ID;
 
 app.get("/products", async (req, res) => {
   try {
@@ -896,12 +873,6 @@ app.post("/order", async (req, res) => {
 
     let sticksText = "";
 
-    const calculatedTotal =
-      items.reduce((sum, item) => {
-        const paidQuantity = item.paidQuantity ?? item.quantity ?? 0;
-        return sum + item.price * paidQuantity;
-      }, 0) + (sticksExtraPrice ?? 0);
-
     if (!isValidUaPhone(phone)) {
       return res.status(400).json({
         message: "Вкажіть коректний номер телефону України",
@@ -938,7 +909,7 @@ app.post("/order", async (req, res) => {
     if (comment && comment.trim()) {
       message += `💬 Коментар: ${comment.trim()}\n`;
     }
-    message += `🧾 Замовлення:\n`;
+    message += `🧾 Замовлення:\n\n`;
 
     items.forEach((item) => {
       const paidQuantity = item.paidQuantity ?? item.quantity ?? 0;
