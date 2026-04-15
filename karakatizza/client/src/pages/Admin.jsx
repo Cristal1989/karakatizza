@@ -355,6 +355,8 @@ export default function Admin() {
     lineHeight: 1.5,
   };
 
+  const isMobile = window.matchMedia("(max-width: 768px)").matches;
+
   function handleLogout() {
     localStorage.removeItem("adminToken");
     window.location.href = "/admin-login";
