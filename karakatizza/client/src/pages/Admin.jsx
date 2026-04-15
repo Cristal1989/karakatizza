@@ -2033,7 +2033,7 @@ export default function Admin() {
                         checked={!!popular}
                         onChange={(e) => setPopular(e.target.checked)}
                       />
-                      Хіт продажу
+                      Гаряча пропозиція
                     </label>
 
                     <label
