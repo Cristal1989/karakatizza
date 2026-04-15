@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from "react";
 
 const categories = [
   { id: "rolls", label: "Роли", icon: "/svg/roll1.svg" },
-  { id: "maki", label: "Маки", icon: "/svg/maki.svg" },
   { id: "sets", label: "Сети", icon: "/svg/set2.svg" },
   { id: "sushi_burger", label: "Суші бургер", icon: "/svg/burger.svg" },
+  { id: "maki", label: "Маки", icon: "/svg/maki.svg" },
   { id: "sushi", label: "Суші", icon: "/svg/dabl_sushi.svg" },
   { id: "snacks", label: "Закуски", icon: "/svg/snack1.svg" },
   { id: "bowls", label: "Боули", icon: "/svg/boul.svg" },
