@@ -355,8 +355,6 @@ export default function Admin() {
     lineHeight: 1.5,
   };
 
-  const isMobile = window.matchMedia("(max-width: 768px)").matches;
-
   function handleLogout() {
     localStorage.removeItem("adminToken");
     window.location.href = "/admin-login";
@@ -2245,48 +2243,7 @@ export default function Admin() {
                     Список товарів
                   </h2>
 
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "8px",
-                      overflowX: "auto",
-                      overflowY: "hidden",
-                      WebkitOverflowScrolling: "touch",
-                      scrollbarWidth: "none",
-                      paddingBottom: "4px",
-                      paddingRight: "12px",
-                      marginBottom: "6px",
-                    }}
-                    >
-                      {[
-                        { key: "all", label: "Усі" },
-                        { key: "cold", label: "Холодні" },
-                        { key: "fried", label: "Смажені" },
-                        { key: "baked", label: "Запечені" },
-                        { key: "rice_free", label: "Без рису" },
-                      ].map((item) => (
-                        <button
-                          key={item.key}
-                          type="button"
-                          onClick={() => setRollFilter(item.key)}
-                          style={{
-                            border: "none",
-                            borderRadius: "999px",
-                            padding: isMobile ? "10px 14px" : "10px 16px",
-                            background:
-                              rollFilter === item.key ? "#e85d3f" : "#f1f1f1",
-                            color: rollFilter === item.key ? "#fff" : "#333",
-                            fontWeight: 700,
-                            fontSize: isMobile ? "14px" : "15px",
-                            cursor: "pointer",
-                            whiteSpace: "nowrap",
-                            flexShrink: 0,
-                          }}
-                        >
-                          {item.label}
-                        </button>
-                      ))}
-                    </div>
+                  
 
                   <div
                     style={{
