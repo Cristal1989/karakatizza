@@ -42,7 +42,7 @@ function getDraftTokenFromStartParam(startParam = "") {
 }
 
 function buildCheckoutReturnUrl(draftToken = "") {
-  const baseUrl = "https://karakatizza.pages.dev/checkout";
+  const baseUrl = "https://karakatizza.com/checkout";
 
   if (!draftToken) {
     return `${baseUrl}?tg=1`;
