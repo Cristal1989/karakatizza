@@ -50,6 +50,7 @@ function ProductCard({ product }) {
         borderRadius: "16px",
         overflow: "hidden",
         border: "1px solid #ececec",
+        boxShadow: "0 12px 32px rgba(0,0,0,0.06)",
         display: "flex",
         flexDirection: "column",
         height: "100%",

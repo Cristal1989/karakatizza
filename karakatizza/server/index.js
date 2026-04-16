@@ -1087,10 +1087,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const clientDistPath = path.join(__dirname, "../client/dist");
 
-// раздача статики
 app.use(express.static(clientDistPath));
 
-// fallback
 app.get("*", (req, res) => {
   res.sendFile(path.join(clientDistPath, "index.html"));
 });
