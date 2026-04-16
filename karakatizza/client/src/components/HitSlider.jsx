@@ -135,10 +135,10 @@ export default function HitSlider({ products = [] }) {
           <div
             style={{
               position: "absolute",
-              top: "10px",
-              left: "10px",
+              top: "8px",
+              left: "8px",
               display: "flex",
-              gap: "6px",
+              gap: "5px",
               zIndex: 3,
               flexWrap: "wrap",
             }}
@@ -148,9 +148,9 @@ export default function HitSlider({ products = [] }) {
                 style={{
                   background: "#f08a4b",
                   color: "#fff",
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  padding: "4px 8px",
+                  fontSize: "10px",
+                  fontWeight: 800,
+                  padding: "4px 7px",
                   borderRadius: "999px",
                   lineHeight: 1,
                 }}
@@ -164,9 +164,9 @@ export default function HitSlider({ products = [] }) {
                 style={{
                   background: "#1b8904",
                   color: "#fff",
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  padding: "4px 8px",
+                  fontSize: "10px",
+                  fontWeight: 800,
+                  padding: "4px 7px",
                   borderRadius: "999px",
                   lineHeight: 1,
                 }}
@@ -180,9 +180,9 @@ export default function HitSlider({ products = [] }) {
                 style={{
                   background: "#e85d3f",
                   color: "#fff",
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  padding: "4px 8px",
+                  fontSize: "10px",
+                  fontWeight: 800,
+                  padding: "4px 7px",
                   borderRadius: "999px",
                   lineHeight: 1,
                 }}
@@ -196,9 +196,9 @@ export default function HitSlider({ products = [] }) {
                 style={{
                   background: "#2563eb",
                   color: "#fff",
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  padding: "4px 8px",
+                  fontSize: "10px",
+                  fontWeight: 800,
+                  padding: "4px 7px",
                   borderRadius: "999px",
                   lineHeight: 1,
                 }}
@@ -410,6 +410,7 @@ export default function HitSlider({ products = [] }) {
                     cursor: "pointer",
                     whiteSpace: "nowrap",
                     flexShrink: 0,
+                    boxShadow: "0 12px 32px rgba(0,0,0,0.06)",
                   }}
                 >
                   В кошик
