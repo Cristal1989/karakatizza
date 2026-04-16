@@ -12,6 +12,9 @@ let botInstance = null;
 const pendingPhones = new Map();
 const pendingReturnDrafts = new Map();
 
+const PUBLIC_SITE_URL =
+  process.env.PUBLIC_SITE_URL || "https://www.karakatizza.com";
+
 function normalizePhone(phone = "") {
   const digits = String(phone).replace(/\D/g, "");
 
@@ -42,7 +45,7 @@ function getDraftTokenFromStartParam(startParam = "") {
 }
 
 function buildCheckoutReturnUrl(draftToken = "") {
-  const baseUrl = "https://karakatizza.com/checkout";
+  const baseUrl = `${PUBLIC_SITE_URL}/checkout`;
 
   if (!draftToken) {
     return `${baseUrl}?tg=1`;
