@@ -59,13 +59,13 @@ export default function HitSlider({ products = [] }) {
       style={{
         background: "#fff",
         borderRadius: "24px",
-        padding: isMobile ? "14px" : "16px",
+        padding: isMobile ? "14px 10px 4px 10px" : "16px 10px 10px 10px",
         boxShadow: "0 12px 32px rgba(0,0,0,0.06)",
         border: "1px solid #f0f0f0",
         display: "flex",
         flexDirection: "column",
         boxSizing: "border-box",
-        height: "420px",
+        height: isMobile ? "410px" : "420px"
       }}
     >
       {/* HEADER */}
