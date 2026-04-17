@@ -818,7 +818,6 @@ export default function Checkout() {
     };
   }, [searchParams, setSearchParams, setCheckoutMode]);
 
-
   const handlePhoneChange = (e) => {
     let value = e.target.value.replace(/[^\d+]/g, "");
 
@@ -901,7 +900,7 @@ export default function Checkout() {
       } catch (error) {
         console.error("CHECKOUT LOCAL DRAFT SAVE ERROR:", error);
       }
-      
+
       const draftResponse = await createCheckoutDraft(payload);
       const token = draftResponse?.token;
 
@@ -1627,139 +1626,141 @@ export default function Checkout() {
             </div>
           </div>
 
-          <div style={sectionCardStyle}>
-            <div style={sectionTitleStyle}>Оплата</div>
+          {checkoutMode === "delivery" && (
+            <div style={sectionCardStyle}>
+              <div style={sectionTitleStyle}>Оплата</div>
 
-            <div style={tabsWrapStyle}>
-              <button
-                type="button"
-                style={
-                  form.paymentMethod === "cash"
-                    ? activeTabStyle
-                    : inactiveTabStyle
-                }
-                onClick={() =>
-                  setForm((prev) => ({
-                    ...prev,
-                    paymentMethod: "cash",
-                  }))
-                }
-              >
-                Готівка
-              </button>
-
-              {cardOnlineEnabled && (
+              <div style={tabsWrapStyle}>
                 <button
                   type="button"
                   style={
-                    form.paymentMethod === "card"
+                    form.paymentMethod === "cash"
                       ? activeTabStyle
                       : inactiveTabStyle
                   }
                   onClick={() =>
                     setForm((prev) => ({
                       ...prev,
-                      paymentMethod: "card",
+                      paymentMethod: "cash",
                     }))
                   }
                 >
-                  Картка онлайн
+                  Готівка
                 </button>
-              )}
 
-              {bankTransferEnabled && (
-                <button
-                  type="button"
-                  style={
-                    form.paymentMethod === "bank_transfer"
-                      ? activeTabStyle
-                      : inactiveTabStyle
-                  }
-                  onClick={() =>
-                    setForm((prev) => ({
-                      ...prev,
-                      paymentMethod: "bank_transfer",
-                    }))
-                  }
-                >
-                  Переказ на карту
-                </button>
-              )}
-            </div>
-
-            {form.paymentMethod === "bank_transfer" && bankTransferEnabled && (
-              <div
-                style={{
-                  marginTop: "14px",
-                  background: "#fff7ed",
-                  border: "1px solid #fdba74",
-                  borderRadius: "16px",
-                  padding: "14px",
-                  display: "grid",
-                  gap: "10px",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "15px",
-                    fontWeight: 700,
-                    color: "#9a3412",
-                  }}
-                >
-                  Реквізити для переказу
-                </div>
-
-                {bankTransferCardNumber && (
-                  <div
-                    style={{
-                      fontSize: "14px",
-                      color: "#7c2d12",
-                      lineHeight: 1.45,
-                    }}
+                {cardOnlineEnabled && (
+                  <button
+                    type="button"
+                    style={
+                      form.paymentMethod === "card"
+                        ? activeTabStyle
+                        : inactiveTabStyle
+                    }
+                    onClick={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        paymentMethod: "card",
+                      }))
+                    }
                   >
-                    <strong>Картка:</strong> {bankTransferCardNumber}
-                  </div>
+                    Картка онлайн
+                  </button>
                 )}
 
-                {bankTransferRecipient && (
-                  <div
-                    style={{
-                      fontSize: "14px",
-                      color: "#7c2d12",
-                      lineHeight: 1.45,
-                    }}
+                {bankTransferEnabled && (
+                  <button
+                    type="button"
+                    style={
+                      form.paymentMethod === "bank_transfer"
+                        ? activeTabStyle
+                        : inactiveTabStyle
+                    }
+                    onClick={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        paymentMethod: "bank_transfer",
+                      }))
+                    }
                   >
-                    <strong>Отримувач:</strong> {bankTransferRecipient}
-                  </div>
-                )}
-
-                {bankTransferBankName && (
-                  <div
-                    style={{
-                      fontSize: "14px",
-                      color: "#7c2d12",
-                      lineHeight: 1.45,
-                    }}
-                  >
-                    <strong>Банк:</strong> {bankTransferBankName}
-                  </div>
-                )}
-
-                {bankTransferHint && (
-                  <div
-                    style={{
-                      fontSize: "14px",
-                      color: "#9a3412",
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    {bankTransferHint}
-                  </div>
+                    Переказ на карту
+                  </button>
                 )}
               </div>
-            )}
-          </div>
 
+              {form.paymentMethod === "bank_transfer" &&
+                bankTransferEnabled && (
+                  <div
+                    style={{
+                      marginTop: "14px",
+                      background: "#fff7ed",
+                      border: "1px solid #fdba74",
+                      borderRadius: "16px",
+                      padding: "14px",
+                      display: "grid",
+                      gap: "10px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: "15px",
+                        fontWeight: 700,
+                        color: "#9a3412",
+                      }}
+                    >
+                      Реквізити для переказу
+                    </div>
+
+                    {bankTransferCardNumber && (
+                      <div
+                        style={{
+                          fontSize: "14px",
+                          color: "#7c2d12",
+                          lineHeight: 1.45,
+                        }}
+                      >
+                        <strong>Картка:</strong> {bankTransferCardNumber}
+                      </div>
+                    )}
+
+                    {bankTransferRecipient && (
+                      <div
+                        style={{
+                          fontSize: "14px",
+                          color: "#7c2d12",
+                          lineHeight: 1.45,
+                        }}
+                      >
+                        <strong>Отримувач:</strong> {bankTransferRecipient}
+                      </div>
+                    )}
+
+                    {bankTransferBankName && (
+                      <div
+                        style={{
+                          fontSize: "14px",
+                          color: "#7c2d12",
+                          lineHeight: 1.45,
+                        }}
+                      >
+                        <strong>Банк:</strong> {bankTransferBankName}
+                      </div>
+                    )}
+
+                    {bankTransferHint && (
+                      <div
+                        style={{
+                          fontSize: "14px",
+                          color: "#9a3412",
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        {bankTransferHint}
+                      </div>
+                    )}
+                  </div>
+                )}
+            </div>
+          )}
           <div style={sectionCardStyle}>
             <label style={checkboxRowStyle}>
               <input
