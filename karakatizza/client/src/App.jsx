@@ -1,4 +1,5 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import Home from "./pages/Home";
 import Checkout from "./pages/Checkout";
 import Success from "./pages/Success";
@@ -13,8 +14,16 @@ import NotFound from "./pages/NotFound";
 import CategoryPage from "./pages/CategoryPage";
 import CustomersPage from "./pages/CustomersPage";
 import AdminLogin from "./pages/AdminLogin";
+import { trackEvent } from "./utils/analytics";
 
 export default function App() {
+
+  const location = useLocation();
+
+  useEffect(() => {
+    trackEvent("page_view");
+  }, [location.pathname, location.search]);
+  
   return (
     <Routes>
       <Route path="/" element={<Home />} />
