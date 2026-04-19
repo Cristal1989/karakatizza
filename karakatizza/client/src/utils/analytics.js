@@ -1,5 +1,6 @@
 const VISITOR_ID_KEY = "kara_visitor_id";
 const SESSION_ID_KEY = "kara_session_id";
+const TRAFFIC_SOURCE_KEY = "kara_traffic_source";
 const API_BASE = import.meta.env.VITE_API_URL || "https://karakatizza-production.up.railway.app";
 
 function generateId(prefix = "id") {
@@ -38,27 +39,62 @@ export function getSessionId() {
   }
 }
 
+function getStoredTrafficSource() {
+  try {
+    const raw = sessionStorage.getItem(TRAFFIC_SOURCE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (error) {
+    console.error("GET STORED TRAFFIC SOURCE ERROR:", error);
+    return null;
+  }
+}
+
+function saveTrafficSource(data) {
+  try {
+    sessionStorage.setItem(TRAFFIC_SOURCE_KEY, JSON.stringify(data));
+  } catch (error) {
+    console.error("SAVE TRAFFIC SOURCE ERROR:", error);
+  }
+}
+
 function getTrafficSource() {
   try {
     const url = new URL(window.location.href);
     const params = url.searchParams;
 
-    const utmSource = params.get("utm_source") || "";
-    const utmMedium = params.get("utm_medium") || "";
-    const utmCampaign = params.get("utm_campaign") || "";
-    const utmContent = params.get("utm_content") || "";
-    const utmTerm = params.get("utm_term") || "";
-    const gclid = params.get("gclid") || "";
-    const fbclid = params.get("fbclid") || "";
-    const referrer = document.referrer || "";
+    const currentTrafficSource = {
+      utmSource: params.get("utm_source") || "",
+      utmMedium: params.get("utm_medium") || "",
+      utmCampaign: params.get("utm_campaign") || "",
+      utmContent: params.get("utm_content") || "",
+      utmTerm: params.get("utm_term") || "",
+      gclid: params.get("gclid") || "",
+      fbclid: params.get("fbclid") || "",
+      referrer: document.referrer || "",
+    };
+
+    const storedTrafficSource = getStoredTrafficSource();
+
+    const hasNewAttribution =
+      currentTrafficSource.gclid ||
+      currentTrafficSource.fbclid ||
+      currentTrafficSource.utmSource ||
+      currentTrafficSource.utmMedium ||
+      currentTrafficSource.utmCampaign;
+
+    const traffic =
+      hasNewAttribution
+        ? currentTrafficSource
+        : storedTrafficSource || currentTrafficSource;
+
+    const utmSourceLower = String(traffic.utmSource || "").toLowerCase();
+    const utmMediumLower = String(traffic.utmMedium || "").toLowerCase();
+    const ref = String(traffic.referrer || "").toLowerCase();
 
     let source = "direct";
 
-    const ref = referrer.toLowerCase();
-    const utmSourceLower = utmSource.toLowerCase();
-    const utmMediumLower = utmMedium.toLowerCase();
-
-    if (gclid || utmSourceLower === "google" || utmMediumLower === "cpc") {
+    if (traffic.gclid || utmSourceLower === "google" || utmMediumLower === "cpc") {
       source = "google_ads";
     } else if (
       utmSourceLower === "instagram" ||
@@ -70,7 +106,7 @@ function getTrafficSource() {
     } else if (
       utmSourceLower === "facebook" ||
       utmSourceLower === "fb" ||
-      fbclid ||
+      traffic.fbclid ||
       ref.includes("facebook.com") ||
       ref.includes("m.facebook.com") ||
       ref.includes("l.facebook.com")
@@ -78,21 +114,25 @@ function getTrafficSource() {
       source = "facebook";
     } else if (utmSourceLower) {
       source = utmSourceLower;
-    } else if (ref) {
-      source = ref;
     }
 
-    return {
+    const result = {
       source,
-      utmSource,
-      utmMedium,
-      utmCampaign,
-      utmContent,
-      utmTerm,
-      gclid,
-      fbclid,
-      referrer,
+      utmSource: traffic.utmSource || "",
+      utmMedium: traffic.utmMedium || "",
+      utmCampaign: traffic.utmCampaign || "",
+      utmContent: traffic.utmContent || "",
+      utmTerm: traffic.utmTerm || "",
+      gclid: traffic.gclid || "",
+      fbclid: traffic.fbclid || "",
+      referrer: traffic.referrer || "",
     };
+
+    if (hasNewAttribution) {
+      saveTrafficSource(result);
+    }
+
+    return result;
   } catch (error) {
     console.error("GET TRAFFIC SOURCE ERROR:", error);
 
