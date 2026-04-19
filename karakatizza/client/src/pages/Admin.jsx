@@ -328,17 +328,7 @@ export default function Admin() {
       alert(error.message || "Не вдалося скинути тестові дані");
     }
   };
-
-  const handleMarkCurrentDeviceInternal = async () => {
-    try {
-      await markCurrentDeviceInternal("Admin device");
-      alert("Цей пристрій позначено як внутрішній");
-      loadAnalytics();
-    } catch (error) {
-      console.error("MARK INTERNAL DEVICE ERROR:", error);
-      alert(error.message || "Не вдалося позначити пристрій");
-    }
-  };
+  
 
   const inputStyle = {
     width: "100%",
@@ -5118,22 +5108,6 @@ export default function Admin() {
                         }}
                       >
                         Оновити
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={handleMarkCurrentDeviceInternal}
-                        style={{
-                          background: "#e74c3c",
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: "8px",
-                          padding: "8px 14px",
-                          cursor: "pointer",
-                          fontWeight: 700,
-                        }}
-                      >
-                        Це мій пристрій
                       </button>
 
                       <button
