@@ -16,9 +16,13 @@ export async function getAnalyticsSummary(range = "today") {
   return data.summary;
 }
 
-export async function getAnalyticsEvents(limit = 50, includeInternal = false) {
+export async function getAnalyticsEvents(
+  limit = 50,
+  includeInternal = false,
+  range = "today"
+) {
   const response = await fetch(
-    `${API_BASE}/api/crm/analytics/events?limit=${limit}&includeInternal=${includeInternal}`
+    `${API_BASE}/api/crm/analytics/events?limit=${limit}&includeInternal=${includeInternal}&range=${encodeURIComponent(range)}`
   );
 
   const data = await response.json();

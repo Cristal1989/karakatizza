@@ -1349,15 +1349,10 @@ router.get("/analytics/summary", async (req, res) => {
   try {
     const range = String(req.query.range || "today").trim();
 
-    let whereClause = "";
+    let whereClause = "1=1";
+
     if (range === "today") {
-      whereClause = `created_at >= date_trunc('day', now())`;
-    } else if (range === "24h") {
-      whereClause = `created_at >= now() - interval '24 hours'`;
-    } else if (range === "7d") {
-      whereClause = `created_at >= now() - interval '7 days'`;
-    } else {
-      whereClause = `created_at >= date_trunc('day', now())`;
+      whereClause = "created_at >= date_trunc('day', now())";
     }
 
     const summaryResult = await pool.query(
@@ -1414,27 +1409,35 @@ router.get("/analytics/events", async (req, res) => {
     const limit = Math.min(Number(req.query.limit || 50), 200);
     const includeInternal =
       String(req.query.includeInternal || "false") === "true";
+    const range = String(req.query.range || "today").trim();
+
+    let rangeClause = "1=1";
+
+    if (range === "today") {
+      rangeClause = "created_at >= date_trunc('day', now())";
+    }
 
     const result = await pool.query(
       `
-      SELECT
-        id,
-        visitor_id,
-        session_id,
-        event_name,
-        path,
-        page_url,
-        referrer,
-        device_type,
-        order_id,
-        metadata,
-        is_internal,
-        is_test,
-        created_at
-      FROM site_events
-      WHERE ($1::boolean = TRUE OR is_internal = FALSE)
-      ORDER BY created_at DESC
-      LIMIT $2
+        SELECT
+          id,
+          visitor_id,
+          session_id,
+          event_name,
+          path,
+          page_url,
+          referrer,
+          device_type,
+          order_id,
+          metadata,
+          is_internal,
+          is_test,
+          created_at
+        FROM site_events
+        WHERE (${rangeClause})
+          AND ($1::boolean = TRUE OR is_internal = FALSE)
+        ORDER BY created_at DESC
+        LIMIT $2
       `,
       [includeInternal, limit]
     );

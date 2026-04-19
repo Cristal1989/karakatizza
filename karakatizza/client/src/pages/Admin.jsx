@@ -287,6 +287,7 @@ export default function Admin() {
   const [analyticsEvents, setAnalyticsEvents] = useState([]);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [analyticsError, setAnalyticsError] = useState("");
+  const [analyticsRange, setAnalyticsRange] = useState("today");
 
   const selectedGiftProduct =
     products.find(
@@ -400,8 +401,8 @@ export default function Admin() {
       setAnalyticsError("");
 
       const [summary, events] = await Promise.all([
-        getAnalyticsSummary("today"),
-        getAnalyticsEvents(50, false),
+        getAnalyticsSummary(analyticsRange),
+        getAnalyticsEvents(50, false, analyticsRange),
       ]);
 
       setAnalyticsSummary(summary);
@@ -443,10 +444,8 @@ export default function Admin() {
   };
 
   useEffect(() => {
-    if (activeSection === "analytics") {
-      loadAnalytics();
-    }
-  }, [activeSection]);
+    loadAnalytics();
+  }, [analyticsRange]);
 
   useEffect(() => {
     loadProducts();
@@ -5060,6 +5059,40 @@ export default function Admin() {
                     </h2>
 
                     <div style={{ display: "flex", gap: "10px" }}>
+                      <button
+                        type="button"
+                        onClick={() => setAnalyticsRange("today")}
+                        style={{
+                          border: "none",
+                          borderRadius: "10px",
+                          padding: "10px 16px",
+                          cursor: "pointer",
+                          fontWeight: 700,
+                          background:
+                            analyticsRange === "today" ? "#ef4444" : "#f3f4f6",
+                          color:
+                            analyticsRange === "today" ? "#fff" : "#111827",
+                        }}
+                      >
+                        Сьогодні
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setAnalyticsRange("all")}
+                        style={{
+                          border: "none",
+                          borderRadius: "10px",
+                          padding: "10px 16px",
+                          cursor: "pointer",
+                          fontWeight: 700,
+                          background:
+                            analyticsRange === "all" ? "#ef4444" : "#f3f4f6",
+                          color: analyticsRange === "all" ? "#fff" : "#111827",
+                        }}
+                      >
+                        Усі дні
+                      </button>
                       <button
                         onClick={loadAnalytics}
                         style={{
