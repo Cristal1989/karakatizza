@@ -38,10 +38,84 @@ export function getSessionId() {
   }
 }
 
+function getTrafficSource() {
+  try {
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+
+    const utmSource = params.get("utm_source") || "";
+    const utmMedium = params.get("utm_medium") || "";
+    const utmCampaign = params.get("utm_campaign") || "";
+    const utmContent = params.get("utm_content") || "";
+    const utmTerm = params.get("utm_term") || "";
+    const gclid = params.get("gclid") || "";
+    const fbclid = params.get("fbclid") || "";
+    const referrer = document.referrer || "";
+
+    let source = "direct";
+
+    const ref = referrer.toLowerCase();
+    const utmSourceLower = utmSource.toLowerCase();
+    const utmMediumLower = utmMedium.toLowerCase();
+
+    if (gclid || utmSourceLower === "google" || utmMediumLower === "cpc") {
+      source = "google_ads";
+    } else if (
+      utmSourceLower === "instagram" ||
+      utmSourceLower === "ig" ||
+      ref.includes("instagram.com") ||
+      ref.includes("l.instagram.com")
+    ) {
+      source = "instagram";
+    } else if (
+      utmSourceLower === "facebook" ||
+      utmSourceLower === "fb" ||
+      fbclid ||
+      ref.includes("facebook.com") ||
+      ref.includes("m.facebook.com") ||
+      ref.includes("l.facebook.com")
+    ) {
+      source = "facebook";
+    } else if (utmSourceLower) {
+      source = utmSourceLower;
+    } else if (ref) {
+      source = ref;
+    }
+
+    return {
+      source,
+      utmSource,
+      utmMedium,
+      utmCampaign,
+      utmContent,
+      utmTerm,
+      gclid,
+      fbclid,
+      referrer,
+    };
+  } catch (error) {
+    console.error("GET TRAFFIC SOURCE ERROR:", error);
+
+    return {
+      source: "unknown",
+      utmSource: "",
+      utmMedium: "",
+      utmCampaign: "",
+      utmContent: "",
+      utmTerm: "",
+      gclid: "",
+      fbclid: "",
+      referrer: document.referrer || "",
+    };
+  }
+}
+
 export async function trackEvent(eventName, metadata = {}, extra = {}) {
   try {
     const visitorId = getVisitorId();
     const sessionId = getSessionId();
+
+    const trafficSource = getTrafficSource();
 
     const payload = {
       visitorId,
@@ -50,7 +124,10 @@ export async function trackEvent(eventName, metadata = {}, extra = {}) {
       path: window.location.pathname || "",
       pageUrl: window.location.href || "",
       referrer: document.referrer || "",
-      metadata,
+      metadata: {
+        ...trafficSource,
+        ...metadata,
+      },
       ...extra,
     };
 
