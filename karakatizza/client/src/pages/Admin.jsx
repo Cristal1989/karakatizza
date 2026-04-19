@@ -391,6 +391,26 @@ export default function Admin() {
     verticalAlign: "top",
   };
 
+  const tdSmallStyle = {
+    ...tdStyle,
+    fontSize: "12px",
+    whiteSpace: "nowrap",
+  };
+
+  const thSmallStyle = {
+    ...thStyle,
+    fontSize: "12px",
+    whiteSpace: "nowrap",
+  };
+
+  const tdPathStyle = {
+    ...tdStyle,
+    maxWidth: "260px",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  };
+
   function handleLogout() {
     localStorage.removeItem("adminToken");
     window.location.href = "/admin-login";
@@ -4993,6 +5013,7 @@ export default function Admin() {
                 borderRadius: "24px",
                 padding: "24px",
                 boxShadow: "0 15px 40px rgba(0,0,0,0.08)",
+                maxWidth: "100%",
               }}
             >
               <div style={{ marginBottom: "24px" }}>
@@ -5172,10 +5193,10 @@ export default function Admin() {
                           <th style={thStyle}>Подія</th>
                           <th style={thStyle}>Пристрій</th>
                           <th style={thStyle}>Сторінка</th>
-                          <th style={thStyle}>Source</th>
-                          <th style={thStyle}>Campaign</th>
-                          <th style={thStyle}>GCLID</th>
-                          <th style={thStyle}>Visitor</th>
+                          <th style={thSmallStyle}>Source</th>
+                          <th style={thSmallStyle}>Campaign</th>
+                          <th style={thSmallStyle}>GCLID</th>
+                          <th style={thSmallStyle}>Visitor</th>
                           <th style={thStyle}>Order ID</th>
                         </tr>
                       </thead>
@@ -5190,19 +5211,21 @@ export default function Admin() {
                             </td>
                             <td style={tdStyle}>{event.event_name}</td>
                             <td style={tdStyle}>{event.device_type || "-"}</td>
-                            <td style={tdStyle}>{event.path || "-"}</td>
-                            <td style={tdStyle}>
+                            <td style={tdPathStyle} title={event.path || "-"}>
+                              {event.path || "-"}
+                            </td>
+                            <td style={tdSmallStyle}>
                               {event.metadata?.source || "-"}
                             </td>
-                            <td style={tdStyle}>
+                            <td style={tdSmallStyle}>
                               {event.metadata?.utmCampaign || "-"}
                             </td>
-                            <td style={tdStyle}>
+                            <td style={tdSmallStyle}>
                               {event.metadata?.gclid
                                 ? `${event.metadata.gclid.slice(0, 12)}...`
                                 : "-"}
                             </td>
-                            <td style={tdStyle}>{event.visitor_id}</td>
+                            <td style={tdSmallStyle}>{event.visitor_id}</td>
                             <td style={tdStyle}>{event.order_id || "-"}</td>
                           </tr>
                         ))}
