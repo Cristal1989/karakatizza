@@ -5173,6 +5173,8 @@ export default function Admin() {
                           <th style={thStyle}>Пристрій</th>
                           <th style={thStyle}>Сторінка</th>
                           <th style={thStyle}>Source</th>
+                          <th style={thStyle}>Campaign</th>
+                          <th style={thStyle}>GCLID</th>
                           <th style={thStyle}>Visitor</th>
                           <th style={thStyle}>Order ID</th>
                         </tr>
@@ -5191,6 +5193,14 @@ export default function Admin() {
                             <td style={tdStyle}>{event.path || "-"}</td>
                             <td style={tdStyle}>
                               {event.metadata?.source || "-"}
+                            </td>
+                            <td style={tdStyle}>
+                              {event.metadata?.utmCampaign || "-"}
+                            </td>
+                            <td style={tdStyle}>
+                              {event.metadata?.gclid
+                                ? `${event.metadata.gclid.slice(0, 12)}...`
+                                : "-"}
                             </td>
                             <td style={tdStyle}>{event.visitor_id}</td>
                             <td style={tdStyle}>{event.order_id || "-"}</td>
