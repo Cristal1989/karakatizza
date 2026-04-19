@@ -328,7 +328,6 @@ export default function Admin() {
       alert(error.message || "Не вдалося скинути тестові дані");
     }
   };
-  
 
   const inputStyle = {
     width: "100%",
@@ -442,6 +441,22 @@ export default function Admin() {
     } catch (error) {
       console.error("CLEAR ANALYTICS FRONT ERROR:", error);
       alert(error.message || "Не вдалося очистити аналітику");
+    }
+  };
+
+  const handleMarkCurrentDeviceInternal = async () => {
+    try {
+      const label =
+        window.prompt("Назва для цього пристрою", "Мій ноутбук") ||
+        "Admin device";
+
+      await markCurrentDeviceInternal(label);
+
+      alert("Цей пристрій позначено як внутрішній");
+      loadAnalytics();
+    } catch (error) {
+      console.error("MARK INTERNAL DEVICE ERROR:", error);
+      alert(error.message || "Не вдалося позначити пристрій");
     }
   };
 
@@ -5108,6 +5123,22 @@ export default function Admin() {
                         }}
                       >
                         Оновити
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleMarkCurrentDeviceInternal}
+                        style={{
+                          background: "#e74c3c",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: "8px",
+                          padding: "8px 14px",
+                          cursor: "pointer",
+                          fontWeight: 700,
+                        }}
+                      >
+                        Це мій пристрій
                       </button>
 
                       <button
