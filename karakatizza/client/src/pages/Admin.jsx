@@ -39,6 +39,7 @@ import {
   useActiveTelegramBonus,
   resetTelegramTestUser,
 } from "../api/crmApi";
+import { getAnalyticsSummary, getAnalyticsEvents } from "../api/analyticsApi";
 
 const sidebarItems = [
   { key: "products", label: "Товари", icon: "🍣" },
@@ -50,6 +51,7 @@ const sidebarItems = [
     label: "Клієнти",
     icon: "👥",
   },
+  { key: "analytics", label: "Аналітика", icon: "📈" },
 ];
 
 const categoryOptions = [
@@ -270,6 +272,18 @@ export default function Admin() {
   const [testBonusLoading, setTestBonusLoading] = useState(false);
   const [testBonusStatus, setTestBonusStatus] = useState("");
 
+  const [analyticsSummary, setAnalyticsSummary] = useState({
+    uniqueVisitors: 0,
+    addToCartVisitors: 0,
+    checkoutVisitors: 0,
+    ordersCount: 0,
+    conversionRate: 0,
+  });
+
+  const [analyticsEvents, setAnalyticsEvents] = useState([]);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState("");
+
   const selectedGiftProduct =
     products.find(
       (p) => String(p.id) === String(giftRollSettings.giftProductId)
@@ -293,15 +307,15 @@ export default function Admin() {
         alert("Введи номер телефону");
         return;
       }
-  
+
       const confirmed = window.confirm(
         "Скинути Telegram-прив'язку і всі Telegram-бонуси для цього номера?"
       );
-  
+
       if (!confirmed) return;
-  
+
       const result = await resetTelegramTestUser(testBonusPhone.trim());
-  
+
       alert(result?.message || "Тестові дані скинуто");
     } catch (error) {
       console.error("RESET TELEGRAM TEST USER ERROR:", error);
@@ -315,22 +329,6 @@ export default function Admin() {
     borderRadius: 10,
     border: "1px solid #ddd",
     marginTop: 4,
-  };
-
-  const textareaStyle = {
-    width: "100%",
-    marginTop: 10,
-    padding: "10px",
-    borderRadius: 10,
-    border: "1px solid #ddd",
-    minHeight: 60,
-  };
-
-  const checkboxStyle = {
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 10,
   };
 
   const settingsCardStyle = {
@@ -355,10 +353,68 @@ export default function Admin() {
     lineHeight: 1.5,
   };
 
+  const analyticsCardStyle = {
+    background: "#f7f7fb",
+    borderRadius: "18px",
+    padding: "16px",
+    border: "1px solid #ececf3",
+  };
+
+  const analyticsCardLabelStyle = {
+    fontSize: "13px",
+    color: "#666",
+    marginBottom: "8px",
+  };
+
+  const analyticsCardValueStyle = {
+    fontSize: "28px",
+    fontWeight: 800,
+    color: "#111827",
+  };
+
+  const thStyle = {
+    textAlign: "left",
+    padding: "12px 10px",
+    fontSize: "13px",
+    color: "#666",
+  };
+
+  const tdStyle = {
+    padding: "12px 10px",
+    fontSize: "14px",
+    verticalAlign: "top",
+  };
+
   function handleLogout() {
     localStorage.removeItem("adminToken");
     window.location.href = "/admin-login";
   }
+
+  const loadAnalytics = async () => {
+    try {
+      setAnalyticsLoading(true);
+      setAnalyticsError("");
+
+      const [summary, events] = await Promise.all([
+        getAnalyticsSummary("today"),
+        getAnalyticsEvents(50, false),
+      ]);
+
+      setAnalyticsSummary(summary);
+      setAnalyticsEvents(events);
+    } catch (error) {
+      console.error("LOAD ANALYTICS ERROR:", error);
+      setAnalyticsError(error.message || "Не вдалося завантажити аналітику");
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeSection === "analytics") {
+      loadAnalytics();
+    }
+  }, [activeSection]);
 
   useEffect(() => {
     loadProducts();
@@ -2242,8 +2298,6 @@ export default function Admin() {
                   >
                     Список товарів
                   </h2>
-
-                  
 
                   <div
                     style={{
@@ -4883,6 +4937,139 @@ export default function Admin() {
             </div>
           )}
           {activeSection === "customers" && <CustomersPage />}
+
+          {activeSection === "analytics" && (
+            <div
+              style={{
+                background: "#fff",
+                borderRadius: "24px",
+                padding: "24px",
+                boxShadow: "0 15px 40px rgba(0,0,0,0.08)",
+              }}
+            >
+              <div style={{ marginBottom: "24px" }}>
+                <h1 style={{ margin: 0, fontSize: "24px", fontWeight: 800 }}>
+                  Аналітика
+                </h1>
+                <div style={{ marginTop: "8px", color: "#666" }}>
+                  Відвідування, корзина, checkout і замовлення
+                </div>
+              </div>
+
+              {analyticsLoading ? (
+                <div>Завантаження...</div>
+              ) : analyticsError ? (
+                <div>
+                  <div style={{ color: "red", marginBottom: "12px" }}>
+                    {analyticsError}
+                  </div>
+                  <button onClick={loadAnalytics}>Спробувати ще раз</button>
+                </div>
+              ) : (
+                <>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+                      gap: "12px",
+                      marginBottom: "24px",
+                    }}
+                  >
+                    <div style={analyticsCardStyle}>
+                      <div style={analyticsCardLabelStyle}>
+                        Унікальні відвідувачі
+                      </div>
+                      <div style={analyticsCardValueStyle}>
+                        {analyticsSummary.uniqueVisitors}
+                      </div>
+                    </div>
+
+                    <div style={analyticsCardStyle}>
+                      <div style={analyticsCardLabelStyle}>Додали в кошик</div>
+                      <div style={analyticsCardValueStyle}>
+                        {analyticsSummary.addToCartVisitors}
+                      </div>
+                    </div>
+
+                    <div style={analyticsCardStyle}>
+                      <div style={analyticsCardLabelStyle}>
+                        Почали оформлення
+                      </div>
+                      <div style={analyticsCardValueStyle}>
+                        {analyticsSummary.checkoutVisitors}
+                      </div>
+                    </div>
+
+                    <div style={analyticsCardStyle}>
+                      <div style={analyticsCardLabelStyle}>Замовлення</div>
+                      <div style={analyticsCardValueStyle}>
+                        {analyticsSummary.ordersCount}
+                      </div>
+                    </div>
+
+                    <div style={analyticsCardStyle}>
+                      <div style={analyticsCardLabelStyle}>Конверсія</div>
+                      <div style={analyticsCardValueStyle}>
+                        {analyticsSummary.conversionRate}%
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "16px",
+                    }}
+                  >
+                    <h2 style={{ margin: 0, fontSize: "20px" }}>
+                      Останні події
+                    </h2>
+                    <button onClick={loadAnalytics}>Оновити</button>
+                  </div>
+
+                  <div style={{ overflowX: "auto" }}>
+                    <table
+                      style={{
+                        width: "100%",
+                        borderCollapse: "collapse",
+                        background: "#fff",
+                      }}
+                    >
+                      <thead>
+                        <tr style={{ borderBottom: "1px solid #eee" }}>
+                          <th style={thStyle}>Час</th>
+                          <th style={thStyle}>Подія</th>
+                          <th style={thStyle}>Пристрій</th>
+                          <th style={thStyle}>Сторінка</th>
+                          <th style={thStyle}>Visitor</th>
+                          <th style={thStyle}>Order ID</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {analyticsEvents.map((event) => (
+                          <tr
+                            key={event.id}
+                            style={{ borderBottom: "1px solid #f1f1f1" }}
+                          >
+                            <td style={tdStyle}>
+                              {new Date(event.created_at).toLocaleString()}
+                            </td>
+                            <td style={tdStyle}>{event.event_name}</td>
+                            <td style={tdStyle}>{event.device_type || "-"}</td>
+                            <td style={tdStyle}>{event.path || "-"}</td>
+                            <td style={tdStyle}>{event.visitor_id}</td>
+                            <td style={tdStyle}>{event.order_id || "-"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </main>
       </div>
     </div>

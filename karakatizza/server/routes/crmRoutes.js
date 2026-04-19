@@ -1222,4 +1222,230 @@ router.get("/telegram/pending/:telegramUserId", async (req, res) => {
   }
 });
 
+router.post("/track", async (req, res) => {
+  try {
+    const {
+      visitorId,
+      sessionId,
+      eventName,
+      path = "",
+      pageUrl = "",
+      referrer = "",
+      orderId = null,
+      metadata = {},
+      isTest = false,
+    } = req.body || {};
+
+    if (!visitorId || !sessionId || !eventName) {
+      return res.status(400).json({
+        success: false,
+        message: "visitorId, sessionId і eventName обов'язкові",
+      });
+    }
+
+    const userAgent = req.get("user-agent") || "";
+    const ua = userAgent.toLowerCase();
+
+    let deviceType = "desktop";
+    if (/ipad|tablet/.test(ua)) {
+      deviceType = "tablet";
+    } else if (/mobi|android|iphone/.test(ua)) {
+      deviceType = "mobile";
+    }
+
+    const internalCheck = await pool.query(
+      `
+      SELECT 1
+      FROM internal_visitors
+      WHERE visitor_id = $1
+      LIMIT 1
+      `,
+      [visitorId]
+    );
+
+    const isInternal = internalCheck.rows.length > 0;
+
+    await pool.query(
+      `
+      INSERT INTO site_events (
+        visitor_id,
+        session_id,
+        event_name,
+        path,
+        page_url,
+        referrer,
+        user_agent,
+        device_type,
+        order_id,
+        metadata,
+        is_internal,
+        is_test
+      )
+      VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11, $12
+      )
+      `,
+      [
+        visitorId,
+        sessionId,
+        eventName,
+        path,
+        pageUrl,
+        referrer,
+        userAgent,
+        deviceType,
+        orderId,
+        JSON.stringify(metadata || {}),
+        isInternal,
+        isTest === true,
+      ]
+    );
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error("TRACK EVENT ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Не вдалося зберегти подію",
+    });
+  }
+});
+
+router.post("/track/mark-internal", async (req, res) => {
+  try {
+    const { visitorId, label = "" } = req.body || {};
+
+    if (!visitorId) {
+      return res.status(400).json({
+        success: false,
+        message: "visitorId обов'язковий",
+      });
+    }
+
+    await pool.query(
+      `
+      INSERT INTO internal_visitors (visitor_id, label)
+      VALUES ($1, $2)
+      ON CONFLICT (visitor_id)
+      DO UPDATE SET label = EXCLUDED.label
+      `,
+      [visitorId, label]
+    );
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error("MARK INTERNAL VISITOR ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Не вдалося позначити пристрій як внутрішній",
+    });
+  }
+});
+
+router.get("/analytics/summary", async (req, res) => {
+  try {
+    const range = String(req.query.range || "today").trim();
+
+    let whereClause = "";
+    if (range === "today") {
+      whereClause = `created_at >= date_trunc('day', now())`;
+    } else if (range === "24h") {
+      whereClause = `created_at >= now() - interval '24 hours'`;
+    } else if (range === "7d") {
+      whereClause = `created_at >= now() - interval '7 days'`;
+    } else {
+      whereClause = `created_at >= date_trunc('day', now())`;
+    }
+
+    const summaryResult = await pool.query(
+      `
+      SELECT
+        COUNT(DISTINCT visitor_id) FILTER (WHERE is_internal = FALSE) AS unique_visitors,
+        COUNT(DISTINCT visitor_id) FILTER (
+          WHERE event_name = 'add_to_cart' AND is_internal = FALSE
+        ) AS add_to_cart_visitors,
+        COUNT(DISTINCT visitor_id) FILTER (
+          WHERE event_name = 'checkout_view' AND is_internal = FALSE
+        ) AS checkout_visitors,
+        COUNT(*) FILTER (
+          WHERE event_name = 'order_created' AND is_internal = FALSE
+        ) AS orders_count
+      FROM site_events
+      WHERE ${whereClause}
+      `
+    );
+
+    const row = summaryResult.rows[0] || {};
+
+    const uniqueVisitors = Number(row.unique_visitors || 0);
+    const addToCartVisitors = Number(row.add_to_cart_visitors || 0);
+    const checkoutVisitors = Number(row.checkout_visitors || 0);
+    const ordersCount = Number(row.orders_count || 0);
+
+    const conversionRate =
+      uniqueVisitors > 0
+        ? Number(((ordersCount / uniqueVisitors) * 100).toFixed(2))
+        : 0;
+
+    return res.json({
+      success: true,
+      summary: {
+        uniqueVisitors,
+        addToCartVisitors,
+        checkoutVisitors,
+        ordersCount,
+        conversionRate,
+      },
+    });
+  } catch (error) {
+    console.error("ANALYTICS SUMMARY ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Не вдалося отримати зведення аналітики",
+    });
+  }
+});
+
+router.get("/analytics/events", async (req, res) => {
+  try {
+    const limit = Math.min(Number(req.query.limit || 50), 200);
+    const includeInternal = String(req.query.includeInternal || "false") === "true";
+
+    const result = await pool.query(
+      `
+      SELECT
+        id,
+        visitor_id,
+        session_id,
+        event_name,
+        path,
+        page_url,
+        referrer,
+        device_type,
+        order_id,
+        metadata,
+        is_internal,
+        is_test,
+        created_at
+      FROM site_events
+      WHERE ($1::boolean = TRUE OR is_internal = FALSE)
+      ORDER BY created_at DESC
+      LIMIT $2
+      `,
+      [includeInternal, limit]
+    );
+
+    return res.json({
+      success: true,
+      events: result.rows,
+    });
+  } catch (error) {
+    console.error("ANALYTICS EVENTS ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Не вдалося отримати події аналітики",
+    });
+  }
+});
+
 export default router;

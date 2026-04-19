@@ -832,4 +832,58 @@ await pool.query(`
   CREATE INDEX IF NOT EXISTS idx_telegram_pending_links_created_at
   ON telegram_pending_links(created_at DESC);
 `);
+
+await pool.query(`
+  CREATE TABLE IF NOT EXISTS site_events (
+    id BIGSERIAL PRIMARY KEY,
+    visitor_id TEXT NOT NULL,
+    session_id TEXT NOT NULL,
+    event_name TEXT NOT NULL,
+    path TEXT DEFAULT '',
+    page_url TEXT DEFAULT '',
+    referrer TEXT DEFAULT '',
+    user_agent TEXT DEFAULT '',
+    device_type TEXT DEFAULT 'desktop',
+    order_id BIGINT,
+    metadata JSONB DEFAULT '{}'::jsonb,
+    is_internal BOOLEAN DEFAULT FALSE,
+    is_test BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT NOW()
+  );
+`);
+
+await pool.query(`
+  CREATE TABLE IF NOT EXISTS internal_visitors (
+    id BIGSERIAL PRIMARY KEY,
+    visitor_id TEXT UNIQUE NOT NULL,
+    label TEXT DEFAULT '',
+    created_at TIMESTAMP DEFAULT NOW()
+  );
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_site_events_created_at
+  ON site_events(created_at DESC);
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_site_events_visitor_id
+  ON site_events(visitor_id);
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_site_events_session_id
+  ON site_events(session_id);
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_site_events_event_name
+  ON site_events(event_name);
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_site_events_is_internal
+  ON site_events(is_internal);
+`);
+
 }
