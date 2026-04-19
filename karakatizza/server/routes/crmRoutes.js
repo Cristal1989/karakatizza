@@ -1327,12 +1327,21 @@ router.post("/track/mark-internal", async (req, res) => {
 
     await pool.query(
       `
-      INSERT INTO internal_visitors (visitor_id, label)
-      VALUES ($1, $2)
-      ON CONFLICT (visitor_id)
-      DO UPDATE SET label = EXCLUDED.label
+        INSERT INTO internal_visitors (visitor_id, label)
+        VALUES ($1, $2)
+        ON CONFLICT (visitor_id)
+        DO UPDATE SET label = EXCLUDED.label
       `,
       [visitorId, label]
+    );
+
+    await pool.query(
+      `
+        UPDATE site_events
+        SET is_internal = TRUE
+        WHERE visitor_id = $1
+      `,
+      [visitorId]
     );
 
     return res.json({ success: true });

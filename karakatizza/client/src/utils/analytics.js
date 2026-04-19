@@ -70,7 +70,7 @@ export async function markCurrentDeviceInternal(label = "") {
   try {
     const visitorId = getVisitorId();
 
-    await fetch(`${API_BASE}/api/crm/track/mark-internal`, {
+    const response = await fetch(`${API_BASE}/api/crm/track/mark-internal`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -80,7 +80,16 @@ export async function markCurrentDeviceInternal(label = "") {
         label,
       }),
     });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || "Не вдалося позначити пристрій");
+    }
+
+    return data;
   } catch (error) {
     console.error("MARK INTERNAL DEVICE ERROR:", error);
+    throw error;
   }
 }
