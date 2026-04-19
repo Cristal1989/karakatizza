@@ -21,9 +21,35 @@ export default function App() {
   const location = useLocation();
 
   useEffect(() => {
+    const ignoredPrefixes = [
+      "/admin",
+      "/menu",
+      "/reviews",
+      "/api",
+    ];
+  
+    const ignoredExactPaths = [
+      "/user-agreement",
+      "/return-policy",
+      "/about",
+      "/delivery",
+      "/contacts",
+      "/promotions",
+    ];
+  
+    const pathname = location.pathname || "";
+  
+    if (ignoredPrefixes.some((prefix) => pathname.startsWith(prefix))) {
+      return;
+    }
+  
+    if (ignoredExactPaths.includes(pathname)) {
+      return;
+    }
+  
     trackEvent("page_view");
   }, [location.pathname, location.search]);
-  
+
   return (
     <Routes>
       <Route path="/" element={<Home />} />

@@ -27,3 +27,21 @@ export async function getAnalyticsEvents(limit = 50, includeInternal = false) {
 
   return data.events;
 }
+
+export async function clearAnalytics() {
+  const response = await fetch(`${API_BASE}/api/crm/analytics/clear`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  });
+
+  const data = await response.json();
+
+  if (!response.ok || !data.success) {
+    throw new Error(data.message || "Не вдалося очистити аналітику");
+  }
+
+  return data;
+}

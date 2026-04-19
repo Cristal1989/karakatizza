@@ -39,7 +39,11 @@ import {
   useActiveTelegramBonus,
   resetTelegramTestUser,
 } from "../api/crmApi";
-import { getAnalyticsSummary, getAnalyticsEvents } from "../api/analyticsApi";
+import {
+  getAnalyticsSummary,
+  getAnalyticsEvents,
+  clearAnalytics,
+} from "../api/analyticsApi";
 
 const sidebarItems = [
   { key: "products", label: "Товари", icon: "🍣" },
@@ -407,6 +411,34 @@ export default function Admin() {
       setAnalyticsError(error.message || "Не вдалося завантажити аналітику");
     } finally {
       setAnalyticsLoading(false);
+    }
+  };
+
+  const handleClearAnalytics = async () => {
+    const confirmed = window.confirm(
+      "Очистити всю аналітику? Будуть видалені всі події та внутрішні visitor-и."
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await clearAnalytics();
+
+      setAnalyticsSummary({
+        uniqueVisitors: 0,
+        addToCartVisitors: 0,
+        checkoutVisitors: 0,
+        ordersCount: 0,
+        conversionRate: 0,
+      });
+
+      setAnalyticsEvents([]);
+      setAnalyticsError("");
+
+      alert("Аналітику очищено");
+    } catch (error) {
+      console.error("CLEAR ANALYTICS FRONT ERROR:", error);
+      alert(error.message || "Не вдалося очистити аналітику");
     }
   };
 
@@ -5026,7 +5058,25 @@ export default function Admin() {
                     <h2 style={{ margin: 0, fontSize: "20px" }}>
                       Останні події
                     </h2>
-                    <button onClick={loadAnalytics}>Оновити</button>
+
+                    <div style={{ display: "flex", gap: "10px" }}>
+                      <button onClick={loadAnalytics}>Оновити</button>
+
+                      <button
+                        onClick={handleClearAnalytics}
+                        style={{
+                          background: "#e74c3c",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: "8px",
+                          padding: "8px 14px",
+                          cursor: "pointer",
+                          fontWeight: 700,
+                        }}
+                      >
+                        Очистити аналітику
+                      </button>
+                    </div>
                   </div>
 
                   <div style={{ overflowX: "auto" }}>

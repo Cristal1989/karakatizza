@@ -1448,4 +1448,23 @@ router.get("/analytics/events", async (req, res) => {
   }
 });
 
+router.post("/analytics/clear", async (req, res) => {
+  try {
+    await pool.query(`
+      TRUNCATE TABLE site_events, internal_visitors RESTART IDENTITY;
+    `);
+
+    return res.json({
+      success: true,
+      message: "Аналітику очищено",
+    });
+  } catch (error) {
+    console.error("ANALYTICS CLEAR ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Не вдалося очистити аналітику",
+    });
+  }
+});
+
 export default router;
