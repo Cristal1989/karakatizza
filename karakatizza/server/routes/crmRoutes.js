@@ -1448,7 +1448,7 @@ router.get("/analytics/events", async (req, res) => {
   }
 });
 
-router.post("/analytics/clear", async (req, res) => {
+router.post("/analytics/clear", requireAdminAuth, async (req, res) => {
   try {
     await pool.query(`
       TRUNCATE TABLE site_events, internal_visitors RESTART IDENTITY;
