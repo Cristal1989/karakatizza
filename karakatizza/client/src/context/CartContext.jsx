@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useSiteSettings } from "./SiteSettingsContext";
+import { trackEvent } from "../utils/analytics";
 
 const CartContext = createContext();
 
@@ -186,6 +187,15 @@ export function CartProvider({ children }) {
           cartKey: productKey,
         },
       ];
+    });
+
+    trackEvent("add_to_cart", {
+      productId: product.id,
+      productName: product.name || "",
+      category: product.category || "",
+      price: Number(product.price) || 0,
+      quantity: Number(quantity) || 1,
+      isGiftRoll: product.isGiftRoll === true,
     });
   };
 

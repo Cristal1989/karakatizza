@@ -5060,7 +5060,20 @@ export default function Admin() {
                     </h2>
 
                     <div style={{ display: "flex", gap: "10px" }}>
-                      <button onClick={loadAnalytics}>Оновити</button>
+                      <button
+                        onClick={loadAnalytics}
+                        style={{
+                          background: "#e74c3c",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: "8px",
+                          padding: "8px 14px",
+                          cursor: "pointer",
+                          fontWeight: 700,
+                        }}
+                      >
+                        Оновити
+                      </button>
 
                       <button
                         onClick={handleClearAnalytics}

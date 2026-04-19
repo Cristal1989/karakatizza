@@ -13,6 +13,7 @@ import {
   getCheckoutDraft,
   deleteCheckoutDraft,
 } from "../api/crmApi";
+import { trackEvent } from "../utils/analytics";
 
 export default function Checkout() {
   const { siteSettings } = useSiteSettings();
@@ -133,6 +134,15 @@ export default function Checkout() {
     url.searchParams.delete("tg");
     window.history.replaceState({}, "", url.toString());
   }, [isTelegramReturnFromUrl]);
+
+  useEffect(() => {
+    const key = "analytics_checkout_view_sent";
+
+    if (sessionStorage.getItem(key) === "1") return;
+
+    trackEvent("checkout_view");
+    sessionStorage.setItem(key, "1");
+  }, []);
 
   const { cartItems, clearCart, totalPrice } = useCart();
   const {
@@ -1057,6 +1067,10 @@ export default function Checkout() {
       };
 
       await createOrder(orderData);
+
+      await trackEvent("order_created");
+
+      sessionStorage.removeItem("analytics_checkout_view_sent");
 
       clearCart();
       localStorage.removeItem(CHECKOUT_DRAFT_KEY);

@@ -1247,10 +1247,13 @@ router.post("/track", async (req, res) => {
     const ua = userAgent.toLowerCase();
 
     let deviceType = "desktop";
+
     if (/ipad|tablet/.test(ua)) {
       deviceType = "tablet";
-    } else if (/mobi|android|iphone/.test(ua)) {
+    } else if (/iphone|ipod|android.*mobile|windows phone|mobile/.test(ua)) {
       deviceType = "mobile";
+    } else if (/android/.test(ua)) {
+      deviceType = "tablet";
     }
 
     const internalCheck = await pool.query(
@@ -1409,7 +1412,8 @@ router.get("/analytics/summary", async (req, res) => {
 router.get("/analytics/events", async (req, res) => {
   try {
     const limit = Math.min(Number(req.query.limit || 50), 200);
-    const includeInternal = String(req.query.includeInternal || "false") === "true";
+    const includeInternal =
+      String(req.query.includeInternal || "false") === "true";
 
     const result = await pool.query(
       `
