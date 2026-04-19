@@ -444,21 +444,7 @@ export default function Admin() {
     }
   };
 
-  const handleMarkCurrentDeviceInternal = async () => {
-    try {
-      const label =
-        window.prompt("Назва для цього пристрою", "Мій ноутбук") ||
-        "Admin device";
-
-      await markCurrentDeviceInternal(label);
-
-      alert("Цей пристрій позначено як внутрішній");
-      loadAnalytics();
-    } catch (error) {
-      console.error("MARK INTERNAL DEVICE ERROR:", error);
-      alert(error.message || "Не вдалося позначити пристрій");
-    }
-  };
+  
 
   useEffect(() => {
     loadAnalytics();
@@ -1720,6 +1706,22 @@ export default function Admin() {
     } catch (error) {
       console.error(error);
       setMessage(`❌ ${error.message}`);
+    }
+  };
+
+  const handleMarkCurrentDeviceInternal = async () => {
+    try {
+      const label =
+        window.prompt("Назва для цього пристрою", "Мій ноутбук") ||
+        "Admin device";
+
+      await markCurrentDeviceInternal(label);
+
+      alert("Цей пристрій позначено як внутрішній");
+      loadAnalytics();
+    } catch (error) {
+      console.error("MARK INTERNAL DEVICE ERROR:", error);
+      alert(error.message || "Не вдалося позначити пристрій");
     }
   };
 
