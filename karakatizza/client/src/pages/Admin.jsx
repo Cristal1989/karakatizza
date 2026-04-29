@@ -40,8 +40,11 @@ import {
   resetTelegramTestUser,
 } from "../api/crmApi";
 import {
-  getAnalyticsSummary,
+  getAnalyticsFunnel,
   getAnalyticsEvents,
+  getAnalyticsReportSources,
+  getAnalyticsReportCampaigns,
+  getAnalyticsReportLandingPages,
   clearAnalytics,
 } from "../api/analyticsApi";
 import { markCurrentDeviceInternal } from "../utils/analytics";
@@ -277,15 +280,26 @@ export default function Admin() {
   const [testBonusLoading, setTestBonusLoading] = useState(false);
   const [testBonusStatus, setTestBonusStatus] = useState("");
 
-  const [analyticsSummary, setAnalyticsSummary] = useState({
-    uniqueVisitors: 0,
-    addToCartVisitors: 0,
-    checkoutVisitors: 0,
-    ordersCount: 0,
-    conversionRate: 0,
+  const [analyticsFunnel, setAnalyticsFunnel] = useState({
+    visits: 0,
+    product_view: 0,
+    add_to_cart: 0,
+    checkout_view: 0,
+    order_created: 0,
+    cr: 0,
   });
 
-  const [analyticsEvents, setAnalyticsEvents] = useState([]);
+  const [analyticsEventsData, setAnalyticsEventsData] = useState({
+    events: [],
+    groups: [],
+    group_by: "none",
+  });
+
+  const [analyticsSourcesReport, setAnalyticsSourcesReport] = useState([]);
+  const [analyticsCampaignsReport, setAnalyticsCampaignsReport] = useState([]);
+  const [analyticsLandingPagesReport, setAnalyticsLandingPagesReport] =
+    useState([]);
+
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [analyticsError, setAnalyticsError] = useState("");
   const [analyticsRange, setAnalyticsRange] = useState("today");
@@ -427,30 +441,170 @@ export default function Admin() {
     textOverflow: "ellipsis",
   };
 
+  const smallActionButtonStyle = {
+  border: "none",
+  borderRadius: "10px",
+  padding: "10px 14px",
+  cursor: "pointer",
+  fontWeight: 600,
+};
+
+const checkboxRowStyle = {
+  display: "flex",
+  alignItems: "center",
+  gap: "8px",
+  fontSize: "14px",
+  color: "#333",
+};
+
+const analyticsCardStyle = {
+  background: "#fff",
+  borderRadius: "16px",
+  padding: "16px",
+  border: "1px solid #ececec",
+};
+
+const analyticsCardLabelStyle = {
+  fontSize: "13px",
+  color: "#777",
+  marginBottom: "8px",
+};
+
+const analyticsCardValueStyle = {
+  fontSize: "28px",
+  fontWeight: 700,
+  color: "#222",
+};
+
+const analyticsTableStyle = {
+  width: "100%",
+  borderCollapse: "collapse",
+  minWidth: "1200px",
+};
+
+const thStyle = {
+  textAlign: "left",
+  padding: "12px 10px",
+  fontSize: "13px",
+  color: "#666",
+  borderBottom: "1px solid #ececec",
+  background: "#fafafa",
+  whiteSpace: "nowrap",
+};
+
+const tdStyle = {
+  padding: "12px 10px",
+  fontSize: "14px",
+  color: "#222",
+  verticalAlign: "top",
+};
+
+const tdSmallStyle = {
+  padding: "12px 10px",
+  fontSize: "12px",
+  color: "#444",
+  verticalAlign: "top",
+  maxWidth: "150px",
+  wordBreak: "break-word",
+};
+
+const tdPathStyle = {
+  padding: "12px 10px",
+  fontSize: "13px",
+  color: "#222",
+  verticalAlign: "top",
+  maxWidth: "220px",
+  wordBreak: "break-word",
+};
+
+const subSectionTitleStyle = {
+  fontSize: "20px",
+  fontWeight: 700,
+  marginBottom: "12px",
+  color: "#222",
+};
+
   function handleLogout() {
     localStorage.removeItem("adminToken");
     window.location.href = "/admin-login";
   }
 
-  const loadAnalytics = async () => {
-    try {
-      setAnalyticsLoading(true);
-      setAnalyticsError("");
+  function buildAnalyticsRangeFilters(range) {
+    if (range === "today") {
+      const now = new Date();
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
 
-      const [summary, events] = await Promise.all([
-        getAnalyticsSummary(analyticsRange),
-        getAnalyticsEvents(50, false, analyticsRange),
-      ]);
-
-      setAnalyticsSummary(summary);
-      setAnalyticsEvents(events);
-    } catch (error) {
-      console.error("LOAD ANALYTICS ERROR:", error);
-      setAnalyticsError(error.message || "Не вдалося завантажити аналітику");
-    } finally {
-      setAnalyticsLoading(false);
+      return {
+        date_from: start.toISOString(),
+        date_to: now.toISOString(),
+      };
     }
-  };
+
+    return {};
+  }
+
+  const loadAnalytics = async () => {
+  try {
+    setAnalyticsLoading(true);
+    setAnalyticsError("");
+
+    const rangeFilters =
+      analyticsRange === "today"
+        ? {
+            date_from: new Date(new Date().setHours(0, 0, 0, 0)).toISOString(),
+            date_to: new Date().toISOString(),
+          }
+        : {};
+
+    const baseFilters = {
+      ...rangeFilters,
+      ...filters,
+    };
+
+    const [
+      funnel,
+      eventsData,
+      sourcesReport,
+      campaignsReport,
+      landingPagesReport,
+    ] = await Promise.all([
+      getAnalyticsFunnel(baseFilters),
+      getAnalyticsEvents(baseFilters),
+      getAnalyticsReportSources(baseFilters),
+      getAnalyticsReportCampaigns(baseFilters),
+      getAnalyticsReportLandingPages(baseFilters),
+    ]);
+
+    setAnalyticsFunnel(
+      funnel || {
+        visits: 0,
+        product_view: 0,
+        add_to_cart: 0,
+        checkout_view: 0,
+        order_created: 0,
+        cr: 0,
+      }
+    );
+
+    setAnalyticsEventsData(
+      eventsData || {
+        events: [],
+        groups: [],
+        group_by: "none",
+      }
+    );
+
+    setAnalyticsSourcesReport(sourcesReport || []);
+    setAnalyticsCampaignsReport(campaignsReport || []);
+    setAnalyticsLandingPagesReport(landingPagesReport || []);
+  } catch (error) {
+    console.error("LOAD ANALYTICS ERROR:", error);
+    setAnalyticsError(error.message || "Не вдалося завантажити аналітику");
+  } finally {
+    setAnalyticsLoading(false);
+  }
+};
 
   const handleClearAnalytics = async () => {
     const confirmed = window.confirm(
@@ -462,15 +616,24 @@ export default function Admin() {
     try {
       await clearAnalytics();
 
-      setAnalyticsSummary({
-        uniqueVisitors: 0,
-        addToCartVisitors: 0,
-        checkoutVisitors: 0,
-        ordersCount: 0,
-        conversionRate: 0,
+      setAnalyticsFunnel({
+        visits: 0,
+        product_view: 0,
+        add_to_cart: 0,
+        checkout_view: 0,
+        order_created: 0,
+        cr: 0,
       });
 
-      setAnalyticsEvents([]);
+      setAnalyticsEventsData({
+        events: [],
+        groups: [],
+        group_by: "none",
+      });
+
+      setAnalyticsSourcesReport([]);
+      setAnalyticsCampaignsReport([]);
+      setAnalyticsLandingPagesReport([]);
       setAnalyticsError("");
 
       alert("Аналітику очищено");
@@ -479,6 +642,20 @@ export default function Admin() {
       alert(error.message || "Не вдалося очистити аналітику");
     }
   };
+
+  const updateAnalyticsFilter = (key, value) => {
+  setFilters((prev) => ({
+    ...prev,
+    [key]: value,
+  }));
+};
+
+const toggleAnalyticsCheckbox = (key) => {
+  setFilters((prev) => ({
+    ...prev,
+    [key]: !prev[key],
+  }));
+};
 
   useEffect(() => {
     loadAnalytics();
@@ -5023,235 +5200,490 @@ export default function Admin() {
           {activeSection === "customers" && <CustomersPage />}
 
           {activeSection === "analytics" && (
+  <div style={sectionCardStyle}>
+    <h2 style={sectionTitleStyle}>Аналітика</h2>
+    <p style={sectionSubtitleStyle}>
+      Відвідування, перегляди товарів, кошик, checkout і замовлення
+    </p>
+
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: "10px",
+        alignItems: "center",
+        marginBottom: "20px",
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => setAnalyticsRange("today")}
+        style={{
+          ...smallActionButtonStyle,
+          background: analyticsRange === "today" ? "#e85b3a" : "#f3f4f6",
+          color: analyticsRange === "today" ? "#fff" : "#222",
+        }}
+      >
+        Сьогодні
+      </button>
+
+      <button
+        type="button"
+        onClick={() => setAnalyticsRange("all")}
+        style={{
+          ...smallActionButtonStyle,
+          background: analyticsRange === "all" ? "#e85b3a" : "#f3f4f6",
+          color: analyticsRange === "all" ? "#fff" : "#222",
+        }}
+      >
+        Усі дні
+      </button>
+
+      <button
+        type="button"
+        onClick={loadAnalytics}
+        style={smallActionButtonStyle}
+      >
+        Оновити
+      </button>
+
+      <button
+        type="button"
+        onClick={handleClearAnalytics}
+        style={{
+          ...smallActionButtonStyle,
+          background: "#fff1f0",
+          color: "#c0392b",
+          border: "1px solid #f1b5ae",
+        }}
+      >
+        Очистити аналітику
+      </button>
+    </div>
+
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+        gap: "12px",
+        marginBottom: "20px",
+      }}
+    >
+      <input
+        type="datetime-local"
+        value={filters.date_from}
+        onChange={(e) => updateAnalyticsFilter("date_from", e.target.value)}
+        style={inputStyle}
+      />
+
+      <input
+        type="datetime-local"
+        value={filters.date_to}
+        onChange={(e) => updateAnalyticsFilter("date_to", e.target.value)}
+        style={inputStyle}
+      />
+
+      <input
+        type="text"
+        placeholder="Source"
+        value={filters.source}
+        onChange={(e) => updateAnalyticsFilter("source", e.target.value)}
+        style={inputStyle}
+      />
+
+      <input
+        type="text"
+        placeholder="Campaign"
+        value={filters.campaign}
+        onChange={(e) => updateAnalyticsFilter("campaign", e.target.value)}
+        style={inputStyle}
+      />
+
+      <select
+        value={filters.device}
+        onChange={(e) => updateAnalyticsFilter("device", e.target.value)}
+        style={inputStyle}
+      >
+        <option value="">Усі пристрої</option>
+        <option value="desktop">Desktop</option>
+        <option value="mobile">Mobile</option>
+        <option value="tablet">Tablet</option>
+      </select>
+
+      <select
+        value={filters.event_type}
+        onChange={(e) => updateAnalyticsFilter("event_type", e.target.value)}
+        style={inputStyle}
+      >
+        <option value="">Усі події</option>
+        <option value="page_view">page_view</option>
+        <option value="product_view">product_view</option>
+        <option value="add_to_cart">add_to_cart</option>
+        <option value="checkout_view">checkout_view</option>
+        <option value="order_created">order_created</option>
+      </select>
+
+      <select
+        value={filters.group_by}
+        onChange={(e) => updateAnalyticsFilter("group_by", e.target.value)}
+        style={inputStyle}
+      >
+        <option value="none">Без групування</option>
+        <option value="visitor">По visitor</option>
+        <option value="session">По session</option>
+      </select>
+
+      <input
+        type="number"
+        min="1"
+        max="500"
+        value={filters.limit}
+        onChange={(e) =>
+          updateAnalyticsFilter("limit", Number(e.target.value || 100))
+        }
+        placeholder="Ліміт"
+        style={inputStyle}
+      />
+    </div>
+
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: "16px",
+        marginBottom: "24px",
+      }}
+    >
+      <label style={checkboxRowStyle}>
+        <input
+          type="checkbox"
+          checked={filters.only_orders}
+          onChange={() => toggleAnalyticsCheckbox("only_orders")}
+        />
+        Лише замовлення
+      </label>
+
+      <label style={checkboxRowStyle}>
+        <input
+          type="checkbox"
+          checked={filters.only_add_to_cart}
+          onChange={() => toggleAnalyticsCheckbox("only_add_to_cart")}
+        />
+        Лише add_to_cart
+      </label>
+
+      <label style={checkboxRowStyle}>
+        <input
+          type="checkbox"
+          checked={filters.only_checkout}
+          onChange={() => toggleAnalyticsCheckbox("only_checkout")}
+        />
+        Лише checkout
+      </label>
+
+      <label style={checkboxRowStyle}>
+        <input
+          type="checkbox"
+          checked={filters.includeInternal}
+          onChange={() => toggleAnalyticsCheckbox("includeInternal")}
+        />
+        Включати внутрішні переходи
+      </label>
+    </div>
+
+    {analyticsLoading ? (
+      <div style={{ padding: "16px 0", color: "#666" }}>Завантаження...</div>
+    ) : analyticsError ? (
+      <div
+        style={{
+          padding: "14px 16px",
+          borderRadius: "12px",
+          background: "#fff2f0",
+          color: "#c0392b",
+          marginBottom: "20px",
+        }}
+      >
+        {analyticsError}
+      </div>
+    ) : null}
+
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+        gap: "12px",
+        marginBottom: "26px",
+      }}
+    >
+      <div style={analyticsCardStyle}>
+        <div style={analyticsCardLabelStyle}>Visits</div>
+        <div style={analyticsCardValueStyle}>{analyticsFunnel.visits || 0}</div>
+      </div>
+
+      <div style={analyticsCardStyle}>
+        <div style={analyticsCardLabelStyle}>Product view</div>
+        <div style={analyticsCardValueStyle}>
+          {analyticsFunnel.product_view || 0}
+        </div>
+      </div>
+
+      <div style={analyticsCardStyle}>
+        <div style={analyticsCardLabelStyle}>Add to cart</div>
+        <div style={analyticsCardValueStyle}>
+          {analyticsFunnel.add_to_cart || 0}
+        </div>
+      </div>
+
+      <div style={analyticsCardStyle}>
+        <div style={analyticsCardLabelStyle}>Checkout view</div>
+        <div style={analyticsCardValueStyle}>
+          {analyticsFunnel.checkout_view || 0}
+        </div>
+      </div>
+
+      <div style={analyticsCardStyle}>
+        <div style={analyticsCardLabelStyle}>Order created</div>
+        <div style={analyticsCardValueStyle}>
+          {analyticsFunnel.order_created || 0}
+        </div>
+      </div>
+
+      <div style={analyticsCardStyle}>
+        <div style={analyticsCardLabelStyle}>CR</div>
+        <div style={analyticsCardValueStyle}>{analyticsFunnel.cr || 0}%</div>
+      </div>
+    </div>
+
+    {filters.group_by === "none" ? (
+      <div style={{ overflowX: "auto", marginBottom: "28px" }}>
+        <table style={analyticsTableStyle}>
+          <thead>
+            <tr>
+              <th style={thStyle}>Час</th>
+              <th style={thStyle}>Подія</th>
+              <th style={thStyle}>Пристрій</th>
+              <th style={thStyle}>Сторінка</th>
+              <th style={thStyle}>Landing</th>
+              <th style={thStyle}>Source</th>
+              <th style={thStyle}>Campaign</th>
+              <th style={thStyle}>GCLID</th>
+              <th style={thStyle}>UTM Source</th>
+              <th style={thStyle}>UTM Campaign</th>
+              <th style={thStyle}>Session ID</th>
+              <th style={thStyle}>Visitor ID</th>
+              <th style={thStyle}>Order ID</th>
+              <th style={thStyle}>Next event</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {(analyticsEventsData.events || []).map((event) => (
+              <tr key={event.id} style={{ borderBottom: "1px solid #f1f1f1" }}>
+                <td style={tdStyle}>
+                  {new Date(event.created_at).toLocaleString("uk-UA")}
+                </td>
+                <td style={tdStyle}>{event.event_type || "-"}</td>
+                <td style={tdStyle}>{event.device_type || "-"}</td>
+                <td
+                  style={tdPathStyle}
+                  title={event.path || event.page_url || "-"}
+                >
+                  {event.path || event.page_url || "-"}
+                </td>
+                <td style={tdPathStyle} title={event.landing_page || "-"}>
+                  {event.landing_page || "-"}
+                </td>
+                <td style={tdSmallStyle}>{event.source || "-"}</td>
+                <td style={tdSmallStyle}>{event.campaign || "-"}</td>
+                <td style={tdSmallStyle}>
+                  {event.gclid ? `${event.gclid.slice(0, 16)}...` : "-"}
+                </td>
+                <td style={tdSmallStyle}>{event.utm_source || "-"}</td>
+                <td style={tdSmallStyle}>{event.utm_campaign || "-"}</td>
+                <td style={tdSmallStyle}>{event.session_id || "-"}</td>
+                <td style={tdSmallStyle}>{event.visitor_id || "-"}</td>
+                <td style={tdStyle}>{event.order_id || "-"}</td>
+                <td style={tdStyle}>{event.next_event || "-"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ) : (
+      <div style={{ display: "grid", gap: "16px", marginBottom: "28px" }}>
+        {(analyticsEventsData.groups || []).map((group) => (
+          <div
+            key={group.key}
+            style={{
+              border: "1px solid #ececec",
+              borderRadius: "16px",
+              padding: "16px",
+              background: "#fff",
+            }}
+          >
             <div
               style={{
-                background: "#fff",
-                borderRadius: "24px",
-                padding: "24px",
-                boxShadow: "0 15px 40px rgba(0,0,0,0.08)",
-                maxWidth: "100%",
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                gap: "10px",
+                marginBottom: "14px",
               }}
             >
-              <div style={{ marginBottom: "24px" }}>
-                <h1 style={{ margin: 0, fontSize: "24px", fontWeight: 800 }}>
-                  Аналітика
-                </h1>
-                <div style={{ marginTop: "8px", color: "#666" }}>
-                  Відвідування, корзина, checkout і замовлення
-                </div>
+              <div>
+                <strong>
+                  {filters.group_by === "visitor" ? "Visitor" : "Session"}:
+                </strong>{" "}
+                {group.key}
               </div>
-
-              {analyticsLoading ? (
-                <div>Завантаження...</div>
-              ) : analyticsError ? (
-                <div>
-                  <div style={{ color: "red", marginBottom: "12px" }}>
-                    {analyticsError}
-                  </div>
-                  <button onClick={loadAnalytics}>Спробувати ще раз</button>
-                </div>
-              ) : (
-                <>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
-                      gap: "12px",
-                      marginBottom: "24px",
-                    }}
-                  >
-                    <div style={analyticsCardStyle}>
-                      <div style={analyticsCardLabelStyle}>
-                        Унікальні відвідувачі
-                      </div>
-                      <div style={analyticsCardValueStyle}>
-                        {analyticsSummary.uniqueVisitors}
-                      </div>
-                    </div>
-
-                    <div style={analyticsCardStyle}>
-                      <div style={analyticsCardLabelStyle}>Додали в кошик</div>
-                      <div style={analyticsCardValueStyle}>
-                        {analyticsSummary.addToCartVisitors}
-                      </div>
-                    </div>
-
-                    <div style={analyticsCardStyle}>
-                      <div style={analyticsCardLabelStyle}>
-                        Почали оформлення
-                      </div>
-                      <div style={analyticsCardValueStyle}>
-                        {analyticsSummary.checkoutVisitors}
-                      </div>
-                    </div>
-
-                    <div style={analyticsCardStyle}>
-                      <div style={analyticsCardLabelStyle}>Замовлення</div>
-                      <div style={analyticsCardValueStyle}>
-                        {analyticsSummary.ordersCount}
-                      </div>
-                    </div>
-
-                    <div style={analyticsCardStyle}>
-                      <div style={analyticsCardLabelStyle}>Конверсія</div>
-                      <div style={analyticsCardValueStyle}>
-                        {analyticsSummary.conversionRate}%
-                      </div>
-                    </div>
-                  </div>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: "16px",
-                    }}
-                  >
-                    <h2 style={{ margin: 0, fontSize: "20px" }}>
-                      Останні події
-                    </h2>
-
-                    <div style={{ display: "flex", gap: "10px" }}>
-                      <button
-                        type="button"
-                        onClick={() => setAnalyticsRange("today")}
-                        style={{
-                          border: "none",
-                          borderRadius: "10px",
-                          padding: "10px 16px",
-                          cursor: "pointer",
-                          fontWeight: 700,
-                          background:
-                            analyticsRange === "today" ? "#ef4444" : "#f3f4f6",
-                          color:
-                            analyticsRange === "today" ? "#fff" : "#111827",
-                        }}
-                      >
-                        Сьогодні
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setAnalyticsRange("all")}
-                        style={{
-                          border: "none",
-                          borderRadius: "10px",
-                          padding: "10px 16px",
-                          cursor: "pointer",
-                          fontWeight: 700,
-                          background:
-                            analyticsRange === "all" ? "#ef4444" : "#f3f4f6",
-                          color: analyticsRange === "all" ? "#fff" : "#111827",
-                        }}
-                      >
-                        Усі дні
-                      </button>
-                      <button
-                        onClick={loadAnalytics}
-                        style={{
-                          background: "#e74c3c",
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: "8px",
-                          padding: "8px 14px",
-                          cursor: "pointer",
-                          fontWeight: 700,
-                        }}
-                      >
-                        Оновити
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={handleMarkCurrentDeviceInternal}
-                        style={{
-                          background: "#e74c3c",
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: "8px",
-                          padding: "8px 14px",
-                          cursor: "pointer",
-                          fontWeight: 700,
-                        }}
-                      >
-                        Це мій пристрій
-                      </button>
-
-                      <button
-                        onClick={handleClearAnalytics}
-                        style={{
-                          background: "#e74c3c",
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: "8px",
-                          padding: "8px 14px",
-                          cursor: "pointer",
-                          fontWeight: 700,
-                        }}
-                      >
-                        Очистити аналітику
-                      </button>
-                    </div>
-                  </div>
-
-                  <div style={{ overflowX: "auto" }}>
-                    <table
-                      style={{
-                        width: "100%",
-                        borderCollapse: "collapse",
-                        background: "#fff",
-                      }}
-                    >
-                      <thead>
-                        <tr style={{ borderBottom: "1px solid #eee" }}>
-                          <th style={thStyle}>Час</th>
-                          <th style={thStyle}>Подія</th>
-                          <th style={thStyle}>Пристрій</th>
-                          <th style={thStyle}>Сторінка</th>
-                          <th style={thSmallStyle}>Source</th>
-                          <th style={thSmallStyle}>Campaign</th>
-                          <th style={thSmallStyle}>GCLID</th>
-                          <th style={thSmallStyle}>Visitor</th>
-                          <th style={thStyle}>Order ID</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {analyticsEvents.map((event) => (
-                          <tr
-                            key={event.id}
-                            style={{ borderBottom: "1px solid #f1f1f1" }}
-                          >
-                            <td style={tdStyle}>
-                              {new Date(event.created_at).toLocaleString()}
-                            </td>
-                            <td style={tdStyle}>{event.event_name}</td>
-                            <td style={tdStyle}>{event.device_type || "-"}</td>
-                            <td style={tdPathStyle} title={event.path || "-"}>
-                              {event.path || "-"}
-                            </td>
-                            <td style={tdSmallStyle}>
-                              {event.metadata?.source || "-"}
-                            </td>
-                            <td style={tdSmallStyle}>
-                              {event.metadata?.utmCampaign || "-"}
-                            </td>
-                            <td style={tdSmallStyle}>
-                              {event.metadata?.gclid
-                                ? `${event.metadata.gclid.slice(0, 12)}...`
-                                : "-"}
-                            </td>
-                            <td style={tdSmallStyle}>{event.visitor_id}</td>
-                            <td style={tdStyle}>{event.order_id || "-"}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </>
-              )}
+              <div>
+                <strong>Source:</strong> {group.source || "-"}
+              </div>
+              <div>
+                <strong>Campaign:</strong> {group.campaign || "-"}
+              </div>
+              <div>
+                <strong>Landing:</strong> {group.landing_page || "-"}
+              </div>
+              <div>
+                <strong>Device:</strong> {group.device_type || "-"}
+              </div>
+              <div>
+                <strong>Order ID:</strong> {group.order_id || "-"}
+              </div>
             </div>
-          )}
+
+            <div style={{ display: "grid", gap: "10px" }}>
+              {(group.events || []).map((event) => (
+                <div
+                  key={event.id}
+                  style={{
+                    borderRadius: "12px",
+                    background: "#f9fafb",
+                    padding: "12px 14px",
+                  }}
+                >
+                  <div style={{ marginBottom: "4px", fontWeight: 700 }}>
+                    {event.event_type || "-"}
+                  </div>
+                  <div style={{ fontSize: "13px", color: "#666" }}>
+                    {new Date(event.created_at).toLocaleString("uk-UA")}
+                  </div>
+                  <div style={{ marginTop: "6px", fontSize: "14px" }}>
+                    Path: {event.path || event.page_url || "-"}
+                  </div>
+                  <div style={{ marginTop: "4px", fontSize: "14px" }}>
+                    Next: {event.next_event || "-"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+
+    <div style={{ marginBottom: "28px" }}>
+      <h3 style={subSectionTitleStyle}>Звіт по джерелах</h3>
+      <div style={{ overflowX: "auto" }}>
+        <table style={analyticsTableStyle}>
+          <thead>
+            <tr>
+              <th style={thStyle}>Source</th>
+              <th style={thStyle}>Visits</th>
+              <th style={thStyle}>Product view</th>
+              <th style={thStyle}>Add to cart</th>
+              <th style={thStyle}>Checkout</th>
+              <th style={thStyle}>Orders</th>
+              <th style={thStyle}>Visitors</th>
+            </tr>
+          </thead>
+          <tbody>
+            {analyticsSourcesReport.map((row, idx) => (
+              <tr key={`${row.source}-${idx}`} style={{ borderBottom: "1px solid #f1f1f1" }}>
+                <td style={tdStyle}>{row.source}</td>
+                <td style={tdStyle}>{row.visits}</td>
+                <td style={tdStyle}>{row.product_view}</td>
+                <td style={tdStyle}>{row.add_to_cart}</td>
+                <td style={tdStyle}>{row.checkout_view}</td>
+                <td style={tdStyle}>{row.order_created}</td>
+                <td style={tdStyle}>{row.unique_visitors}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style={{ marginBottom: "28px" }}>
+      <h3 style={subSectionTitleStyle}>Звіт по кампаніях</h3>
+      <div style={{ overflowX: "auto" }}>
+        <table style={analyticsTableStyle}>
+          <thead>
+            <tr>
+              <th style={thStyle}>Campaign</th>
+              <th style={thStyle}>Source</th>
+              <th style={thStyle}>Visits</th>
+              <th style={thStyle}>Add to cart</th>
+              <th style={thStyle}>Checkout</th>
+              <th style={thStyle}>Orders</th>
+              <th style={thStyle}>Visitors</th>
+            </tr>
+          </thead>
+          <tbody>
+            {analyticsCampaignsReport.map((row, idx) => (
+              <tr key={`${row.campaign}-${idx}`} style={{ borderBottom: "1px solid #f1f1f1" }}>
+                <td style={tdStyle}>{row.campaign}</td>
+                <td style={tdStyle}>{row.source}</td>
+                <td style={tdStyle}>{row.visits}</td>
+                <td style={tdStyle}>{row.add_to_cart}</td>
+                <td style={tdStyle}>{row.checkout_view}</td>
+                <td style={tdStyle}>{row.order_created}</td>
+                <td style={tdStyle}>{row.unique_visitors}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <h3 style={subSectionTitleStyle}>Звіт по landing pages</h3>
+      <div style={{ overflowX: "auto" }}>
+        <table style={analyticsTableStyle}>
+          <thead>
+            <tr>
+              <th style={thStyle}>Landing page</th>
+              <th style={thStyle}>Visits</th>
+              <th style={thStyle}>Product view</th>
+              <th style={thStyle}>Add to cart</th>
+              <th style={thStyle}>Checkout</th>
+              <th style={thStyle}>Orders</th>
+              <th style={thStyle}>Visitors</th>
+            </tr>
+          </thead>
+          <tbody>
+            {analyticsLandingPagesReport.map((row, idx) => (
+              <tr
+                key={`${row.landing_page}-${idx}`}
+                style={{ borderBottom: "1px solid #f1f1f1" }}
+              >
+                <td style={tdPathStyle} title={row.landing_page}>
+                  {row.landing_page}
+                </td>
+                <td style={tdStyle}>{row.visits}</td>
+                <td style={tdStyle}>{row.product_view}</td>
+                <td style={tdStyle}>{row.add_to_cart}</td>
+                <td style={tdStyle}>{row.checkout_view}</td>
+                <td style={tdStyle}>{row.order_created}</td>
+                <td style={tdStyle}>{row.unique_visitors}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+)}
         </main>
       </div>
     </div>
