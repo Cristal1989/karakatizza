@@ -5219,12 +5219,16 @@ export default function Admin() {
                 <button
                   type="button"
                   onClick={() => {
-                    setAnalyticsRange("all");
                     setFilters((prev) => ({
                       ...prev,
                       date_from: "",
                       date_to: "",
                     }));
+                    setAnalyticsRange("today");
+
+                    setTimeout(() => {
+                      loadAnalytics();
+                    }, 0);
                   }}
                   style={{
                     ...smallActionButtonStyle,
@@ -5239,12 +5243,16 @@ export default function Admin() {
                 <button
                   type="button"
                   onClick={() => {
-                    setAnalyticsRange("all");
                     setFilters((prev) => ({
                       ...prev,
                       date_from: "",
                       date_to: "",
                     }));
+                    setAnalyticsRange("all");
+
+                    setTimeout(() => {
+                      loadAnalytics();
+                    }, 0);
                   }}
                   style={{
                     ...smallActionButtonStyle,
