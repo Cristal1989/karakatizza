@@ -464,12 +464,37 @@ const analyticsTableStyle = {
   minWidth: "1200px",
 };
 
+
 const subSectionTitleStyle = {
   fontSize: "20px",
   fontWeight: 700,
   marginBottom: "12px",
   color: "#222",
 };
+
+const sectionCardStyle = {
+  background: "#ffffff",
+  borderRadius: "24px",
+  padding: "28px",
+  boxShadow: "0 10px 30px rgba(15, 23, 42, 0.06)",
+  border: "1px solid rgba(226, 232, 240, 0.9)",
+  width: "100%",
+  boxSizing: "border-box",
+};
+
+const sectionTitleStyle = {
+  fontSize: "34px",
+  fontWeight: 800,
+  marginBottom: "8px",
+  color: "#111827",
+};
+
+const sectionSubtitleStyle = {
+  fontSize: "16px",
+  color: "#6b7280",
+  marginBottom: "20px",
+};
+
 
   function handleLogout() {
     localStorage.removeItem("adminToken");
