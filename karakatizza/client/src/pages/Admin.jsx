@@ -290,9 +290,25 @@ export default function Admin() {
   const [analyticsError, setAnalyticsError] = useState("");
   const [analyticsRange, setAnalyticsRange] = useState("today");
 
+  const [filters, setFilters] = useState({
+    date_from: "",
+    date_to: "",
+    source: "",
+    campaign: "",
+    device: "",
+    event_type: "",
+    only_orders: false,
+    only_add_to_cart: false,
+    only_checkout: false,
+    includeInternal: false,
+    group_by: "none",
+    limit: 100,
+    offset: 0,
+  });
+
   const selectedGiftProduct =
     products.find(
-      (p) => String(p.id) === String(giftRollSettings.giftProductId)
+      (p) => String(p.id) === String(giftRollSettings.giftProductId),
     ) || null;
 
   function handleFillTelegramBonusFromGiftProduct() {
@@ -301,7 +317,7 @@ export default function Admin() {
     setBonusTitle(selectedGiftProduct.name || "");
 
     setBonusDescription(
-      selectedGiftProduct.description || selectedGiftProduct.composition || ""
+      selectedGiftProduct.description || selectedGiftProduct.composition || "",
     );
 
     setBonusImage(selectedGiftProduct.image || "");
@@ -315,7 +331,7 @@ export default function Admin() {
       }
 
       const confirmed = window.confirm(
-        "Скинути Telegram-прив'язку і всі Telegram-бонуси для цього номера?"
+        "Скинути Telegram-прив'язку і всі Telegram-бонуси для цього номера?",
       );
 
       if (!confirmed) return;
@@ -438,7 +454,7 @@ export default function Admin() {
 
   const handleClearAnalytics = async () => {
     const confirmed = window.confirm(
-      "Очистити всю аналітику? Будуть видалені всі події та внутрішні visitor-и."
+      "Очистити всю аналітику? Будуть видалені всі події та внутрішні visitor-и.",
     );
 
     if (!confirmed) return;
@@ -504,7 +520,7 @@ export default function Admin() {
     if (!Array.isArray(products)) return;
 
     const selectedProduct = products.find(
-      (item) => String(item.id) === String(giftRollSettings.giftProductId)
+      (item) => String(item.id) === String(giftRollSettings.giftProductId),
     );
 
     if (!selectedProduct) return;
@@ -556,7 +572,7 @@ export default function Admin() {
             deliveryEnabled: settings.delivery.deliveryEnabled === true,
             pickupEnabled: settings.delivery.pickupEnabled === true,
             pickupDiscountPercent: Number(
-              settings.delivery.pickupDiscountPercent ?? 5
+              settings.delivery.pickupDiscountPercent ?? 5,
             ),
             showFreeDeliveryProgress:
               settings.delivery.showFreeDeliveryProgress === true,
@@ -783,7 +799,7 @@ export default function Admin() {
       }, 2500);
     } catch (error) {
       setTelegramTemplatesError(
-        error?.message || "Помилка збереження Telegram-шаблонів"
+        error?.message || "Помилка збереження Telegram-шаблонів",
       );
     } finally {
       setTelegramTemplatesSaving(false);
@@ -904,7 +920,7 @@ export default function Admin() {
               ...zone,
               [field]: value,
             }
-          : zone
+          : zone,
       ),
     }));
   };
@@ -920,7 +936,7 @@ export default function Admin() {
     setDeliverySettings((prev) => ({
       ...prev,
       deliveryZones: prev.deliveryZones.filter(
-        (_, zoneIndex) => zoneIndex !== index
+        (_, zoneIndex) => zoneIndex !== index,
       ),
     }));
   };
@@ -947,7 +963,7 @@ export default function Admin() {
         deliveryEnabled: deliverySettings.deliveryEnabled === true,
         pickupEnabled: deliverySettings.pickupEnabled === true,
         pickupDiscountPercent: Number(
-          deliverySettings.pickupDiscountPercent ?? 5
+          deliverySettings.pickupDiscountPercent ?? 5,
         ),
         showFreeDeliveryProgress:
           deliverySettings.showFreeDeliveryProgress === true,
@@ -968,7 +984,7 @@ export default function Admin() {
         deliveryEnabled: result.delivery?.deliveryEnabled === true,
         pickupEnabled: result.delivery?.pickupEnabled === true,
         pickupDiscountPercent: Number(
-          result.delivery?.pickupDiscountPercent ?? 5
+          result.delivery?.pickupDiscountPercent ?? 5,
         ),
         showFreeDeliveryProgress:
           result.delivery?.showFreeDeliveryProgress === true,
@@ -990,7 +1006,7 @@ export default function Admin() {
     } catch (error) {
       console.error("SAVE DELIVERY SETTINGS ERROR:", error);
       setDeliveryError(
-        error.message || "Помилка збереження налаштувань доставки"
+        error.message || "Помилка збереження налаштувань доставки",
       );
     } finally {
       setDeliverySaving(false);
@@ -1240,7 +1256,7 @@ export default function Admin() {
     } catch (error) {
       console.error("SAVE GIFT ROLL SETTINGS ERROR:", error);
       setGiftRollError(
-        error.message || "Помилка збереження налаштувань подарункового ролу"
+        error.message || "Помилка збереження налаштувань подарункового ролу",
       );
     } finally {
       setGiftRollSaving(false);
@@ -1283,12 +1299,12 @@ export default function Admin() {
       formData.append("priority", String(form.priority || 10));
       formData.append(
         "rollType",
-        form.category === "rolls" ? form.rollType || "" : ""
+        form.category === "rolls" ? form.rollType || "" : "",
       );
 
       formData.append(
         "discountOfferEligible",
-        String(!!form.discountOfferEligible)
+        String(!!form.discountOfferEligible),
       );
 
       formData.append("isVisible", String(!!form.isVisible));
@@ -1309,7 +1325,7 @@ export default function Admin() {
 
         if (result?.product) {
           setProducts((prev) =>
-            prev.map((p) => (p.id === editingId ? result.product : p))
+            prev.map((p) => (p.id === editingId ? result.product : p)),
           );
         }
 
@@ -1392,7 +1408,7 @@ export default function Admin() {
     } catch (error) {
       console.error("SAVE PROMOTION SETTINGS ERROR:", error);
       setPromotionError(
-        error.message || "Помилка збереження налаштувань акції"
+        error.message || "Помилка збереження налаштувань акції",
       );
     } finally {
       setPromotionSaving(false);
@@ -1446,12 +1462,12 @@ export default function Admin() {
       formData.append("priority", String(nextPriority));
       formData.append(
         "rollType",
-        form.category === "rolls" ? form.rollType || "" : ""
+        form.category === "rolls" ? form.rollType || "" : "",
       );
 
       formData.append(
         "discountOfferEligible",
-        String(!!product.discountOfferEligible)
+        String(!!product.discountOfferEligible),
       );
 
       formData.append("isVisible", String(product.isVisible !== false));
@@ -1627,7 +1643,7 @@ export default function Admin() {
       if (fileInput) fileInput.value = "";
 
       const mobileFileInput = document.getElementById(
-        "banner-mobile-image-input"
+        "banner-mobile-image-input",
       );
       if (mobileFileInput) mobileFileInput.value = "";
 
@@ -1658,7 +1674,7 @@ export default function Admin() {
     setBannerMobileImage(null);
     setBannerPreview(getImageUrl(banner.image));
     setBannerMobilePreview(
-      banner.mobileImage ? getImageUrl(banner.mobileImage) : ""
+      banner.mobileImage ? getImageUrl(banner.mobileImage) : "",
     );
     setMessage("");
   };
@@ -1679,7 +1695,7 @@ export default function Admin() {
       }
 
       const sorted = [...banners].sort(
-        (a, b) => Number(a.priority ?? 10) - Number(b.priority ?? 10)
+        (a, b) => Number(a.priority ?? 10) - Number(b.priority ?? 10),
       );
 
       const fromIndex = sorted.findIndex((item) => item.id === dragBannerId);
@@ -2299,8 +2315,8 @@ export default function Admin() {
                       {loading
                         ? "Збереження..."
                         : editingId
-                        ? "Оновити товар"
-                        : "Додати товар"}
+                          ? "Оновити товар"
+                          : "Додати товар"}
                     </button>
 
                     {editingId ? (
@@ -2809,8 +2825,8 @@ export default function Admin() {
                       {loading
                         ? "Збереження..."
                         : bannerEditingId
-                        ? "Зберегти банер"
-                        : "Додати банер"}
+                          ? "Зберегти банер"
+                          : "Додати банер"}
                     </button>
 
                     {bannerEditingId && (
@@ -2835,7 +2851,7 @@ export default function Admin() {
                           if (fileInput) fileInput.value = "";
 
                           const mobileFileInput = document.getElementById(
-                            "banner-mobile-image-input"
+                            "banner-mobile-image-input",
                           );
                           if (mobileFileInput) mobileFileInput.value = "";
                         }}
@@ -2879,7 +2895,7 @@ export default function Admin() {
                     {[...banners]
                       .sort(
                         (a, b) =>
-                          Number(a.priority ?? 10) - Number(b.priority ?? 10)
+                          Number(a.priority ?? 10) - Number(b.priority ?? 10),
                       )
                       .map((banner) => (
                         <div
@@ -2971,7 +2987,7 @@ export default function Admin() {
                               <span
                                 style={badgeStyle(
                                   banner.isActive ? "#ecfdf3" : "#fef2f2",
-                                  banner.isActive ? "#027a48" : "#b42318"
+                                  banner.isActive ? "#027a48" : "#b42318",
                                 )}
                               >
                                 {banner.isActive ? "Активний" : "Вимкнений"}

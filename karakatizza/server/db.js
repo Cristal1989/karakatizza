@@ -886,4 +886,76 @@ await pool.query(`
   ON site_events(is_internal);
 `);
 
+await pool.query(`
+  ALTER TABLE site_events
+  ADD COLUMN IF NOT EXISTS landing_page TEXT DEFAULT '',
+  ADD COLUMN IF NOT EXISTS source TEXT DEFAULT '',
+  ADD COLUMN IF NOT EXISTS campaign TEXT DEFAULT '',
+  ADD COLUMN IF NOT EXISTS gclid TEXT DEFAULT '',
+  ADD COLUMN IF NOT EXISTS utm_source TEXT DEFAULT '',
+  ADD COLUMN IF NOT EXISTS utm_campaign TEXT DEFAULT '';
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_site_events_source
+  ON site_events(source);
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_site_events_campaign
+  ON site_events(campaign);
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_site_events_gclid
+  ON site_events(gclid);
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_site_events_landing_page
+  ON site_events(landing_page);
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_site_events_order_id
+  ON site_events(order_id);
+`);
+
+await pool.query(`
+  ALTER TABLE orders
+  ADD COLUMN IF NOT EXISTS landing_page TEXT DEFAULT '',
+  ADD COLUMN IF NOT EXISTS source TEXT DEFAULT '',
+  ADD COLUMN IF NOT EXISTS campaign TEXT DEFAULT '',
+  ADD COLUMN IF NOT EXISTS gclid TEXT DEFAULT '',
+  ADD COLUMN IF NOT EXISTS utm_source TEXT DEFAULT '',
+  ADD COLUMN IF NOT EXISTS utm_campaign TEXT DEFAULT '',
+  ADD COLUMN IF NOT EXISTS session_id TEXT DEFAULT '',
+  ADD COLUMN IF NOT EXISTS visitor_id TEXT DEFAULT '';
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_orders_source
+  ON orders(source);
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_orders_campaign
+  ON orders(campaign);
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_orders_gclid
+  ON orders(gclid);
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_orders_session_id
+  ON orders(session_id);
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_orders_visitor_id
+  ON orders(visitor_id);
+`);
+
 }

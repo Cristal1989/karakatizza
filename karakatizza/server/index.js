@@ -26,15 +26,12 @@ dotenv.config();
 const app = express();
 app.use(compression());
 
-
-
 await initDb();
 if (process.env.ENABLE_TELEGRAM_BOT === "true") {
   startTelegramBot();
 } else {
   console.log("Telegram bot disabled");
 }
-
 
 const allowedOrigins = [
   "https://karakatizza.com",
@@ -133,7 +130,6 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage });
 
 app.use("/api/settings", siteSettingsRoutes);
-
 
 const PORT = process.env.PORT || 5000;
 
@@ -342,7 +338,7 @@ VALUES (
           newProduct.isWeeklyOffer,
           newProduct.oldPrice,
           rollType || "",
-        ]
+        ],
       );
 
       return res.status(201).json({
@@ -355,7 +351,7 @@ VALUES (
         message: "Не вдалося створити товар",
       });
     }
-  }
+  },
 );
 
 app.post(
@@ -403,7 +399,7 @@ app.post(
           newBanner.isActive,
           newBanner.priority,
           newBanner.endAt,
-        ]
+        ],
       );
 
       return res.status(201).json({
@@ -418,7 +414,7 @@ app.post(
         error: error.message,
       });
     }
-  }
+  },
 );
 
 app.put("/products/:id", requireAdminAuth, (req, res) => {
@@ -463,7 +459,7 @@ app.put("/products/:id", requireAdminAuth, (req, res) => {
 
       const existing = await pool.query(
         `SELECT * FROM products WHERE id = $1`,
-        [id]
+        [id],
       );
 
       if (existing.rows.length === 0) {
@@ -474,7 +470,6 @@ app.put("/products/:id", requireAdminAuth, (req, res) => {
       let imageUrl = oldProduct.image || "";
 
       if (req.file) {
-
         imageUrl = req.file.path || req.file.secure_url || oldProduct.image;
 
         if (
@@ -495,7 +490,7 @@ app.put("/products/:id", requireAdminAuth, (req, res) => {
           } catch (deleteError) {
             console.error(
               "Помилка видалення старого фото:",
-              deleteError.message
+              deleteError.message,
             );
           }
         }
@@ -572,7 +567,7 @@ app.put("/products/:id", requireAdminAuth, (req, res) => {
           updatedProduct.oldPrice,
           rollType || "",
           updatedProduct.id,
-        ]
+        ],
       );
 
       return res.json({
@@ -631,7 +626,7 @@ app.put(
           } catch (fileError) {
             console.error(
               "Помилка видалення старого desktop-банера:",
-              fileError.message
+              fileError.message,
             );
           }
         }
@@ -653,7 +648,7 @@ app.put(
           } catch (fileError) {
             console.error(
               "Помилка видалення старого mobile-банера:",
-              fileError.message
+              fileError.message,
             );
           }
         }
@@ -689,7 +684,7 @@ app.put(
           updatedBanner.priority,
           updatedBanner.endAt,
           updatedBanner.id,
-        ]
+        ],
       );
 
       return res.json({
@@ -704,7 +699,7 @@ app.put(
         error: error.message,
       });
     }
-  }
+  },
 );
 
 app.delete("/products/:id", requireAdminAuth, async (req, res) => {
@@ -737,7 +732,7 @@ app.delete("/products/:id", requireAdminAuth, async (req, res) => {
       } catch (deleteError) {
         console.error(
           "Помилка видалення фото з Cloudinary:",
-          deleteError.message
+          deleteError.message,
         );
       }
     }
@@ -787,7 +782,7 @@ app.delete("/banners/:id", requireAdminAuth, async (req, res) => {
         } catch (fileError) {
           console.error(
             "Помилка видалення банера з Cloudinary:",
-            fileError.message
+            fileError.message,
           );
         }
       }
@@ -817,7 +812,7 @@ app.post("/banners/:id/click", async (req, res) => {
       `UPDATE banners
        SET click_count = click_count + 1
        WHERE id = $1`,
-      [id]
+      [id],
     );
 
     return res.json({
@@ -848,7 +843,7 @@ app.put("/banners/reorder", requireAdminAuth, async (req, res) => {
         `UPDATE banners
          SET priority = $1
          WHERE id = $2`,
-        [Number(item.priority) || 10, item.id]
+        [Number(item.priority) || 10, item.id],
       );
     }
 
@@ -884,8 +879,16 @@ app.post("/order", async (req, res) => {
       exactTime,
       condiments,
       telegramBonusMeta = null,
-    } = req.body;
 
+      visitorId = "",
+      sessionId = "",
+      landingPage = "",
+      source = "",
+      campaign = "",
+      gclid = "",
+      utmSource = "",
+      utmCampaign = "",
+    } = req.body;
 
     let sticksText = "";
 
@@ -914,8 +917,8 @@ app.post("/order", async (req, res) => {
         paymentMethod === "card"
           ? "Картка онлайн"
           : paymentMethod === "bank_transfer"
-          ? "Переказ на карту"
-          : "Готівка";
+            ? "Переказ на карту"
+            : "Готівка";
 
       message += `💳 Оплата: ${paymentText}\n`;
     }
@@ -931,30 +934,30 @@ app.post("/order", async (req, res) => {
       const paidQuantity = item.paidQuantity ?? item.quantity ?? 0;
       const freeQuantity = item.freeQuantity ?? 0;
       const lineTotal = item.lineTotal ?? item.price * paidQuantity;
-    
+
       let itemLine = `• ${item.name}`;
-    
+
       if (item.isTelegramGift) {
-        itemLine +=  `🎁`;
+        itemLine += `🎁`;
       }
-    
+
       if (item.isDiscountOffer || item.discountLabel) {
         const label =
           item.discountLabel && item.discountLabel !== ""
             ? item.discountLabel
             : "-25%";
-    
-        itemLine +=  `(${label})`;
+
+        itemLine += `(${label})`;
       }
-    
-      itemLine +=  `— ${item.quantity} шт`;
-    
+
+      itemLine += `— ${item.quantity} шт`;
+
       if (freeQuantity > 0) {
-        itemLine +=  `(${paidQuantity} платно + ${freeQuantity} 🎁 подарунок)`;
+        itemLine += `(${paidQuantity} платно + ${freeQuantity} 🎁 подарунок)`;
       }
-    
-      itemLine +=  `— ${lineTotal} грн\n`;
-    
+
+      itemLine += `— ${lineTotal} грн\n`;
+
       message += itemLine;
     });
 
@@ -1050,7 +1053,69 @@ app.post("/order", async (req, res) => {
         trainingSticksCount,
         sticksExtraPrice,
         telegramBonusMeta,
+
+        visitorId,
+        sessionId,
+        landingPage,
+        source,
+        campaign,
+        gclid,
+        utmSource,
+        utmCampaign,
       });
+
+      try {
+        if (crmResult?.order?.id) {
+          await pool.query(
+            `
+        INSERT INTO site_events (
+          visitor_id,
+          session_id,
+          event_name,
+          path,
+          page_url,
+          referrer,
+          user_agent,
+          device_type,
+          order_id,
+          landing_page,
+          source,
+          campaign,
+          gclid,
+          utm_source,
+          utm_campaign,
+          metadata,
+          is_internal,
+          is_test
+        )
+        VALUES (
+          $1, $2, 'order_created', '/checkout', '/checkout', '',
+          '', 'desktop', $3, $4, $5, $6, $7, $8, $9, $10::jsonb, FALSE, FALSE
+        )
+      `,
+            [
+              visitorId || `order_${Date.now()}`,
+              sessionId || `session_${Date.now()}`,
+              crmResult.order.id,
+              landingPage || "",
+              source || "direct",
+              campaign || "",
+              gclid || "",
+              utmSource || "",
+              utmCampaign || "",
+              JSON.stringify({
+                phone,
+                totalPrice,
+              }),
+            ],
+          );
+        }
+      } catch (analyticsOrderError) {
+        console.error(
+          "ORDER_CREATED ANALYTICS INSERT ERROR:",
+          analyticsOrderError,
+        );
+      }
 
       try {
         if (
@@ -1064,7 +1129,7 @@ app.post("/order", async (req, res) => {
             console.error("ORDER AUTO USE ERROR", giftUseError);
             console.error(
               "ORDER AUTO USE ERROR MESSAGE",
-              giftUseError?.message
+              giftUseError?.message,
             );
           }
         }

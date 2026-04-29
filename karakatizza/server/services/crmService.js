@@ -34,7 +34,7 @@ export async function findOrCreateCustomer(pool, { phone, name, totalAmount }) {
     WHERE phone_normalized = $1
     LIMIT 1
     `,
-    [phoneNormalized]
+    [phoneNormalized],
   );
 
   const now = new Date();
@@ -65,7 +65,7 @@ export async function findOrCreateCustomer(pool, { phone, name, totalAmount }) {
         now,
         Number(totalAmount || 0),
         customer.id,
-      ]
+      ],
     );
 
     return updatedResult.rows[0];
@@ -94,7 +94,7 @@ export async function findOrCreateCustomer(pool, { phone, name, totalAmount }) {
       String(name || "").trim(),
       now,
       Number(totalAmount || 0),
-    ]
+    ],
   );
 
   return insertResult.rows[0];
@@ -119,6 +119,15 @@ export async function saveOrderToCrm(pool, orderData) {
     trainingSticksCount,
     sticksExtraPrice,
     telegramBonusMeta,
+
+    landingPage = "",
+    source = "",
+    campaign = "",
+    gclid = "",
+    utmSource = "",
+    utmCampaign = "",
+    sessionId = "",
+    visitorId = "",
   } = orderData;
 
   const phoneNormalized = normalizeUaPhone(phone);
@@ -129,29 +138,24 @@ export async function saveOrderToCrm(pool, orderData) {
     totalAmount: totalPrice,
   });
 
-
   let effectiveCustomer = customer;
-let effectiveTelegramBonusMeta = telegramBonusMeta || null;
+  let effectiveTelegramBonusMeta = telegramBonusMeta || null;
 
-const pendingLinkResult = await pool.query(
-  `
+  const pendingLinkResult = await pool.query(
+    `
     SELECT *
     FROM telegram_pending_links
     WHERE phone_normalized = $1
     LIMIT 1
   `,
-  [customer.phone_normalized || normalizeUaPhone(phone)]
-);
+    [customer.phone_normalized || normalizeUaPhone(phone)],
+  );
 
+  const pendingLink = pendingLinkResult.rows[0] || null;
 
-const pendingLink = pendingLinkResult.rows[0] || null;
-
-if (
-  pendingLink &&
-  !effectiveCustomer.telegram_user_id
-) {
-  const linkedResult = await pool.query(
-    `
+  if (pendingLink && !effectiveCustomer.telegram_user_id) {
+    const linkedResult = await pool.query(
+      `
       UPDATE customers
       SET
         telegram_user_id = $1,
@@ -163,79 +167,88 @@ if (
       WHERE id = $4
       RETURNING *
     `,
-    [
-      String(pendingLink.telegram_user_id),
-      pendingLink.telegram_username || "",
-      pendingLink.telegram_first_name || "",
-      effectiveCustomer.id,
-    ]
-  );
+      [
+        String(pendingLink.telegram_user_id),
+        pendingLink.telegram_username || "",
+        pendingLink.telegram_first_name || "",
+        effectiveCustomer.id,
+      ],
+    );
 
-  effectiveCustomer = linkedResult.rows[0] || effectiveCustomer;
+    effectiveCustomer = linkedResult.rows[0] || effectiveCustomer;
 
-  const issueResult = await issueTelegramGift(pool, {
-    customerId: effectiveCustomer.id,
-    phone: effectiveCustomer.phone,
-    giftRollId: "telegram-welcome",
-    giftRollTitle: "Подарунковий рол",
-    comment: "Telegram welcome gift",
-  });
+    const issueResult = await issueTelegramGift(pool, {
+      customerId: effectiveCustomer.id,
+      phone: effectiveCustomer.phone,
+      giftRollId: "telegram-welcome",
+      giftRollTitle: "Подарунковий рол",
+      comment: "Telegram welcome gift",
+    });
 
+    if (issueResult?.success && issueResult?.gift) {
+      effectiveTelegramBonusMeta = {
+        applied: false,
+        justIssuedAfterFirstOrder: true,
+        giftId: issueResult.gift.id,
+        giftRollId: issueResult.gift.gift_roll_id,
+        giftRollTitle: issueResult.gift.gift_roll_title,
+        availableAfterOrdersCount:
+          issueResult.gift.available_after_orders_count,
+        message:
+          "Бонус активований після першого замовлення та буде доступний з наступного.",
+      };
+    }
 
-  if (issueResult?.success && issueResult?.gift) {
-    effectiveTelegramBonusMeta = {
-      applied: false,
-      justIssuedAfterFirstOrder: true,
-      giftId: issueResult.gift.id,
-      giftRollId: issueResult.gift.gift_roll_id,
-      giftRollTitle: issueResult.gift.gift_roll_title,
-      availableAfterOrdersCount: issueResult.gift.available_after_orders_count,
-      message: "Бонус активований після першого замовлення та буде доступний з наступного.",
-    };
-  }
-
-  await pool.query(
-    `
+    await pool.query(
+      `
       DELETE FROM telegram_pending_links
       WHERE phone_normalized = $1
     `,
-    [pendingLink.phone_normalized]
-  );
-}
+      [pendingLink.phone_normalized],
+    );
+  }
   const itemsSummary = buildItemsSummary(items);
 
   const result = await pool.query(
     `
-      INSERT INTO orders (
-        customer_id,
-        phone,
-        phone_normalized,
-        name,
-        mode,
-        address,
-        resolved_address,
-        entrance,
-        comment,
-        payment_method,
-        need_exact_time,
-        exact_time,
-        total_amount,
-        items_json,
-        items_summary,
-        condiments_json,
-        regular_sticks_count,
-        training_sticks_count,
-        sticks_extra_price,
-        status,
-        source,
-        telegram_bonus_meta
-      )
-      VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-        $11, $12, $13, $14::jsonb, $15, $16::jsonb, $17, $18, $19, 'new', 'site', $20::jsonb
-      )
-      RETURNING *
-    `,
+    INSERT INTO orders (
+      customer_id,
+      phone,
+      phone_normalized,
+      name,
+      mode,
+      address,
+      resolved_address,
+      entrance,
+      comment,
+      payment_method,
+      need_exact_time,
+      exact_time,
+      total_amount,
+      items_json,
+      items_summary,
+      condiments_json,
+      regular_sticks_count,
+      training_sticks_count,
+      sticks_extra_price,
+      status,
+      source,
+      campaign,
+      gclid,
+      utm_source,
+      utm_campaign,
+      landing_page,
+      session_id,
+      visitor_id,
+      telegram_bonus_meta
+    )
+    VALUES (
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+      $11, $12, $13, $14::jsonb, $15, $16::jsonb, $17, $18, $19, 'new',
+      $20, $21, $22, $23, $24, $25, $26, $27, $28::jsonb
+    )
+    RETURNING *
+  `,
     [
       effectiveCustomer.id,
       phone,
@@ -256,18 +269,39 @@ if (
       Number(regularSticksCount || 0),
       Number(trainingSticksCount || 0),
       Number(sticksExtraPrice || 0),
+      source || "direct",
+      campaign || "",
+      gclid || "",
+      utmSource || "",
+      utmCampaign || "",
+      landingPage || "",
+      sessionId || "",
+      visitorId || "",
       JSON.stringify(effectiveTelegramBonusMeta || null),
-    ]
+    ],
   );
+
+  const createdOrder = result.rows[0] || null;
+
+  if (createdOrder?.id && sessionId) {
+    await pool.query(
+      `
+      UPDATE site_events
+      SET order_id = $1
+      WHERE session_id = $2
+        AND (order_id IS NULL OR order_id = 0)
+    `,
+      [createdOrder.id, sessionId],
+    );
+  }
 
   return {
     customer: effectiveCustomer,
-    order: result.rows[0],
-  };``
+    order: createdOrder,
+  };
 }
 
 export async function getActiveTelegramGiftByPhone(pool, phone) {
-
   const phoneNormalized = normalizeUaPhone(phone);
 
   if (!phoneNormalized) {
@@ -296,7 +330,7 @@ export async function getActiveTelegramGiftByPhone(pool, phone) {
       ORDER BY tg.created_at DESC, tg.id DESC
       LIMIT 1
     `,
-    [phoneNormalized]
+    [phoneNormalized],
   );
 
   return result.rows[0] || null;
@@ -310,11 +344,9 @@ export async function issueTelegramGift(
     giftRollId = "",
     giftRollTitle = "",
     comment = "",
-  }
+  },
 ) {
-
   const phoneNormalized = normalizeUaPhone(phone);
-
 
   if (!phoneNormalized) {
     throw new Error("Некоректний номер телефону");
@@ -343,7 +375,7 @@ export async function issueTelegramGift(
       ORDER BY created_at DESC, id DESC
       LIMIT 1
     `,
-    [phoneNormalized]
+    [phoneNormalized],
   );
 
   const existingAnyGift = existingAnyGiftResult.rows[0] || null;
@@ -363,7 +395,7 @@ export async function issueTelegramGift(
       FROM orders
       WHERE phone_normalized = $1
     `,
-    [phoneNormalized]
+    [phoneNormalized],
   );
 
   const currentOrdersCount = Number(ordersCountResult.rows[0]?.count || 0);
@@ -429,7 +461,7 @@ export async function issueTelegramGift(
       giftRollTitle || "",
       comment || "",
       availableAfterOrdersCount,
-    ]
+    ],
   );
 
   return {
@@ -464,7 +496,7 @@ export async function markTelegramGiftUsed(pool, giftId) {
         created_at,
         updated_at
     `,
-    [giftId]
+    [giftId],
   );
 
   return result.rows[0] || null;
@@ -472,17 +504,9 @@ export async function markTelegramGiftUsed(pool, giftId) {
 
 export async function linkTelegramToCustomerByPhone(
   pool,
-  {
-    phone,
-    telegramUserId,
-    telegramUsername = "",
-    telegramFirstName = "",
-  }
+  { phone, telegramUserId, telegramUsername = "", telegramFirstName = "" },
 ) {
-
   const phoneNormalized = normalizeUaPhone(phone);
-
-  
 
   if (!phoneNormalized) {
     throw new Error("Некоректний номер телефону");
@@ -516,7 +540,7 @@ export async function linkTelegramToCustomerByPhone(
       ORDER BY id DESC
       LIMIT 1
     `,
-    [phoneNormalized]
+    [phoneNormalized],
   );
 
   const customer = customerResult.rows[0] || null;
@@ -546,9 +570,9 @@ export async function linkTelegramToCustomerByPhone(
         String(telegramUserId),
         telegramUsername || "",
         telegramFirstName || "",
-      ]
+      ],
     );
-  
+
     return {
       linked: false,
       reason: "pending_until_first_order",
@@ -591,7 +615,7 @@ export async function linkTelegramToCustomerByPhone(
       telegramUsername || "",
       telegramFirstName || "",
       customer.id,
-    ]
+    ],
   );
 
   const updatedCustomer = updatedResult.rows[0] || customer;
@@ -629,7 +653,7 @@ export async function getTelegramGiftsByPhone(pool, phone) {
       WHERE phone_normalized = $1
       ORDER BY created_at DESC, id DESC
     `,
-    [phoneNormalized]
+    [phoneNormalized],
   );
 
   return result.rows;
@@ -677,7 +701,7 @@ export async function getTelegramCheckoutStatusByPhone(pool, phone) {
       ORDER BY id DESC
       LIMIT 1
     `,
-    [phoneNormalized]
+    [phoneNormalized],
   );
 
   const customer = customerResult.rows[0] || null;
@@ -698,7 +722,7 @@ export async function getTelegramCheckoutStatusByPhone(pool, phone) {
         ORDER BY id DESC
         LIMIT 1
       `,
-      [phoneNormalized]
+      [phoneNormalized],
     );
 
     const pendingLink = pendingResult.rows[0] || null;
@@ -742,7 +766,7 @@ export async function getTelegramCheckoutStatusByPhone(pool, phone) {
       FROM orders
       WHERE phone_normalized = $1
     `,
-    [phoneNormalized]
+    [phoneNormalized],
   );
 
   const ordersCount = Number(ordersCountResult.rows[0]?.count || 0);
@@ -753,11 +777,9 @@ export async function getTelegramCheckoutStatusByPhone(pool, phone) {
 
   const canUseGiftNow = Boolean(
     activeGift &&
-      (
-        availableAfterOrdersCount === null ||
-        availableAfterOrdersCount <= 0 ||
-        ordersCount >= availableAfterOrdersCount
-      )
+    (availableAfterOrdersCount === null ||
+      availableAfterOrdersCount <= 0 ||
+      ordersCount >= availableAfterOrdersCount),
   );
 
   const ordersLeftUntilGift = activeGift
@@ -766,7 +788,9 @@ export async function getTelegramCheckoutStatusByPhone(pool, phone) {
 
   const result = {
     success: true,
-    telegramLinked: Boolean(customer.telegram_user_id && customer.is_telegram_subscribed),
+    telegramLinked: Boolean(
+      customer.telegram_user_id && customer.is_telegram_subscribed,
+    ),
     phoneConfirmed: Boolean(customer.is_phone_confirmed),
     telegramSubscribed: Boolean(customer.is_telegram_subscribed),
     pendingUntilFirstOrder: false,
@@ -813,7 +837,7 @@ export async function getTelegramGiftsByTelegramUserId(pool, telegramUserId) {
       ORDER BY id DESC
       LIMIT 1
     `,
-    [String(telegramUserId)]
+    [String(telegramUserId)],
   );
 
   const customer = customerResult.rows[0] || null;
@@ -842,7 +866,7 @@ export async function getTelegramCustomersForBroadcast(
     inactiveDays = "",
     minTotalSpent = "",
     minLastOrderAmount = "",
-  } = {}
+  } = {},
 ) {
   const conditions = [
     `telegram_user_id IS NOT NULL`,
@@ -872,7 +896,7 @@ export async function getTelegramCustomersForBroadcast(
 
   if (inactiveDays !== "" && Number(inactiveDays) > 0) {
     conditions.push(
-      `last_order_at <= NOW() - ($${paramIndex}::text || ' days')::interval`
+      `last_order_at <= NOW() - ($${paramIndex}::text || ' days')::interval`,
     );
     values.push(String(Number(inactiveDays)));
     paramIndex += 1;
@@ -919,7 +943,7 @@ export async function getTelegramCustomersForBroadcast(
       ${whereSql}
       ORDER BY last_order_at DESC NULLS LAST, id DESC
     `,
-    values
+    values,
   );
 
   return result.rows;
@@ -933,7 +957,7 @@ export async function getTelegramBroadcastCount(
     inactiveDays = "",
     minTotalSpent = "",
     minLastOrderAmount = "",
-  } = {}
+  } = {},
 ) {
   const conditions = [
     `telegram_user_id IS NOT NULL`,
@@ -963,7 +987,7 @@ export async function getTelegramBroadcastCount(
 
   if (inactiveDays !== "" && Number(inactiveDays) > 0) {
     conditions.push(
-      `last_order_at <= NOW() - ($${paramIndex}::text || ' days')::interval`
+      `last_order_at <= NOW() - ($${paramIndex}::text || ' days')::interval`,
     );
     values.push(String(Number(inactiveDays)));
     paramIndex += 1;
@@ -989,7 +1013,7 @@ export async function getTelegramBroadcastCount(
       FROM customers
       ${whereSql}
     `,
-    values
+    values,
   );
 
   return Number(result.rows[0]?.count || 0);
@@ -1004,7 +1028,7 @@ export async function saveTelegramBroadcastHistory(
     sentCount = 0,
     failedCount = 0,
     results = [],
-  } = {}
+  } = {},
 ) {
   const result = await pool.query(
     `
@@ -1035,7 +1059,7 @@ export async function saveTelegramBroadcastHistory(
       Number(sentCount || 0),
       Number(failedCount || 0),
       JSON.stringify(results || []),
-    ]
+    ],
   );
 
   return result.rows[0];
@@ -1057,7 +1081,7 @@ export async function getTelegramBroadcastHistory(pool, limit = 20) {
       ORDER BY created_at DESC, id DESC
       LIMIT $1
     `,
-    [Number(limit) || 20]
+    [Number(limit) || 20],
   );
 
   return result.rows.map((row) => ({
@@ -1067,7 +1091,10 @@ export async function getTelegramBroadcastHistory(pool, limit = 20) {
   }));
 }
 
-export async function getTelegramPendingLinkByTelegramUserId(pool, telegramUserId) {
+export async function getTelegramPendingLinkByTelegramUserId(
+  pool,
+  telegramUserId,
+) {
   const result = await pool.query(
     `
       SELECT *
@@ -1076,7 +1103,7 @@ export async function getTelegramPendingLinkByTelegramUserId(pool, telegramUserI
       ORDER BY id DESC
       LIMIT 1
     `,
-    [String(telegramUserId)]
+    [String(telegramUserId)],
   );
 
   return result.rows[0] || null;

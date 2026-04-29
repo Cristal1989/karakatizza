@@ -1222,19 +1222,91 @@ router.get("/telegram/pending/:telegramUserId", async (req, res) => {
   }
 });
 
+function normalizeBool(value) {
+  return String(value || "").toLowerCase() === "true";
+}
+
+function buildAnalyticsFilters(query, { includeInternalDefault = false } = {}) {
+  const values = [];
+  const where = [];
+
+  const includeInternal =
+    query.includeInternal !== undefined
+      ? normalizeBool(query.includeInternal)
+      : includeInternalDefault;
+
+  if (!includeInternal) {
+    where.push(`is_internal = FALSE`);
+  }
+
+  if (query.date_from) {
+    values.push(query.date_from);
+    where.push(`created_at >= $${values.length}::timestamp`);
+  }
+
+  if (query.date_to) {
+    values.push(query.date_to);
+    where.push(`created_at <= $${values.length}::timestamp`);
+  }
+
+  if (query.source) {
+    values.push(query.source);
+    where.push(`source = $${values.length}`);
+  }
+
+  if (query.campaign) {
+    values.push(query.campaign);
+    where.push(`campaign = $${values.length}`);
+  }
+
+  if (query.device) {
+    values.push(query.device);
+    where.push(`device_type = $${values.length}`);
+  }
+
+  if (query.event_type) {
+    values.push(query.event_type);
+    where.push(`event_name = $${values.length}`);
+  }
+
+  if (normalizeBool(query.only_orders)) {
+    where.push(`order_id IS NOT NULL OR event_name = 'order_created'`);
+  }
+
+  if (normalizeBool(query.only_add_to_cart)) {
+    where.push(`event_name = 'add_to_cart'`);
+  }
+
+  if (normalizeBool(query.only_checkout)) {
+    where.push(`event_name = 'checkout_view'`);
+  }
+
+  return {
+    whereClause: where.length ? where.join(" AND ") : "1=1",
+    values,
+  };
+}
+
+
 router.post("/track", async (req, res) => {
   try {
     const {
-      visitorId,
-      sessionId,
-      eventName,
-      path = "",
-      pageUrl = "",
-      referrer = "",
-      orderId = null,
-      metadata = {},
-      isTest = false,
-    } = req.body || {};
+  visitorId,
+  sessionId,
+  eventName,
+  path = "",
+  pageUrl = "",
+  referrer = "",
+  landingPage = "",
+  source = "",
+  campaign = "",
+  gclid = "",
+  utmSource = "",
+  utmCampaign = "",
+  orderId = null,
+  metadata = {},
+  isTest = false,
+} = req.body || {};
 
     if (!visitorId || !sessionId || !eventName) {
       return res.status(400).json({
@@ -1269,40 +1341,54 @@ router.post("/track", async (req, res) => {
     const isInternal = internalCheck.rows.length > 0;
 
     await pool.query(
-      `
-      INSERT INTO site_events (
-        visitor_id,
-        session_id,
-        event_name,
-        path,
-        page_url,
-        referrer,
-        user_agent,
-        device_type,
-        order_id,
-        metadata,
-        is_internal,
-        is_test
-      )
-      VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11, $12
-      )
-      `,
-      [
-        visitorId,
-        sessionId,
-        eventName,
-        path,
-        pageUrl,
-        referrer,
-        userAgent,
-        deviceType,
-        orderId,
-        JSON.stringify(metadata || {}),
-        isInternal,
-        isTest === true,
-      ]
-    );
+  `
+    INSERT INTO site_events (
+      visitor_id,
+      session_id,
+      event_name,
+      path,
+      page_url,
+      referrer,
+      user_agent,
+      device_type,
+      order_id,
+      landing_page,
+      source,
+      campaign,
+      gclid,
+      utm_source,
+      utm_campaign,
+      metadata,
+      is_internal,
+      is_test
+    )
+    VALUES (
+      $1, $2, $3, $4, $5, $6, $7, $8, $9,
+      $10, $11, $12, $13, $14, $15,
+      $16::jsonb, $17, $18
+    )
+  `,
+  [
+    visitorId,
+    sessionId,
+    eventName,
+    path,
+    pageUrl,
+    referrer,
+    userAgent,
+    deviceType,
+    orderId,
+    landingPage,
+    source,
+    campaign,
+    gclid,
+    utmSource,
+    utmCampaign,
+    JSON.stringify(metadata || {}),
+    isInternal,
+    isTest === true,
+  ]
+);
 
     return res.json({ success: true });
   } catch (error) {
@@ -1354,76 +1440,125 @@ router.post("/track/mark-internal", async (req, res) => {
   }
 });
 
-router.get("/analytics/summary", async (req, res) => {
+router.get("/analytics/funnel", requireAdminAuth, async (req, res) => {
   try {
-    const range = String(req.query.range || "today").trim();
+    const { whereClause, values } = buildAnalyticsFilters(req.query);
 
-    let whereClause = "1=1";
-
-    if (range === "today") {
-      whereClause = "created_at >= date_trunc('day', now())";
-    }
-
-    const summaryResult = await pool.query(
+    const result = await pool.query(
       `
-      SELECT
-        COUNT(DISTINCT visitor_id) FILTER (WHERE is_internal = FALSE) AS unique_visitors,
-        COUNT(DISTINCT visitor_id) FILTER (
-          WHERE event_name = 'add_to_cart' AND is_internal = FALSE
-        ) AS add_to_cart_visitors,
-        COUNT(DISTINCT visitor_id) FILTER (
-          WHERE event_name = 'checkout_view' AND is_internal = FALSE
-        ) AS checkout_visitors,
-        COUNT(*) FILTER (
-          WHERE event_name = 'order_created' AND is_internal = FALSE
-        ) AS orders_count
-      FROM site_events
-      WHERE ${whereClause}
-      `
+        SELECT
+          COUNT(DISTINCT visitor_id) FILTER (
+            WHERE event_name = 'page_view'
+          ) AS visits,
+
+          COUNT(DISTINCT visitor_id) FILTER (
+            WHERE event_name = 'product_view'
+          ) AS product_view,
+
+          COUNT(DISTINCT visitor_id) FILTER (
+            WHERE event_name = 'add_to_cart'
+          ) AS add_to_cart,
+
+          COUNT(DISTINCT visitor_id) FILTER (
+            WHERE event_name = 'checkout_view'
+          ) AS checkout_view,
+
+          COUNT(*) FILTER (
+            WHERE event_name = 'order_created'
+          ) AS order_created
+        FROM site_events
+        WHERE ${whereClause}
+      `,
+      values
     );
 
-    const row = summaryResult.rows[0] || {};
+    const row = result.rows[0] || {};
 
-    const uniqueVisitors = Number(row.unique_visitors || 0);
-    const addToCartVisitors = Number(row.add_to_cart_visitors || 0);
-    const checkoutVisitors = Number(row.checkout_visitors || 0);
-    const ordersCount = Number(row.orders_count || 0);
+    const visits = Number(row.visits || 0);
+    const productView = Number(row.product_view || 0);
+    const addToCart = Number(row.add_to_cart || 0);
+    const checkoutView = Number(row.checkout_view || 0);
+    const orderCreated = Number(row.order_created || 0);
 
-    const conversionRate =
-      uniqueVisitors > 0
-        ? Number(((ordersCount / uniqueVisitors) * 100).toFixed(2))
-        : 0;
+    const cr =
+      visits > 0 ? Number(((orderCreated / visits) * 100).toFixed(2)) : 0;
 
     return res.json({
       success: true,
-      summary: {
-        uniqueVisitors,
-        addToCartVisitors,
-        checkoutVisitors,
-        ordersCount,
-        conversionRate,
+      funnel: {
+        visits,
+        product_view: productView,
+        add_to_cart: addToCart,
+        checkout_view: checkoutView,
+        order_created: orderCreated,
+        cr,
       },
     });
   } catch (error) {
-    console.error("ANALYTICS SUMMARY ERROR:", error);
+    console.error("ANALYTICS FUNNEL ERROR:", error);
     return res.status(500).json({
       success: false,
-      message: "Не вдалося отримати зведення аналітики",
+      message: "Не вдалося отримати воронку аналітики.",
     });
   }
 });
 
-router.get("/analytics/events", async (req, res) => {
+router.get("/analytics/events", requireAdminAuth, async (req, res) => {
   try {
-    const limit = Math.min(Number(req.query.limit || 50), 200);
-    const includeInternal =
-      String(req.query.includeInternal || "false") === "true";
-    const range = String(req.query.range || "today").trim();
+    const limit = Math.min(Number(req.query.limit || 100), 500);
+    const offset = Math.max(Number(req.query.offset || 0), 0);
+    const groupBy = String(req.query.group_by || "none").trim(); // none | visitor | session
 
-    let rangeClause = "1=1";
+    const { whereClause, values } = buildAnalyticsFilters(req.query);
 
-    if (range === "today") {
-      rangeClause = "created_at >= date_trunc('day', now())";
+    const orderField =
+      groupBy === "session"
+        ? "session_id"
+        : groupBy === "visitor"
+        ? "visitor_id"
+        : null;
+
+    if (!orderField) {
+      const result = await pool.query(
+        `
+          SELECT
+            id,
+            visitor_id,
+            session_id,
+            event_name AS event_type,
+            path,
+            page_url,
+            landing_page,
+            source,
+            campaign,
+            gclid,
+            utm_source,
+            utm_campaign,
+            referrer,
+            device_type,
+            order_id,
+            metadata,
+            is_internal,
+            is_test,
+            created_at,
+            LEAD(event_name) OVER (
+              PARTITION BY session_id
+              ORDER BY created_at ASC, id ASC
+            ) AS next_event
+          FROM site_events
+          WHERE ${whereClause}
+          ORDER BY created_at DESC, id DESC
+          LIMIT $${values.length + 1}
+          OFFSET $${values.length + 2}
+        `,
+        [...values, limit, offset]
+      );
+
+      return res.json({
+        success: true,
+        group_by: "none",
+        events: result.rows,
+      });
     }
 
     const result = await pool.query(
@@ -1432,34 +1567,73 @@ router.get("/analytics/events", async (req, res) => {
           id,
           visitor_id,
           session_id,
-          event_name,
+          event_name AS event_type,
           path,
           page_url,
+          landing_page,
+          source,
+          campaign,
+          gclid,
+          utm_source,
+          utm_campaign,
           referrer,
           device_type,
           order_id,
           metadata,
           is_internal,
           is_test,
-          created_at
+          created_at,
+          LEAD(event_name) OVER (
+            PARTITION BY ${orderField}
+            ORDER BY created_at ASC, id ASC
+          ) AS next_event
         FROM site_events
-        WHERE (${rangeClause})
-          AND ($1::boolean = TRUE OR is_internal = FALSE)
-        ORDER BY created_at DESC
-        LIMIT $2
+        WHERE ${whereClause}
+        ORDER BY ${orderField} ASC, created_at ASC, id ASC
+        LIMIT $${values.length + 1}
+        OFFSET $${values.length + 2}
       `,
-      [includeInternal, limit]
+      [...values, limit, offset]
     );
+
+    const groupsMap = new Map();
+
+    for (const row of result.rows) {
+      const key = groupBy === "visitor" ? row.visitor_id : row.session_id;
+
+      if (!groupsMap.has(key)) {
+        groupsMap.set(key, {
+          key,
+          visitor_id: row.visitor_id,
+          session_id: row.session_id,
+          source: row.source || "",
+          campaign: row.campaign || "",
+          landing_page: row.landing_page || "",
+          device_type: row.device_type || "",
+          order_id: row.order_id || null,
+          events: [],
+        });
+      }
+
+      const group = groupsMap.get(key);
+
+      if (!group.order_id && row.order_id) {
+        group.order_id = row.order_id;
+      }
+
+      group.events.push(row);
+    }
 
     return res.json({
       success: true,
-      events: result.rows,
+      group_by: groupBy,
+      groups: Array.from(groupsMap.values()),
     });
   } catch (error) {
     console.error("ANALYTICS EVENTS ERROR:", error);
     return res.status(500).json({
       success: false,
-      message: "Не вдалося отримати події аналітики",
+      message: "Не вдалося отримати події аналітики.",
     });
   }
 });
@@ -1479,6 +1653,113 @@ router.post("/analytics/clear", requireAdminAuth, async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Не вдалося очистити аналітику",
+    });
+  }
+});
+
+router.get("/analytics/reports/sources", requireAdminAuth, async (req, res) => {
+  try {
+    const { whereClause, values } = buildAnalyticsFilters(req.query);
+
+    const result = await pool.query(
+      `
+        SELECT
+          COALESCE(NULLIF(source, ''), 'direct') AS source,
+          COUNT(*) FILTER (WHERE event_name = 'page_view') AS visits,
+          COUNT(*) FILTER (WHERE event_name = 'product_view') AS product_view,
+          COUNT(*) FILTER (WHERE event_name = 'add_to_cart') AS add_to_cart,
+          COUNT(*) FILTER (WHERE event_name = 'checkout_view') AS checkout_view,
+          COUNT(*) FILTER (WHERE event_name = 'order_created') AS order_created,
+          COUNT(DISTINCT visitor_id) AS unique_visitors
+        FROM site_events
+        WHERE ${whereClause}
+        GROUP BY COALESCE(NULLIF(source, ''), 'direct')
+        ORDER BY order_created DESC, visits DESC
+      `,
+      values
+    );
+
+    return res.json({
+      success: true,
+      rows: result.rows,
+    });
+  } catch (error) {
+    console.error("REPORT SOURCES ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Не вдалося отримати звіт по джерелах.",
+    });
+  }
+});
+
+router.get("/analytics/reports/campaigns", requireAdminAuth, async (req, res) => {
+  try {
+    const { whereClause, values } = buildAnalyticsFilters(req.query);
+
+    const result = await pool.query(
+      `
+        SELECT
+          COALESCE(NULLIF(campaign, ''), '(none)') AS campaign,
+          COALESCE(NULLIF(source, ''), 'direct') AS source,
+          COUNT(*) FILTER (WHERE event_name = 'page_view') AS visits,
+          COUNT(*) FILTER (WHERE event_name = 'add_to_cart') AS add_to_cart,
+          COUNT(*) FILTER (WHERE event_name = 'checkout_view') AS checkout_view,
+          COUNT(*) FILTER (WHERE event_name = 'order_created') AS order_created,
+          COUNT(DISTINCT visitor_id) AS unique_visitors
+        FROM site_events
+        WHERE ${whereClause}
+        GROUP BY
+          COALESCE(NULLIF(campaign, ''), '(none)'),
+          COALESCE(NULLIF(source, ''), 'direct')
+        ORDER BY order_created DESC, visits DESC
+      `,
+      values
+    );
+
+    return res.json({
+      success: true,
+      rows: result.rows,
+    });
+  } catch (error) {
+    console.error("REPORT CAMPAIGNS ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Не вдалося отримати звіт по кампаніях.",
+    });
+  }
+});
+
+router.get("/analytics/reports/landing-pages", requireAdminAuth, async (req, res) => {
+  try {
+    const { whereClause, values } = buildAnalyticsFilters(req.query);
+
+    const result = await pool.query(
+      `
+        SELECT
+          COALESCE(NULLIF(landing_page, ''), '/') AS landing_page,
+          COUNT(*) FILTER (WHERE event_name = 'page_view') AS visits,
+          COUNT(*) FILTER (WHERE event_name = 'product_view') AS product_view,
+          COUNT(*) FILTER (WHERE event_name = 'add_to_cart') AS add_to_cart,
+          COUNT(*) FILTER (WHERE event_name = 'checkout_view') AS checkout_view,
+          COUNT(*) FILTER (WHERE event_name = 'order_created') AS order_created,
+          COUNT(DISTINCT visitor_id) AS unique_visitors
+        FROM site_events
+        WHERE ${whereClause}
+        GROUP BY COALESCE(NULLIF(landing_page, ''), '/')
+        ORDER BY order_created DESC, visits DESC
+      `,
+      values
+    );
+
+    return res.json({
+      success: true,
+      rows: result.rows,
+    });
+  } catch (error) {
+    console.error("REPORT LANDING PAGES ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Не вдалося отримати звіт по landing pages.",
     });
   }
 });
