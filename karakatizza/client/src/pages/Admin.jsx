@@ -457,64 +457,11 @@ const checkboxRowStyle = {
   color: "#333",
 };
 
-const analyticsCardStyle = {
-  background: "#fff",
-  borderRadius: "16px",
-  padding: "16px",
-  border: "1px solid #ececec",
-};
-
-const analyticsCardLabelStyle = {
-  fontSize: "13px",
-  color: "#777",
-  marginBottom: "8px",
-};
-
-const analyticsCardValueStyle = {
-  fontSize: "28px",
-  fontWeight: 700,
-  color: "#222",
-};
 
 const analyticsTableStyle = {
   width: "100%",
   borderCollapse: "collapse",
   minWidth: "1200px",
-};
-
-const thStyle = {
-  textAlign: "left",
-  padding: "12px 10px",
-  fontSize: "13px",
-  color: "#666",
-  borderBottom: "1px solid #ececec",
-  background: "#fafafa",
-  whiteSpace: "nowrap",
-};
-
-const tdStyle = {
-  padding: "12px 10px",
-  fontSize: "14px",
-  color: "#222",
-  verticalAlign: "top",
-};
-
-const tdSmallStyle = {
-  padding: "12px 10px",
-  fontSize: "12px",
-  color: "#444",
-  verticalAlign: "top",
-  maxWidth: "150px",
-  wordBreak: "break-word",
-};
-
-const tdPathStyle = {
-  padding: "12px 10px",
-  fontSize: "13px",
-  color: "#222",
-  verticalAlign: "top",
-  maxWidth: "220px",
-  wordBreak: "break-word",
 };
 
 const subSectionTitleStyle = {
