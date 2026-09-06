@@ -19,6 +19,7 @@ import { saveOrderToCrm, markTelegramGiftUsed } from "./services/crmService.js";
 import crmRoutes from "./routes/crmRoutes.js";
 import { startTelegramBot } from "./bot.js";
 import adminAuthRoutes from "./routes/adminAuth.js";
+import smmContextRoutes from "./routes/smmContext.js";
 import requireAdminAuth from "./middleware/requireAdminAuth.js";
 
 dotenv.config();
@@ -112,6 +113,8 @@ app.use("/gift-roll", giftRollRoutes(pool));
 app.use("/api/crm", crmRoutes);
 app.use("/site-settings", siteSettingsRoutes);
 app.use("/admin-auth", adminAuthRoutes);
+app.use("/api/smm", smmContextRoutes);
+
 
 const storage = new CloudinaryStorage({
   cloudinary,
