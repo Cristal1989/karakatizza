@@ -254,8 +254,8 @@ export default function Home() {
     }
 
     const outsideHours = isOutsideWorkingHours(
-      workingHours?.openTime,
-      workingHours?.closeTime
+      workingHours?.openingTime,
+      workingHours?.closingTime
     );
 
     if (outsideHours && popup?.showOutsideWorkingHours) {
