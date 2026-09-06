@@ -20,6 +20,7 @@ import crmRoutes from "./routes/crmRoutes.js";
 import { startTelegramBot } from "./bot.js";
 import adminAuthRoutes from "./routes/adminAuth.js";
 import smmContextRoutes from "./routes/smmContext.js";
+import smmPlansRoutes from "./routes/smmPlans.js";
 import requireAdminAuth from "./middleware/requireAdminAuth.js";
 
 dotenv.config();
@@ -52,7 +53,7 @@ const corsOptions = {
     return callback(new Error(`CORS blocked for origin: ${origin}`));
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 };
 
@@ -114,6 +115,7 @@ app.use("/api/crm", crmRoutes);
 app.use("/site-settings", siteSettingsRoutes);
 app.use("/admin-auth", adminAuthRoutes);
 app.use("/api/smm", smmContextRoutes);
+app.use("/api/smm", smmPlansRoutes);
 
 
 const storage = new CloudinaryStorage({

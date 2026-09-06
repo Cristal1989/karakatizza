@@ -1,37 +1,21 @@
 import express from "express";
 import { pool } from "../db.js";
+import requireSmmToken from "../middleware/requireSmmToken.js";
+import { getContentHistory } from "../services/smmPlanService.js";
 
 const router = express.Router();
 
-function requireSmmToken(req, res, next) {
-  const configuredToken = process.env.SMM_CONTEXT_TOKEN;
 
-  if (!configuredToken) {
-    return res.status(500).json({
-      message: "SMM_CONTEXT_TOKEN is not configured",
-    });
-  }
-
-  const authHeader = req.headers.authorization || "";
-  const expected = `Bearer ${configuredToken}`;
-
-  if (authHeader !== expected) {
-    return res.status(401).json({
-      message: "Unauthorized",
-    });
-  }
-
-  next();
-}
 
 router.get("/context", requireSmmToken, async (req, res) => {
   try {
     const [
-      productsResult,
-      settingsResult,
-      promotionResult,
-      giftRollResult,
-    ] = await Promise.all([
+  productsResult,
+  settingsResult,
+  promotionResult,
+  giftRollResult,
+  contentHistory,
+] = await Promise.all([
       pool.query(`
         SELECT
           id,
@@ -111,6 +95,8 @@ router.get("/context", requireSmmToken, async (req, res) => {
         FROM gift_roll_settings
         LIMIT 1
       `),
+
+      getContentHistory(pool),
     ]);
 
     const settings = settingsResult.rows[0] || {};
@@ -183,6 +169,8 @@ router.get("/context", requireSmmToken, async (req, res) => {
       },
 
       products,
+
+      contentHistory,
 
       promotions: {
         discountOffer: promotion

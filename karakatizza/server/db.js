@@ -958,4 +958,23 @@ await pool.query(`
   ON orders(visitor_id);
 `);
 
+await pool.query(`
+  CREATE TABLE IF NOT EXISTS smm_content_plans (
+    id BIGSERIAL PRIMARY KEY,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    content_date DATE NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending'
+      CHECK (status IN ('pending', 'approved', 'rejected', 'regenerated')),
+    stories JSONB NOT NULL DEFAULT '[]'::jsonb,
+    post JSONB,
+    products JSONB NOT NULL DEFAULT '[]'::jsonb,
+    raw_plan JSONB NOT NULL DEFAULT '{}'::jsonb
+  );
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_smm_content_plans_date
+  ON smm_content_plans(content_date DESC, id DESC);
+`);
+
 }
