@@ -982,7 +982,7 @@ app.post("/order", async (req, res) => {
         if (soySauceCount) {
           message += `Соєвий соус: ${soySauceCount}`;
           if (extraSoyCount > 0) {
-            message += `(+${extraSoyCount} платно)`;
+            message += `(${extraSoyCount} платно)`;
           }
           message += `\n`;
         }
@@ -990,7 +990,7 @@ app.post("/order", async (req, res) => {
         if (gingerCount) {
           message += `Імбир: ${gingerCount}`;
           if (extraGingerCount > 0) {
-            message += `(+${extraGingerCount} платно)`;
+            message += `(${extraGingerCount} платно)`;
           }
           message += `\n`;
         }
@@ -998,7 +998,7 @@ app.post("/order", async (req, res) => {
         if (wasabiCount) {
           message += `Васабі: ${wasabiCount}`;
           if (extraWasabiCount > 0) {
-            message += `(+${extraWasabiCount} платно)`;
+            message += `(${extraWasabiCount} платно)`;
           }
           message += `\n`;
         }
