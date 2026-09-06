@@ -127,6 +127,7 @@ export async function changePlanStatus(db, id, status) {
       UPDATE smm_content_plans
       SET status = $2
       WHERE id = $1::bigint
+        AND status = 'pending'
       RETURNING id::text AS id, status
     `,
     [id, status]

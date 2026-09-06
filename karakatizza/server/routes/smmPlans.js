@@ -57,13 +57,30 @@ router.patch("/plans/:id/status", requireSmmToken, async (req, res) => {
   try {
     const plan = await changePlanStatus(pool, req.params.id, status);
 
-    if (!plan) {
-      return res.status(404).json({
-        message: "SMM-план не знайдено",
-      });
-    }
+if (!plan) {
+  const existing = await pool.query(
+    `
+      SELECT status
+      FROM smm_content_plans
+      WHERE id = $1::bigint
+      LIMIT 1
+    `,
+    [req.params.id]
+  );
 
-    return res.json(plan);
+  if (!existing.rows[0]) {
+    return res.status(404).json({
+      message: "SMM-план не знайдено",
+    });
+  }
+
+  return res.status(409).json({
+    message: "SMM-план уже має фінальний статус",
+    status: existing.rows[0].status,
+  });
+}
+
+return res.json(plan);
   } catch (error) {
     console.error("PATCH /api/smm/plans/:id/status failed:", error);
     return res.status(500).json({
